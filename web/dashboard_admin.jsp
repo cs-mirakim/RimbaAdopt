@@ -242,93 +242,66 @@
                     </div>
 
                     <!-- Quick Links (right column) -->
-                    <div class="lg:col-span-1 border border-[#E5E5E5] rounded-xl p-6 shadow-sm flex flex-col">
+                    <div class="lg:col-span-1 border border-[#E5E5E5] rounded-xl p-6 shadow-sm flex flex-col h-full">
                         <div class="flex items-center justify-between mb-4">
                             <h2 class="text-xl font-semibold" style="color: #2B2B2B;">Quick Actions</h2>
                             <span class="text-xs px-2 py-1 rounded-full" style="background-color: #2F5D50; color: #FFFFFF;">
-                                4 Actions
+                                2 Actions
                             </span>
                         </div>
 
-                        <!-- scrollable links to avoid stretching the whole column -->
-                        <div class="space-y-3 overflow-y-auto">
-                            <!-- Manage Banner -->
-                            <a href="manage_banner.html" class="flex items-center gap-3 p-3 rounded-lg text-white hover:bg-[#24483E] transition group w-full quick-link" style="background-color: #2F5D50;">
-                                <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background-color: rgba(255, 255, 255, 0.2);">
-                                    <svg class="w-5 h-5 quick-link-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        <!-- Container untuk action links dengan scroll -->
+                        <div class="flex-1 overflow-y-auto mb-4">
+                            <div class="space-y-6">
+                                <!-- Manage Banner -->
+                                <a href="manage_banner.jsp" class="flex items-center gap-3 p-3 rounded-lg text-white hover:bg-[#24483E] transition group w-full quick-link" style="background-color: #2F5D50;">
+                                    <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background-color: rgba(255, 255, 255, 0.2);">
+                                        <svg class="w-5 h-5 quick-link-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <span class="text-sm font-medium block">Manage Banner</span>
+                                        <span class="text-xs opacity-80">Update homepage banners</span>
+                                    </div>
+                                    <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                                     </svg>
-                                </div>
-                                <div class="flex-1">
-                                    <span class="text-sm font-medium block">Manage Banner</span>
-                                    <span class="text-xs opacity-80">Update homepage banners</span>
-                                </div>
-                                <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                </svg>
-                            </a>
+                                </a>
 
-                            <!-- Approve Registrations -->
-                            <a href="review_registrations.html" class="flex items-center gap-3 p-3 rounded-lg text-white hover:bg-[#24483E] transition group w-full quick-link" style="background-color: #2F5D50;">
-                                <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background-color: rgba(255, 255, 255, 0.2);">
-                                    <svg class="w-5 h-5 quick-link-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                          d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                <!-- Approve Registrations -->
+                                <a href="review_registrations.jsp" class="flex items-center gap-3 p-3 rounded-lg text-white hover:bg-[#24483E] transition group w-full quick-link" style="background-color: #2F5D50;">
+                                    <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background-color: rgba(255, 255, 255, 0.2);">
+                                        <svg class="w-5 h-5 quick-link-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <span class="text-sm font-medium block">Review Registrations</span>
+                                        <span class="text-xs opacity-80">Review & approve users</span>
+                                    </div>
+                                    <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                                     </svg>
-                                </div>
-                                <div class="flex-1">
-                                    <span class="text-sm font-medium block">Review Registrations</span>
-                                    <span class="text-xs opacity-80">Review & approve users</span>
-                                </div>
-                                <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                </svg>
-                            </a>
+                                </a>
+                            </div>
+                        </div>
 
-                            <!-- Manage Shelter -->
-                            <a href="manage_shelter.html" class="flex items-center gap-3 p-3 rounded-lg text-white hover:bg-[#24483E] transition group w-full quick-link" style="background-color: #2F5D50;">
-                                <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background-color: rgba(255, 255, 255, 0.2);">
-                                    <svg class="w-5 h-5 quick-link-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <!-- Quick Tips Section - selalu di bawah -->
+                        <div class="mt-auto">
+                            <div class="p-4 rounded-lg" style="background-color: #24483E;">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <svg class="w-4 h-4 text-[#6DBF89]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                     </svg>
+                                    <span class="text-xs font-medium text-white">Quick Tips</span>
                                 </div>
-                                <div class="flex-1">
-                                    <span class="text-sm font-medium block">Manage Shelter</span>
-                                    <span class="text-xs opacity-80">View & manage shelters</span>
-                                </div>
-                                <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                </svg>
-                            </a>
-
-                            <!-- Manage Adopter -->
-                            <a href="manage_adopter.html" class="flex items-center gap-3 p-3 rounded-lg text-white hover:bg-[#24483E] transition group w-full quick-link" style="background-color: #2F5D50;">
-                                <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background-color: rgba(255, 255, 255, 0.2);">
-                                    <svg class="w-5 h-5 quick-link-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13-7.7a4 4 0 11-7.465 1.6"/>
-                                    </svg>
-                                </div>
-                                <div class="flex-1">
-                                    <span class="text-sm font-medium block">Manage Adopter</span>
-                                    <span class="text-xs opacity-80">View & manage adopters</span>
-                                </div>
-                                <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                </svg>
-                            </a>
-
-                            <!-- Statistics Report (Optional - can be removed if not needed) -->
-                            <div class="pt-3 mt-3 border-t border-[#E5E5E5]">
-                                <div class="flex items-center justify-between text-sm" style="color: #2B2B2B;">
-                                    <span>System Status:</span>
-                                    <span class="px-2 py-1 rounded-full text-xs" style="background-color: #6DBF89; color: #06321F;">
-                                        <span class="w-2 h-2 rounded-full inline-block mr-1" style="background-color: #06321F;"></span>
-                                        All Systems Normal
-                                    </span>
-                                </div>
+                                <p class="text-xs text-white opacity-80">
+                                    Only essential actions are shown. Use the main menu for complete admin controls.
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -338,7 +311,7 @@
                 <div class="mb-8">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-bold" style="color: #2B2B2B;">Recent Registration Activities</h2>
-                        <a href="review_registrations.html" class="text-sm hover:text-[#24483E] font-medium" style="color: #2F5D50;">
+                        <a href="review_registrations.jsp" class="text-sm hover:text-[#24483E] font-medium" style="color: #2F5D50;">
                             View All Registrations ?
                         </a>
                     </div>
