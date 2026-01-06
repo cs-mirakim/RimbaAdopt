@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Monitor Applications - Rimba Adopt</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+        <style>
+            /* Custom utility classes based on your theme */
+            .text-main { color: #2B2B2B; }
+            .bg-primary { background-color: #2F5D50; }
+            .hover-bg-primary-dark { background-color: #24483E; }
+            .text-white-on-dark { color: #FFFFFF; }
+            .border-divider { border-color: #E5E5E5; }
+
+            /* Status Chip Styles */
+            .chip-pending { background-color: #C49A6C; color: #FFFFFF; } /* Warm Chip */
+            .chip-approved { background-color: #A8E6CF; color: #2B2B2B; } /* Light Green Chip */
+            .chip-rejected { background-color: #B84A4A; color: #FFFFFF; } /* Danger Alert */
+            .chip-cancelled { background-color: #C49A6C; color: #FFFFFF; } /* Warm Chip */
+
+            /* Modal Styles */
+            .modal {
+                transition: opacity 0.25s ease;
+            }
+
+            /* Custom focus styles */
+            .custom-focus:focus {
+                outline: none;
+                ring: 2px;
+                ring-color: #2F5D50;
+                border-color: #2F5D50;
+            }
+
+            /* Equal width for action buttons */
+            .action-button {
+                width: 120px;
+                padding: 0.5rem 0;
+                text-align: center;
+            }
+        </style>
+
+    </head>
+    <body class="flex flex-col min-h-screen relative bg-[#F6F3E7] text-main">
+
+        <div id="header"></div>
+
+        <main class="flex-1 p-4 pt-6 relative z-10 flex justify-center items-start mb-2" style="background-color: #F6F3E7;">
+            <div class="w-full bg-white py-8 px-6 rounded-3xl shadow-xl border" style="max-width: 1450px; border-color: #E5E5E5;">
+
+                <div class="mb-8">
+                    <h1 class="text-4xl font-extrabold" style="color: #2F5D50;">Monitor Applications</h1>
+                    <p class="mt-2 text-lg" style="color: #2B2B2B;">Check the status of your pet adoption applications here.</p>
+                </div>
+
+                <hr style="border-top: 1px solid #E5E5E5; margin-bottom: 1.5rem; margin-top: 1.5rem;" />
+
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 space-y-4 md:space-y-0">
+                    <div class="flex flex-wrap gap-2 text-sm font-medium">
+                        <button class="px-5 py-2 rounded-full text-white hover:bg-[#24483E] transition duration-150 shadow-md filter-btn bg-primary" data-status="all">All (15)</button>
+                        <button class="px-5 py-2 rounded-full border border-[#C49A6C] text-[#C49A6C] hover:bg-[#F6F3E7] transition duration-150 filter-btn" data-status="pending">Pending (5)</button>
+                        <button class="px-5 py-2 rounded-full border border-[#6DBF89] text-[#57A677] hover:bg-[#F6F3E7] transition duration-150 filter-btn" data-status="approved">Approved (6)</button>
+                        <button class="px-5 py-2 rounded-full border border-[#B84A4A] text-[#B84A4A] hover:bg-[#F6F3E7] transition duration-150 filter-btn" data-status="rejected">Rejected (3)</button>
+                        <button class="px-5 py-2 rounded-full border border-[#C49A6C] text-[#C49A6C] hover:bg-[#F6F3E7] transition duration-150 filter-btn" data-status="cancelled">Cancelled (1)</button>
+                    </div>
+
+                    <div class="relative w-full md:w-80">
+                        <input type="text" placeholder="Search Pet/Shelter..." class="w-full py-2.5 pl-10 pr-4 border rounded-xl transition duration-150 shadow-sm text-base custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;">
+                        <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-xl border shadow-lg" style="border-color: #E5E5E5;">
+                    <table class="min-w-full divide-y" style="border-color: #E5E5E5;">
+                        <thead style="background-color: #F6F3E7;">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 5%;">No.</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Pet</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Shelter</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Date</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Status</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Shelter Response</th>
+                                <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 15%;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="application-list" class="bg-white divide-y" style="border-color: #E5E5E5;">
+                            <!-- Data akan diisi oleh JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="pagination-controls" class="flex justify-between items-center mt-6">
+                    <div class="text-sm" style="color: #2B2B2B;">
+                        Showing <span id="start-index" class="font-semibold">1</span> to <span id="end-index" class="font-semibold">10</span> of <span id="total-items" class="font-semibold">15</span> applications
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="prev-btn" class="px-4 py-2 text-sm rounded-xl border text-[#2B2B2B] hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150" style="border-color: #E5E5E5;">
+                            Previous
+                        </button>
+                        <button id="next-btn" class="px-4 py-2 text-sm rounded-xl border text-[#2B2B2B] hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150" style="border-color: #E5E5E5;">
+                            Next
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <div id="editModal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+            <div class="bg-white rounded-2xl p-8 w-full max-w-2xl mx-4 shadow-2xl transform transition-transform duration-300 scale-95" role="dialog" aria-modal="true" style="color: #2B2B2B;">
+
+                <div class="flex justify-between items-center border-b pb-3 mb-4" style="border-color: #E5E5E5;">
+                    <h3 class="text-2xl font-bold" style="color: #2F5D50;">Application Details for <span id="modalPetName" style="color: #2B2B2B;"></span></h3>
+                    <button onclick="closeModal('editModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+
+                <div class="max-h-[70vh] overflow-y-auto pr-2">
+                    <form id="editForm" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                            <div>
+                                <label class="block text-sm font-medium" style="color: #2B2B2B;">Pet:</label>
+                                <p class="font-semibold" id="formPetDetails" style="color: #2B2B2B;"></p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium" style="color: #2B2B2B;">Application Date:</label>
+                                <p class="font-semibold" id="formRequestDate" style="color: #2B2B2B;"></p>
+                            </div>
+                        </div>
+
+                        <h4 class="font-bold pt-2 border-t text-lg" style="border-color: #E5E5E5; color: #2F5D50;">Your Application Details (Editable)</h4>
+
+                        <div>
+                            <label for="adopterMessage" class="block text-sm font-medium" style="color: #2B2B2B;">Message to Shelter:</label>
+                            <textarea id="adopterMessage" rows="3" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;"></textarea>
+                            <p class="text-xs text-gray-500 mt-1">This is your initial message when applying to adopt.</p>
+                        </div>
+
+                        <div>
+                            <label for="householdType" class="block text-sm font-medium" style="color: #2B2B2B;">Household Type:</label>
+                            <select id="householdType" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;">
+                                <option value="apartment">Apartment</option>
+                                <option value="landed_house">Landed House (With Yard)</option>
+                                <option value="landed_no_yard">Landed House (No Yard)</option>
+                            </select>
+                        </div>
+
+                        <div class="flex items-center">
+                            <input id="hasOtherPets" type="checkbox" class="h-4 w-4 rounded custom-focus" style="color: #2F5D50; border-color: #E5E5E5;">
+                            <label for="hasOtherPets" class="ml-2 block text-sm" style="color: #2B2B2B;">I currently have other pets.</label>
+                        </div>
+
+                        <div>
+                            <label for="adopterNotes" class="block text-sm font-medium" style="color: #2B2B2B;">General Notes (e.g. Pet Care Plan):</label>
+                            <textarea id="adopterNotes" rows="2" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;"></textarea>
+                        </div>
+
+                        <h4 class="font-bold pt-2 border-t text-lg" style="border-color: #E5E5E5; color: #2F5D50;">Shelter Feedback</h4>
+                        <div class="p-3 rounded-lg border" style="background-color: #F6F3E7; border-color: #E5E5E5;">
+                            <p class="text-sm italic text-gray-600" id="formShelterResponse"></p>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="flex justify-end pt-4">
+                    <button type="button" onclick="saveApplicationChanges()" class="px-6 py-2 rounded-xl text-white font-medium hover:bg-[#24483E] transition duration-150 shadow-md" style="background-color: #2F5D50;">
+                        Save Changes
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="cancelModal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+            <div class="bg-white rounded-2xl p-8 w-full max-w-md mx-4 shadow-2xl transform transition-transform duration-300 scale-95" role="dialog" aria-modal="true" style="color: #2B2B2B;">
+
+                <div class="flex justify-between items-center border-b pb-3 mb-4" style="border-color: #E5E5E5;">
+                    <h3 class="text-2xl font-bold" style="color: #B84A4A;">Confirm Cancellation</h3>
+                    <button onclick="closeModal('cancelModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+
+                <div class="text-gray-700">
+                    <p class="mb-4 text-lg" style="color: #2B2B2B;">Are you sure you want to cancel your application for <strong id="cancelPetName" style="color: #2B2B2B;"></strong> from <strong id="cancelShelterName" style="color: #2B2B2B;"></strong>?</p>
+                    <p class="mb-6 text-sm italic text-white font-medium p-3 rounded-lg border" style="background-color: #B84A4A; border-color: #B84A4A;">
+                        This action cannot be undone. Once cancelled, you will need to submit a new application.
+                    </p>
+
+                    <div>
+                        <label for="cancellationReason" class="block text-sm font-medium" style="color: #2B2B2B;">Reason for Cancellation (Optional):</label>
+                        <textarea id="cancellationReason" rows="2" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button onclick="closeModal('cancelModal')" class="px-5 py-2 rounded-xl border text-[#2B2B2B] hover:bg-gray-100 transition duration-150 font-medium" style="border-color: #E5E5E5;">
+                        Go Back
+                    </button>
+                    <button id="confirmCancelBtn" class="px-5 py-2 rounded-xl text-white font-semibold hover:bg-red-700 transition duration-200 shadow-md" style="background-color: #B84A4A;">
+                        Yes, Cancel Application
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="footer"></div>
+
+        <script src="includes/sidebar.js"></script>
+
+        <script>
+                        // =======================================================
+                        // 1. Dummy Data Setup
+                        // =======================================================
+                        const DUMMY_DATA = [
+                            // Simulating Adopter data (Address, Household Type, Notes, etc.)
+                            // This data would normally come from the Adopter table (adopter_id)
+                            // For simplicity, we hardcode it here.
+                            {id: 1, petName: "Kiko (Cat)", petImage: "animal_picture/animal1.png", shelter: "Paws Haven Shelter", date: "2025-11-20", status: "pending", adopterMessage: "We have a quiet apartment and Kiko looks perfect for our family.", shelterResponse: "Your application is currently under review. Please expect a response within 7 working days.", householdType: "apartment", hasOtherPets: false, adopterNotes: "Ready to install a safety net on the balcony."},
+                            {id: 2, petName: "Barkley (Dog)", petImage: "animal_picture/animal2.jpg", shelter: "Kuala Lumpur Rescues", date: "2025-11-25", status: "pending", adopterMessage: "Looking for an energetic dog for my landed house with a big yard.", shelterResponse: "Your application is currently under review. Please expect a response within 7 working days.", householdType: "landed_house", hasOtherPets: true, adopterNotes: "I currently own a small tortoise."},
+                            {id: 3, petName: "Luna (Rabbit)", petImage: "animal_picture/animal3.jpg", shelter: "Paws Haven Shelter", date: "2025-12-01", status: "pending", adopterMessage: "First-time rabbit owner, ready to provide a safe indoor habitat.", shelterResponse: "Your application is currently under review. Please expect a response within 7 working days.", householdType: "apartment", hasOtherPets: false, adopterNotes: ""},
+                            {id: 4, petName: "Milo (Cat)", petImage: "animal_picture/animal1.png", shelter: "Penang Animal Aid", date: "2025-12-05", status: "pending", adopterMessage: "Milo is so cute! We have experience with senior cats.", shelterResponse: "Your application is currently under review. Please expect a response within 7 working days.", householdType: "landed_no_yard", hasOtherPets: false, adopterNotes: "Working from home, so someone is always present."},
+                            {id: 5, petName: "Spot (Dog)", petImage: "animal_picture/animal2.jpg", shelter: "Kuala Lumpur Rescues", date: "2025-12-06", status: "pending", adopterMessage: "A friend recommended Spot. I love large breeds.", shelterResponse: "Your application is currently under review. Please expect a response within 7 working days.", householdType: "landed_house", hasOtherPets: true, adopterNotes: "Large fenced yard available."},
+
+                            // Approved (6)
+                            {id: 6, petName: "Gigi (Cat)", petImage: "animal_picture/animal3.jpg", shelter: "Penang Animal Aid", date: "2025-11-01", status: "approved", adopterMessage: "Gigi looks like a great companion. I am excited!", shelterResponse: "Congratulations! Your application is approved. Our team will contact you within 2 days to arrange delivery/pickup.", householdType: "apartment", hasOtherPets: false, adopterNotes: ""},
+                            {id: 7, petName: "Rex (Dog)", petImage: "animal_picture/animal1.png", shelter: "Paws Haven Shelter", date: "2025-11-05", status: "approved", adopterMessage: "Rex is exactly what we are looking for.", shelterResponse: "Congratulations! Your application is approved. Our team will contact you within 2 days to arrange delivery/pickup.", householdType: "landed_house", hasOtherPets: false, adopterNotes: "We live near a dog park."},
+                            {id: 8, petName: "Coco (Bird)", petImage: "animal_picture/animal2.jpg", shelter: "Kuala Lumpur Rescues", date: "2025-11-10", status: "approved", adopterMessage: "I have an existing large aviary.", shelterResponse: "Congratulations! Your application is approved. Our team will contact you within 2 days to arrange delivery/pickup.", householdType: "landed_no_yard", hasOtherPets: true, adopterNotes: "Have other small birds."},
+                            {id: 9, petName: "Shadow (Cat)", petImage: "animal_picture/animal3.jpg", shelter: "Penang Animal Aid", date: "2025-11-12", status: "approved", adopterMessage: "Shadow seems like a gentle cat.", shelterResponse: "Congratulations! Your application is approved. Our team will contact you within 2 days to arrange delivery/pickup.", householdType: "apartment", hasOtherPets: false, adopterNotes: "Quiet environment."},
+                            {id: 10, petName: "Buddy (Dog)", petImage: "animal_picture/animal1.png", shelter: "Paws Haven Shelter", date: "2025-11-15", status: "approved", adopterMessage: "Ready to welcome Buddy home!", shelterResponse: "Congratulations! Your application is approved. Our team will contact you within 2 days to arrange delivery/pickup.", householdType: "landed_house", hasOtherPets: false, adopterNotes: ""},
+                            {id: 11, petName: "Toby (Dog)", petImage: "animal_picture/animal2.jpg", shelter: "Kuala Lumpur Rescues", date: "2025-11-18", status: "approved", adopterMessage: "Looking forward to meeting Toby.", shelterResponse: "Congratulations! Your application is approved. Our team will contact you within 2 days to arrange delivery/pickup.", householdType: "landed_house", hasOtherPets: false, adopterNotes: ""},
+
+                            // Rejected (3)
+                            {id: 12, petName: "Bella (Cat)", petImage: "animal_picture/animal3.jpg", shelter: "Penang Animal Aid", date: "2025-10-01", status: "rejected", adopterMessage: "Bella looks sweet.", shelterResponse: "Upon consideration, your application was rejected due to unsuitable living conditions for this pet. Please check our criteria.", householdType: "apartment", hasOtherPets: false, adopterNotes: ""},
+                            {id: 13, petName: "Max (Dog)", petImage: "animal_picture/animal1.png", shelter: "Paws Haven Shelter", date: "2025-10-15", status: "rejected", adopterMessage: "We love large dogs.", shelterResponse: "Upon consideration, your application was rejected due to lack of a secure fence. Please check our criteria.", householdType: "landed_no_yard", hasOtherPets: false, adopterNotes: ""},
+                            {id: 14, petName: "Leo (Cat)", petImage: "animal_picture/animal2.jpg", shelter: "Kuala Lumpur Rescues", date: "2025-10-20", status: "rejected", adopterMessage: "Leo would be a great addition.", shelterResponse: "Upon consideration, your application was rejected because you already reached the maximum allowed pets.", householdType: "apartment", hasOtherPets: true, adopterNotes: ""},
+
+                            // Cancelled (1)
+                            {id: 15, petName: "Ziggy (Rabbit)", petImage: "animal_picture/animal3.jpg", shelter: "Penang Animal Aid", date: "2025-09-01", status: "cancelled", adopterMessage: "Excited about adopting Ziggy.", shelterResponse: "We are sad to see you cancel. We hope you will return in the future!", householdType: "apartment", hasOtherPets: false, adopterNotes: ""},
+                        ];
+
+                        const ITEMS_PER_PAGE = 10;
+                        let currentPage = 1;
+                        let filteredData = DUMMY_DATA;
+                        let currentStatusFilter = 'all';
+                        let currentApplicationId = null;
+
+                        // =======================================================
+                        // 2. MODAL FUNCTIONS
+                        // =======================================================
+                        function openModal(modalId, appId) {
+                            const modal = document.getElementById(modalId);
+                            const application = DUMMY_DATA.find(app => app.id === appId);
+                            currentApplicationId = appId;
+
+                            if (modalId === 'editModal' && application) {
+                                document.getElementById('modalPetName').textContent = application.petName;
+                                document.getElementById('formPetDetails').textContent = `${application.petName} from ${application.shelter}`;
+                                document.getElementById('formRequestDate').textContent = application.date;
+                                document.getElementById('formShelterResponse').textContent = application.shelterResponse;
+
+                                // Populate editable fields with dummy Adopter data
+                                document.getElementById('adopterMessage').value = application.adopterMessage || '';
+                                document.getElementById('householdType').value = application.householdType || 'apartment';
+                                document.getElementById('hasOtherPets').checked = application.hasOtherPets || false;
+                                document.getElementById('adopterNotes').value = application.adopterNotes || '';
+
+                            } else if (modalId === 'cancelModal' && application) {
+                                document.getElementById('cancelPetName').textContent = application.petName;
+                                document.getElementById('cancelShelterName').textContent = application.shelter;
+                                document.getElementById('confirmCancelBtn').onclick = () => confirmCancellation(application.id);
+                            }
+
+                            modal.classList.remove('hidden');
+                            setTimeout(() => {
+                                modal.classList.remove('opacity-0');
+                                modal.querySelector('div:nth-child(1)').classList.remove('scale-95'); // Modal content
+                            }, 10);
+                        }
+
+                        function closeModal(modalId) {
+                            const modal = document.getElementById(modalId);
+                            modal.classList.add('opacity-0');
+                            modal.querySelector('div:nth-child(1)').classList.add('scale-95');
+                            setTimeout(() => {
+                                modal.classList.add('hidden');
+                            }, 300);
+                        }
+
+                        function saveApplicationChanges() {
+                            if (!currentApplicationId)
+                                return;
+
+                            const application = DUMMY_DATA.find(app => app.id === currentApplicationId);
+                            if (application) {
+                                // Update application data with form values
+                                application.adopterMessage = document.getElementById('adopterMessage').value;
+                                application.householdType = document.getElementById('householdType').value;
+                                application.hasOtherPets = document.getElementById('hasOtherPets').checked;
+                                application.adopterNotes = document.getElementById('adopterNotes').value;
+
+                                // Show success message (in real app, this would be an AJAX call)
+                                alert('Application updated successfully!');
+                                closeModal('editModal');
+
+                                // Re-render table to reflect changes
+                                filterAndRender();
+                            }
+                        }
+
+                        function confirmCancellation(appId) {
+                            const reason = document.getElementById('cancellationReason').value;
+
+                            // Dummy cancellation logic:
+                            console.log(`Application ${appId} officially cancelled. Reason: ${reason}`);
+                            // In a real application, an AJAX request would be sent here.
+
+                            // Close modal and refresh table (in a real app, you'd update DUMMY_DATA status and re-render)
+                            closeModal('cancelModal');
+
+                            // Simulating status change for the demo
+                            const index = DUMMY_DATA.findIndex(app => app.id === appId);
+                            if (index !== -1) {
+                                DUMMY_DATA[index].status = 'cancelled';
+                                DUMMY_DATA[index].shelterResponse = "We are sad to see you cancel. We hope you will return in the future!";
+                                // Clear the reason textarea
+                                document.getElementById('cancellationReason').value = '';
+                                // Re-render table to reflect the change
+                                filterAndRender();
+                            }
+                        }
+
+                        // =======================================================
+                        // 3. Rendering Logic
+                        // =======================================================
+
+                        function getStatusChipClass(status) {
+                            switch (status) {
+                                case 'pending':
+                                    return 'chip-pending';
+                                case 'approved':
+                                    return 'chip-approved';
+                                case 'rejected':
+                                    return 'chip-rejected';
+                                case 'cancelled':
+                                    return 'chip-cancelled';
+                                default:
+                                    return 'bg-gray-200 text-gray-800';
+                            }
+                        }
+
+                        function renderTable(data, page) {
+                            const tableBody = document.getElementById('application-list');
+                            tableBody.innerHTML = '';
+
+                            const start = (page - 1) * ITEMS_PER_PAGE;
+                            const end = start + ITEMS_PER_PAGE;
+                            const paginatedItems = data.slice(start, end);
+
+                            paginatedItems.forEach((item, index) => {
+                                const statusChipClass = getStatusChipClass(item.status);
+                                const itemNumber = start + index + 1;
+
+                                // Action Buttons - Always show same width buttons
+                                let actionButtons;
+                                if (item.status === 'pending') {
+                                    actionButtons = `
+                            <div class="flex flex-col items-center space-y-2">
+                                <button onclick="openModal('editModal', ${item.id})" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View/Edit</button>
+                                <button onclick="openModal('cancelModal', ${item.id})" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-red-700" style="background-color: #B84A4A;">Cancel</button>
+                            </div>`;
+                                } else {
+                                    actionButtons = `
+                            <button onclick="openModal('editModal', ${item.id})" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View Details</button>`;
+                                }
+
+                                const row = `
+                        <tr class="hover:bg-gray-50 transition duration-100">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color: #2B2B2B;">${itemNumber}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10">
+                                        <img class="h-10 w-10 rounded-full object-cover" src="${item.petImage}" alt="${item.petName}" onerror="this.src='https://via.placeholder.com/40x40?text=Pet'">
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium" style="color: #2B2B2B;">${item.petName}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">${item.shelter}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">${item.date}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full text-white ${statusChipClass}">
+                                    ${item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm truncate max-w-xs" style="color: #2B2B2B;">
+                                ${item.shelterResponse}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                ${actionButtons}
+                            </td>
+                        </tr>
+                    `;
+                                tableBody.innerHTML += row;
+                            });
+
+                            renderPaginationControls(data.length);
+                        }
+
+                        // =======================================================
+                        // 4. Pagination & Filtering Logic (Combined)
+                        // =======================================================
+                        function renderPaginationControls(totalItems) {
+                            const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+                            document.getElementById('total-items').textContent = totalItems;
+                            document.getElementById('start-index').textContent = Math.min(totalItems, (currentPage - 1) * ITEMS_PER_PAGE + 1);
+                            document.getElementById('end-index').textContent = Math.min(totalItems, currentPage * ITEMS_PER_PAGE);
+
+                            document.getElementById('prev-btn').disabled = currentPage === 1;
+                            document.getElementById('next-btn').disabled = currentPage === totalPages || totalItems === 0;
+                        }
+
+                        document.getElementById('prev-btn').addEventListener('click', () => {
+                            if (currentPage > 1) {
+                                currentPage--;
+                                renderTable(filteredData, currentPage);
+                            }
+                        });
+
+                        document.getElementById('next-btn').addEventListener('click', () => {
+                            const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+                            if (currentPage < totalPages) {
+                                currentPage++;
+                                renderTable(filteredData, currentPage);
+                            }
+                        });
+
+                        function filterAndRender() {
+                            // Re-apply filter based on currentStatusFilter
+                            if (currentStatusFilter === 'all') {
+                                filteredData = DUMMY_DATA;
+                            } else {
+                                filteredData = DUMMY_DATA.filter(item => item.status === currentStatusFilter);
+                            }
+                            currentPage = 1; // Reset to page 1 after filter/update
+                            renderTable(filteredData, currentPage);
+                            updateFilterButtonCounts();
+                        }
+
+                        // Update filter button counts based on current filtered data
+                        function updateFilterButtonCounts() {
+                            const counts = {
+                                'all': DUMMY_DATA.length,
+                                'pending': DUMMY_DATA.filter(item => item.status === 'pending').length,
+                                'approved': DUMMY_DATA.filter(item => item.status === 'approved').length,
+                                'rejected': DUMMY_DATA.filter(item => item.status === 'rejected').length,
+                                'cancelled': DUMMY_DATA.filter(item => item.status === 'cancelled').length
+                            };
+
+                            document.querySelectorAll('.filter-btn').forEach(btn => {
+                                const status = btn.getAttribute('data-status');
+                                const count = counts[status];
+                                btn.textContent = btn.textContent.replace(/\(\d+\)/, `(${count})`);
+                            });
+                        }
+
+                        // Update filter button styling
+                        function updateFilterButtonStyles() {
+                            document.querySelectorAll('.filter-btn').forEach(btn => {
+                                const btnStatus = btn.getAttribute('data-status');
+
+                                // Reset semua classes
+                                btn.className = 'px-5 py-2 rounded-full text-sm font-medium transition duration-150 filter-btn';
+
+                                // Set active button
+                                if (btnStatus === currentStatusFilter) {
+                                    if (btnStatus === 'all') {
+                                        btn.classList.add('bg-primary', 'text-white', 'shadow-md');
+                                    } else if (btnStatus === 'pending' || btnStatus === 'cancelled') {
+                                        btn.classList.add('bg-[#C49A6C]', 'text-white', 'border-[#C49A6C]');
+                                    } else if (btnStatus === 'approved') {
+                                        btn.classList.add('bg-[#A8E6CF]', 'text-[#06321F]', 'border-[#6DBF89]');
+                                    } else if (btnStatus === 'rejected') {
+                                        btn.classList.add('bg-[#B84A4A]', 'text-white', 'border-[#B84A4A]');
+                                    }
+                                } else {
+                                    // Inactive button styles
+                                    btn.classList.add('border', 'hover:bg-[#F6F3E7]');
+                                    if (btnStatus === 'all') {
+                                        btn.classList.add('border-[#2F5D50]', 'text-[#2F5D50]');
+                                    } else if (btnStatus === 'pending' || btnStatus === 'cancelled') {
+                                        btn.classList.add('border-[#C49A6C]', 'text-[#C49A6C]');
+                                    } else if (btnStatus === 'approved') {
+                                        btn.classList.add('border-[#6DBF89]', 'text-[#57A677]');
+                                    } else if (btnStatus === 'rejected') {
+                                        btn.classList.add('border-[#B84A4A]', 'text-[#B84A4A]');
+                                    }
+                                }
+                            });
+                        }
+
+                        document.querySelectorAll('.filter-btn').forEach(button => {
+                            button.addEventListener('click', (e) => {
+                                const newStatus = e.target.getAttribute('data-status');
+                                currentStatusFilter = newStatus;
+
+                                updateFilterButtonStyles();
+                                filterAndRender();
+                            });
+                        });
+
+                        // Search functionality
+                        document.querySelector('input[type="text"]').addEventListener('input', function (e) {
+                            const searchTerm = e.target.value.toLowerCase();
+
+                            if (searchTerm.trim() === '') {
+                                filterAndRender();
+                                return;
+                            }
+
+                            const filtered = DUMMY_DATA.filter(item =>
+                                item.petName.toLowerCase().includes(searchTerm) ||
+                                        item.shelter.toLowerCase().includes(searchTerm)
+                            );
+
+                            filteredData = filtered;
+                            currentPage = 1;
+                            renderTable(filteredData, currentPage);
+                        });
+
+                        // Initial load
+                        window.onload = () => {
+                            updateFilterButtonStyles();
+                            updateFilterButtonCounts();
+                            renderTable(filteredData, currentPage);
+                        };
+        </script>
+    </body>
+</html>

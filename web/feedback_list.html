@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>My Feedback - Rimba Adopt</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+        <style>
+            /* Custom utility classes based on your theme */
+            .text-main { color: #2B2B2B; }
+            .bg-primary { background-color: #2F5D50; }
+            .hover-bg-primary-dark { background-color: #24483E; }
+            .text-white-on-dark { color: #FFFFFF; }
+            .border-divider { border-color: #E5E5E5; }
+            /* Rating Star Styles */
+            .star-filter { background-color: #FFD700; color: #2B2B2B; }
+            .star-display { color: #FFD700; }
+            /* Modal Styles */
+            .modal {
+                transition: opacity 0.25s ease;
+            }
+            /* Custom focus styles */
+            .custom-focus:focus {
+                outline: none;
+                ring: 2px;
+                ring-color: #2F5D50;
+                border-color: #2F5D50;
+            }
+            /* Equal width for action buttons */
+            .action-button {
+                width: 120px;
+                padding: 0.5rem 0;
+                text-align: center;
+            }
+            /* Rating stars interactive */
+            .rating-star {
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .rating-star:hover {
+                transform: scale(1.2);
+            }
+            .rating-star.filled {
+                color: #FFD700;
+            }
+            .rating-star.empty {
+                color: #E5E5E5;
+            }
+        </style>
+    </head>
+    <body class="flex flex-col min-h-screen relative bg-[#F6F3E7] text-main">
+        <div id="header"></div>
+        <main class="flex-1 p-4 pt-6 relative z-10 flex justify-center items-start mb-2" style="background-color: #F6F3E7;">
+            <div class="w-full bg-white py-8 px-6 rounded-3xl shadow-xl border" style="max-width: 1450px; border-color: #E5E5E5;">
+                <div class="mb-8">
+                    <h1 class="text-4xl font-extrabold" style="color: #2F5D50;">My Feedback</h1>
+                    <p class="mt-2 text-lg" style="color: #2B2B2B;">View and manage your feedback to shelters here.</p>
+                </div>
+                <hr style="border-top: 1px solid #E5E5E5; margin-bottom: 1.5rem; margin-top: 1.5rem;" />
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 space-y-4 md:space-y-0">
+                    <div class="flex flex-wrap gap-2 text-sm font-medium">
+                        <button class="px-5 py-2 rounded-full text-white hover:bg-[#24483E] transition duration-150 shadow-md filter-btn bg-primary" data-rating="all">All (12)</button>
+                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#FFD700] text-[#2B2B2B]" data-rating="5">⭐ 5 Stars (5)</button>
+                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#FFD700] text-[#2B2B2B]" data-rating="4">⭐ 4 Stars (3)</button>
+                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#FFD700] text-[#2B2B2B]" data-rating="3">⭐ 3 Stars (2)</button>
+                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#FFD700] text-[#2B2B2B]" data-rating="2">⭐ 2 Stars (1)</button>
+                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#FFD700] text-[#2B2B2B]" data-rating="1">⭐ 1 Star (1)</button>
+                    </div>
+                    <div class="relative w-full md:w-80">
+                        <input type="text" id="searchInput" placeholder="Search Shelter..." class="w-full py-2.5 pl-10 pr-4 border rounded-xl transition duration-150 shadow-sm text-base custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;">
+                        <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                </div>
+                <div class="overflow-x-auto rounded-xl border shadow-lg" style="border-color: #E5E5E5;">
+                    <table class="min-w-full divide-y" style="border-color: #E5E5E5;">
+                        <thead style="background-color: #F6F3E7;">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 5%;">No.</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Shelter</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Rating</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Comment</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Date</th>
+                                <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 15%;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="feedback-list" class="bg-white divide-y" style="border-color: #E5E5E5;">
+                            <!-- Data akan diisi oleh JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="pagination-controls" class="flex justify-between items-center mt-6">
+                    <div class="text-sm" style="color: #2B2B2B;">
+                        Showing <span id="start-index" class="font-semibold">1</span> to <span id="end-index" class="font-semibold">10</span> of <span id="total-items" class="font-semibold">12</span> feedback
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="prev-btn" class="px-4 py-2 text-sm rounded-xl border text-[#2B2B2B] hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150" style="border-color: #E5E5E5;">
+                            Previous
+                        </button>
+                        <button id="next-btn" class="px-4 py-2 text-sm rounded-xl border text-[#2B2B2B] hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150" style="border-color: #E5E5E5;">
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Edit Modal -->
+        <div id="editModal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+            <div class="bg-white rounded-2xl p-8 w-full max-w-2xl mx-4 shadow-2xl transform transition-transform duration-300 scale-95" role="dialog" aria-modal="true" style="color: #2B2B2B;">
+                <div class="flex justify-between items-center border-b pb-3 mb-4" style="border-color: #E5E5E5;">
+                    <h3 class="text-2xl font-bold" style="color: #2F5D50;">Feedback for <span id="modalShelterName" style="color: #2B2B2B;"></span></h3>
+                    <button onclick="closeModal('editModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                <div class="max-h-[70vh] overflow-y-auto pr-2">
+                    <form id="editForm" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium" style="color: #2B2B2B;">Shelter:</label>
+                                <p class="font-semibold" id="formShelterName" style="color: #2B2B2B;"></p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium" style="color: #2B2B2B;">Submitted Date:</label>
+                                <p class="font-semibold" id="formSubmittedDate" style="color: #2B2B2B;"></p>
+                            </div>
+                        </div>
+                        <h4 class="font-bold pt-2 border-t text-lg" style="border-color: #E5E5E5; color: #2F5D50;">Your Feedback (Editable)</h4>
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color: #2B2B2B;">Rating:</label>
+                            <div class="flex space-x-2" id="ratingStars">
+                                <i class="fas fa-star rating-star text-3xl" data-rating="1"></i>
+                                <i class="fas fa-star rating-star text-3xl" data-rating="2"></i>
+                                <i class="fas fa-star rating-star text-3xl" data-rating="3"></i>
+                                <i class="fas fa-star rating-star text-3xl" data-rating="4"></i>
+                                <i class="fas fa-star rating-star text-3xl" data-rating="5"></i>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Click on stars to change your rating</p>
+                        </div>
+                        <div>
+                            <label for="feedbackComment" class="block text-sm font-medium" style="color: #2B2B2B;">Comment:</label>
+                            <textarea id="feedbackComment" rows="5" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="Share your experience with this shelter..."></textarea>
+                            <p class="text-xs text-gray-500 mt-1">Your feedback helps other adopters make informed decisions.</p>
+                        </div>
+                    </form>
+                </div>
+                <div class="flex justify-end pt-4">
+                    <button type="button" onclick="saveFeedbackChanges()" class="px-6 py-2 rounded-xl text-white font-medium hover:bg-[#24483E] transition duration-150 shadow-md" style="background-color: #2F5D50;">
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Modal -->
+        <div id="deleteModal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+            <div class="bg-white rounded-2xl p-8 w-full max-w-md mx-4 shadow-2xl transform transition-transform duration-300 scale-95" role="dialog" aria-modal="true" style="color: #2B2B2B;">
+                <div class="flex justify-between items-center border-b pb-3 mb-4" style="border-color: #E5E5E5;">
+                    <h3 class="text-2xl font-bold" style="color: #B84A4A;">Confirm Deletion</h3>
+                    <button onclick="closeModal('deleteModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                <div class="text-gray-700">
+                    <p class="mb-4 text-lg" style="color: #2B2B2B;">Are you sure you want to delete your feedback for <strong id="deleteShelterName" style="color: #2B2B2B;"></strong>?</p>
+                    <p class="mb-6 text-sm italic text-white font-medium p-3 rounded-lg border" style="background-color: #B84A4A; border-color: #B84A4A;">
+                        This action cannot be undone. Your rating and comment will be permanently removed.
+                    </p>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button onclick="closeModal('deleteModal')" class="px-5 py-2 rounded-xl border text-[#2B2B2B] hover:bg-gray-100 transition duration-150 font-medium" style="border-color: #E5E5E5;">
+                        Cancel
+                    </button>
+                    <button id="confirmDeleteBtn" class="px-5 py-2 rounded-xl text-white font-semibold hover:bg-red-700 transition duration-200 shadow-md" style="background-color: #B84A4A;">
+                        Yes, Delete Feedback
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="footer"></div>
+        <script src="includes/sidebar.js"></script>
+        <script>
+                        // =======================================================
+                        // 1. Dummy Data Setup
+                        // =======================================================
+                        const DUMMY_DATA = [
+                            {id: 1, shelterName: "Paws Haven Shelter", shelterLogo: "profile_picture/shelter/pic1.png", rating: 5, comment: "Excellent service! The staff was very caring and helped me throughout the entire adoption process. My cat is doing wonderful!", dateSubmitted: "2025-11-15"},
+                            {id: 2, shelterName: "Kuala Lumpur Rescues", shelterLogo: "profile_picture/shelter/pic1.png", rating: 5, comment: "Amazing shelter with dedicated volunteers. They really care about the animals and finding them good homes.", dateSubmitted: "2025-11-20"},
+                            {id: 3, shelterName: "Penang Animal Aid", shelterLogo: "profile_picture/shelter/pic1.png", rating: 4, comment: "Good experience overall. The adoption process was smooth, though it took a bit longer than expected.", dateSubmitted: "2025-11-25"},
+                            {id: 4, shelterName: "Paws Haven Shelter", shelterLogo: "profile_picture/shelter/pic1.png", rating: 5, comment: "Second time adopting from here. Always professional and caring. Highly recommend!", dateSubmitted: "2025-12-01"},
+                            {id: 5, shelterName: "Selangor Pet Rescue", shelterLogo: "profile_picture/shelter/pic1.png", rating: 4, comment: "The shelter was clean and well-organized. Staff was friendly and knowledgeable.", dateSubmitted: "2025-12-02"},
+                            {id: 6, shelterName: "Kuala Lumpur Rescues", shelterLogo: "profile_picture/shelter/pic1.png", rating: 5, comment: "They went above and beyond to ensure my dog was healthy and ready for adoption. Thank you!", dateSubmitted: "2025-12-03"},
+                            {id: 7, shelterName: "Penang Animal Aid", shelterLogo: "profile_picture/shelter/pic1.png", rating: 3, comment: "Decent shelter but the communication could be better. Had to follow up multiple times.", dateSubmitted: "2025-12-04"},
+                            {id: 8, shelterName: "Paws Haven Shelter", shelterLogo: "profile_picture/shelter/pic1.png", rating: 5, comment: "Best shelter in the area! They truly care about animal welfare and adopter satisfaction.", dateSubmitted: "2025-12-05"},
+                            {id: 9, shelterName: "Selangor Pet Rescue", shelterLogo: "profile_picture/shelter/pic1.png", rating: 4, comment: "Good shelter with helpful staff. The adoption fee was reasonable and transparent.", dateSubmitted: "2025-12-06"},
+                            {id: 10, shelterName: "Kuala Lumpur Rescues", shelterLogo: "profile_picture/shelter/pic1.png", rating: 3, comment: "The shelter is okay. Nothing exceptional but they get the job done.", dateSubmitted: "2025-12-07"},
+                            {id: 11, shelterName: "Penang Animal Aid", shelterLogo: "profile_picture/shelter/pic1.png", rating: 2, comment: "Expected better service. The facility needs improvement and better maintenance.", dateSubmitted: "2025-10-15"},
+                            {id: 12, shelterName: "Selangor Pet Rescue", shelterLogo: "profile_picture/shelter/pic1.png", rating: 1, comment: "Very disappointing experience. Poor communication and unprofessional staff.", dateSubmitted: "2025-09-20"},
+                        ];
+
+                        const ITEMS_PER_PAGE = 10;
+                        let currentPage = 1;
+                        let filteredData = DUMMY_DATA;
+                        let currentRatingFilter = 'all';
+                        let currentFeedbackId = null;
+                        let selectedRating = 0;
+
+                        // =======================================================
+                        // 2. MODAL FUNCTIONS
+                        // =======================================================
+                        function openModal(modalId, feedbackId) {
+                            const modal = document.getElementById(modalId);
+                            const feedback = DUMMY_DATA.find(f => f.id === feedbackId);
+                            currentFeedbackId = feedbackId;
+
+                            if (modalId === 'editModal' && feedback) {
+                                document.getElementById('modalShelterName').textContent = feedback.shelterName;
+                                document.getElementById('formShelterName').textContent = feedback.shelterName;
+                                document.getElementById('formSubmittedDate').textContent = feedback.dateSubmitted;
+                                document.getElementById('feedbackComment').value = feedback.comment || '';
+
+                                // Set rating stars
+                                selectedRating = feedback.rating;
+                                updateRatingStars(selectedRating);
+                            } else if (modalId === 'deleteModal' && feedback) {
+                                document.getElementById('deleteShelterName').textContent = feedback.shelterName;
+                                document.getElementById('confirmDeleteBtn').onclick = () => confirmDeletion(feedback.id);
+                            }
+
+                            modal.classList.remove('hidden');
+                            setTimeout(() => {
+                                modal.classList.remove('opacity-0');
+                                modal.querySelector('div:nth-child(1)').classList.remove('scale-95');
+                            }, 10);
+                        }
+
+                        function closeModal(modalId) {
+                            const modal = document.getElementById(modalId);
+                            modal.classList.add('opacity-0');
+                            modal.querySelector('div:nth-child(1)').classList.add('scale-95');
+                            setTimeout(() => {
+                                modal.classList.add('hidden');
+                            }, 300);
+                        }
+
+                        function updateRatingStars(rating) {
+                            const stars = document.querySelectorAll('#ratingStars .rating-star');
+                            stars.forEach((star, index) => {
+                                if (index < rating) {
+                                    star.classList.add('filled');
+                                    star.classList.remove('empty');
+                                } else {
+                                    star.classList.add('empty');
+                                    star.classList.remove('filled');
+                                }
+                            });
+                        }
+
+                        // Rating star click handlers
+                        document.querySelectorAll('#ratingStars .rating-star').forEach(star => {
+                            star.addEventListener('click', function () {
+                                selectedRating = parseInt(this.getAttribute('data-rating'));
+                                updateRatingStars(selectedRating);
+                            });
+                        });
+
+                        function saveFeedbackChanges() {
+                            if (!currentFeedbackId)
+                                return;
+
+                            const feedback = DUMMY_DATA.find(f => f.id === currentFeedbackId);
+                            if (feedback) {
+                                feedback.rating = selectedRating;
+                                feedback.comment = document.getElementById('feedbackComment').value;
+
+                                alert('Feedback updated successfully!');
+                                closeModal('editModal');
+                                filterAndRender();
+                            }
+                        }
+
+                        function confirmDeletion(feedbackId) {
+                            const index = DUMMY_DATA.findIndex(f => f.id === feedbackId);
+                            if (index !== -1) {
+                                DUMMY_DATA.splice(index, 1);
+                                alert('Feedback deleted successfully!');
+                                closeModal('deleteModal');
+                                filterAndRender();
+                            }
+                        }
+
+                        // =======================================================
+                        // 3. Rendering Logic
+                        // =======================================================
+                        function renderStars(rating) {
+                            let stars = '';
+                            for (let i = 1; i <= 5; i++) {
+                                if (i <= rating) {
+                                    stars += '<i class="fas fa-star star-display"></i>';
+                                } else {
+                                    stars += '<i class="far fa-star" style="color: #E5E5E5;"></i>';
+                                }
+                            }
+                            return stars;
+                        }
+
+                        function renderTable(data, page) {
+                            const tableBody = document.getElementById('feedback-list');
+                            tableBody.innerHTML = '';
+                            const start = (page - 1) * ITEMS_PER_PAGE;
+                            const end = start + ITEMS_PER_PAGE;
+                            const paginatedItems = data.slice(start, end);
+
+                            paginatedItems.forEach((item, index) => {
+                                const itemNumber = start + index + 1;
+                                const truncatedComment = item.comment.length > 80 ? item.comment.substring(0, 80) + '...' : item.comment;
+
+                                const row = `
+                        <tr class="hover:bg-gray-50 transition duration-100">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color: #2B2B2B;">${itemNumber}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10">
+                                        <img class="h-10 w-10 rounded-full object-cover" src="${item.shelterLogo}" alt="${item.shelterName}" onerror="this.src='https://via.placeholder.com/40x40?text=Shelter'">
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium" style="color: #2B2B2B;">${item.shelterName}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-1">
+                                    ${renderStars(item.rating)}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-sm max-w-xs" style="color: #2B2B2B;">
+                                ${truncatedComment}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">${item.dateSubmitted}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <div class="flex flex-col items-center space-y-2">
+                                    <button onclick="openModal('editModal', ${item.id})" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View/Edit</button>
+                                    <button onclick="openModal('deleteModal', ${item.id})" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-red-700" style="background-color: #B84A4A;">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                                tableBody.innerHTML += row;
+                            });
+
+                            renderPaginationControls(data.length);
+                        }
+
+                        // =======================================================
+                        // 4. Pagination & Filtering Logic
+                        // =======================================================
+                        function renderPaginationControls(totalItems) {
+                            const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+                            document.getElementById('total-items').textContent = totalItems;
+                            document.getElementById('start-index').textContent = Math.min(totalItems, (currentPage - 1) * ITEMS_PER_PAGE + 1);
+                            document.getElementById('end-index').textContent = Math.min(totalItems, currentPage * ITEMS_PER_PAGE);
+                            document.getElementById('prev-btn').disabled = currentPage === 1;
+                            document.getElementById('next-btn').disabled = currentPage === totalPages || totalItems === 0;
+                        }
+
+                        document.getElementById('prev-btn').addEventListener('click', () => {
+                            if (currentPage > 1) {
+                                currentPage--;
+                                renderTable(filteredData, currentPage);
+                            }
+                        });
+
+                        document.getElementById('next-btn').addEventListener('click', () => {
+                            const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+                            if (currentPage < totalPages) {
+                                currentPage++;
+                                renderTable(filteredData, currentPage);
+                            }
+                        });
+
+                        function filterAndRender() {
+                            if (currentRatingFilter === 'all') {
+                                filteredData = DUMMY_DATA;
+                            } else {
+                                filteredData = DUMMY_DATA.filter(item => item.rating === parseInt(currentRatingFilter));
+                            }
+                            currentPage = 1;
+                            renderTable(filteredData, currentPage);
+                            updateFilterButtonCounts();
+                        }
+
+                        function updateFilterButtonCounts() {
+                            const counts = {
+                                'all': DUMMY_DATA.length,
+                                '5': DUMMY_DATA.filter(item => item.rating === 5).length,
+                                '4': DUMMY_DATA.filter(item => item.rating === 4).length,
+                                '3': DUMMY_DATA.filter(item => item.rating === 3).length,
+                                '2': DUMMY_DATA.filter(item => item.rating === 2).length,
+                                '1': DUMMY_DATA.filter(item => item.rating === 1).length
+                            };
+
+                            document.querySelectorAll('.filter-btn').forEach(btn => {
+                                const rating = btn.getAttribute('data-rating');
+                                const count = counts[rating];
+                                const text = btn.textContent.replace(/\(\d+\)/, `(${count})`);
+                                btn.textContent = text;
+                            });
+                        }
+
+                        function updateFilterButtonStyles() {
+                            document.querySelectorAll('.filter-btn').forEach(btn => {
+                                const btnRating = btn.getAttribute('data-rating');
+
+                                // Reset classes
+                                btn.className = 'px-5 py-2 rounded-full text-sm font-medium transition duration-150 filter-btn';
+
+                                if (btnRating === currentRatingFilter) {
+                                    if (btnRating === 'all') {
+                                        btn.classList.add('bg-primary', 'text-white', 'shadow-md');
+                                    } else {
+                                        btn.classList.add('star-filter', 'shadow-md');
+                                    }
+                                } else {
+                                    btn.classList.add('border', 'hover:bg-[#F6F3E7]');
+                                    if (btnRating === 'all') {
+                                        btn.classList.add('border-[#2F5D50]', 'text-[#2F5D50]');
+                                    } else {
+                                        btn.classList.add('border-[#FFD700]', 'text-[#2B2B2B]');
+                                    }
+                                }
+                            });
+                        }
+
+                        document.querySelectorAll('.filter-btn').forEach(button => {
+                            button.addEventListener('click', (e) => {
+                                currentRatingFilter = e.target.getAttribute('data-rating');
+                                updateFilterButtonStyles();
+                                filterAndRender();
+                            });
+                        });
+
+                        // Search functionality
+                        document.getElementById('searchInput').addEventListener('input', function (e) {
+                            const searchTerm = e.target.value.toLowerCase();
+                            if (searchTerm.trim() === '') {
+                                filterAndRender();
+                                return;
+                            }
+                            const filtered = DUMMY_DATA.filter(item =>
+                                item.shelterName.toLowerCase().includes(searchTerm)
+                            );
+                            filteredData = filtered;
+                            currentPage = 1;
+                            renderTable(filteredData, currentPage);
+                        });
+
+                        // Initial load
+                        window.onload = () => {
+                            updateFilterButtonStyles();
+                            updateFilterButtonCounts();
+                            renderTable(filteredData, currentPage);
+                        };
+        </script>
+    </body>
+</html>

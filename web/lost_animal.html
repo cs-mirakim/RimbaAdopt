@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Lost & Found Pets - Rimba Adopt</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <style>
+            .card-hover:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+                transition: all 0.3s ease;
+            }
+
+            .active-page {
+                background-color: #2F5D50;
+                color: white;
+            }
+
+            /* Modal styles */
+            .modal-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 1000;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .modal-content {
+                background-color: white;
+                border-radius: 12px;
+                max-width: 700px;
+                width: 90%;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+
+            /* Animation for modal */
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+
+            @keyframes slideUp {
+                from { transform: translateY(50px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+
+            .modal-overlay.show {
+                display: flex;
+                animation: fadeIn 0.3s ease;
+            }
+
+            .modal-content.show {
+                animation: slideUp 0.3s ease;
+            }
+
+            /* Status badges */
+            .status-lost {
+                background-color: #B84A4A;
+                color: white;
+            }
+
+            .status-found {
+                background-color: #6DBF89;
+                color: #06321F;
+            }
+
+            /* Custom scrollbar */
+            ::-webkit-scrollbar {
+                width: 8px;
+            }
+
+            ::-webkit-scrollbar-track {
+                background: #f1f1f1;
+                border-radius: 10px;
+            }
+
+            ::-webkit-scrollbar-thumb {
+                background: #c1c1c1;
+                border-radius: 10px;
+            }
+
+            ::-webkit-scrollbar-thumb:hover {
+                background: #a8a8a8;
+            }
+        </style>
+    </head>
+    <body class="flex flex-col min-h-screen relative bg-[#F6F3E7]">
+
+        <!-- Header container -->
+        <div id="header"></div>
+
+        <!-- Main Dashboard Content -->
+        <main class="flex-1 p-4 pt-6 relative z-10 flex justify-center items-start mb-2">
+            <div class="w-full bg-white py-8 px-6 rounded-xl shadow-md" style="max-width: 1450px;">
+
+                <!-- Dashboard Title -->
+                <div class="mb-8">
+                    <h1 class="text-3xl font-bold text-[#2F5D50] border-b-2 border-[#E5E5E5] pb-4">Lost & Found Pets</h1>
+                    <p class="text-[#2B2B2B] mt-2">Help reunite lost pets with their families. Report sightings or search for missing pets.</p>
+                </div>
+
+                <!-- Filter Section -->
+                <div class="mb-8 p-6 bg-[#F9F9F9] rounded-lg border border-[#E5E5E5]">
+                    <h2 class="text-xl font-semibold text-[#2F5D50] mb-4">Filter Lost Reports</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <!-- Status Filter -->
+                        <div>
+                            <label class="block text-[#2B2B2B] mb-2 font-medium">Status</label>
+                            <select id="statusFilter" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]">
+                                <option value="">All Status</option>
+                                <option value="lost">Lost</option>
+                                <option value="found">Found</option>
+                            </select>
+                        </div>
+
+                        <!-- Species Filter -->
+                        <div>
+                            <label class="block text-[#2B2B2B] mb-2 font-medium">Species</label>
+                            <select id="speciesFilter" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]">
+                                <option value="">All Species</option>
+                                <option value="dog">Dog</option>
+                                <option value="cat">Cat</option>
+                                <option value="rabbit">Rabbit</option>
+                                <option value="bird">Bird</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <!-- Location Filter -->
+                        <div>
+                            <label class="block text-[#2B2B2B] mb-2 font-medium">Last Seen Location</label>
+                            <select id="locationFilter" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]">
+                                <option value="">All Locations</option>
+                                <option value="kuala_lumpur">Kuala Lumpur</option>
+                                <option value="selangor">Selangor</option>
+                                <option value="johor">Johor</option>
+                                <option value="penang">Penang</option>
+                                <option value="sabah">Sabah</option>
+                                <option value="sarawak">Sarawak</option>
+                            </select>
+                        </div>
+
+                        <!-- Date Filter -->
+                        <div>
+                            <label class="block text-[#2B2B2B] mb-2 font-medium">Last Seen (Days)</label>
+                            <select id="dateFilter" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]">
+                                <option value="">Any Time</option>
+                                <option value="1">Last 24 Hours</option>
+                                <option value="3">Last 3 Days</option>
+                                <option value="7">Last Week</option>
+                                <option value="30">Last Month</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Filter Buttons -->
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button id="applyFilter" class="px-6 py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">
+                            <i class="fas fa-filter mr-2"></i>Apply Filters
+                        </button>
+                        <button id="resetFilter" class="px-6 py-3 bg-[#E5E5E5] text-[#2B2B2B] font-medium rounded-lg hover:bg-[#D5D5D5] transition duration-300">
+                            <i class="fas fa-redo mr-2"></i>Reset
+                        </button>
+                        <button id="reportLostBtn" class="px-6 py-3 bg-[#B84A4A] text-white font-medium rounded-lg hover:bg-[#9A3A3A] transition duration-300">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>Report Lost Pet
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Results Count -->
+                <div class="flex justify-between items-center mb-6">
+                    <p class="text-[#2B2B2B]">
+                        Showing <span id="resultCount" class="font-semibold">8</span> lost reports
+                    </p>
+                    <div class="text-[#2B2B2B]">
+                        Page <span id="currentPage" class="font-semibold">1</span> of <span id="totalPages" class="font-semibold">3</span>
+                    </div>
+                </div>
+
+                <!-- Lost Pets Grid (4x2 layout) -->
+                <div id="lostPetsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <!-- Lost pet cards will be dynamically generated here -->
+                </div>
+
+                <!-- Pagination -->
+                <div class="flex justify-center items-center mt-8">
+                    <nav class="flex items-center space-x-2">
+                        <button id="prevPage" class="p-3 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7] disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+
+                        <div id="pageNumbers" class="flex space-x-2">
+                            <!-- Page numbers will be generated here -->
+                        </div>
+
+                        <button id="nextPage" class="p-3 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </nav>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- Lost Pet Details Modal -->
+        <div id="lostPetModal" class="modal-overlay">
+            <div class="modal-content p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-[#2B2B2B]" id="modalTitle">Lost Pet Details</h3>
+                    <button id="closeModal" class="text-[#888] hover:text-[#2B2B2B]">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+
+                <div id="modalContent">
+                    <!-- Modal content will be generated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Lost Pet Modal -->
+        <div id="reportLostModal" class="modal-overlay">
+            <div class="modal-content p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-[#2B2B2B]">Report Lost Pet</h3>
+                    <button id="closeReportModal" class="text-[#888] hover:text-[#2B2B2B]">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+
+                <form id="reportLostForm">
+                    <div class="mb-6">
+                        <div class="bg-[#F0F7F4] p-4 rounded-lg mb-4">
+                            <p class="text-sm text-[#666]"><i class="fas fa-info-circle mr-2 text-[#2F5D50]"></i> Fill out this form to report a lost pet. Your information will be shared with the community to help find your pet.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label for="petName" class="block text-[#2B2B2B] mb-2 font-medium">Pet Name *</label>
+                            <input type="text" id="petName" name="pet_name" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]" placeholder="Enter pet's name" required>
+                        </div>
+
+                        <div>
+                            <label for="petSpecies" class="block text-[#2B2B2B] mb-2 font-medium">Species *</label>
+                            <select id="petSpecies" name="species" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]" required>
+                                <option value="">Select Species</option>
+                                <option value="dog">Dog</option>
+                                <option value="cat">Cat</option>
+                                <option value="rabbit">Rabbit</option>
+                                <option value="bird">Bird</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="lastSeenDate" class="block text-[#2B2B2B] mb-2 font-medium">Last Seen Date *</label>
+                            <input type="date" id="lastSeenDate" name="last_seen_date" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]" required>
+                        </div>
+
+                        <div>
+                            <label for="lastSeenTime" class="block text-[#2B2B2B] mb-2 font-medium">Last Seen Time (Approx)</label>
+                            <input type="time" id="lastSeenTime" name="last_seen_time" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]">
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="lastSeenLocation" class="block text-[#2B2B2B] mb-2 font-medium">Last Seen Location *</label>
+                        <input type="text" id="lastSeenLocation" name="last_seen_location" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]" placeholder="e.g., Taman Tun Dr Ismail, Kuala Lumpur" required>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="petDescription" class="block text-[#2B2B2B] mb-2 font-medium">Description *</label>
+                        <textarea id="petDescription" name="description" rows="4" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]" placeholder="Describe your pet (color, size, distinctive marks, collar color, etc.)..." required></textarea>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="contactInfo" class="block text-[#2B2B2B] mb-2 font-medium">Your Contact Information *</label>
+                        <textarea id="contactInfo" name="contact_info" rows="3" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]" placeholder="Phone number, email, or other contact details..." required></textarea>
+                        <p class="text-[#888] text-sm mt-1">This information will be visible to users who may have found your pet.</p>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-[#2B2B2B] mb-2 font-medium">Upload Photo (Optional)</label>
+                        <div class="border-2 border-dashed border-[#E5E5E5] rounded-lg p-6 text-center">
+                            <i class="fas fa-cloud-upload-alt text-3xl text-[#888] mb-3"></i>
+                            <p class="text-[#666] mb-2">Drag & drop or click to upload photo</p>
+                            <p class="text-[#888] text-sm">Recommended: Clear photo of your pet (max 5MB)</p>
+                            <input type="file" id="petPhoto" name="photo" class="hidden" accept="image/*">
+                            <button type="button" id="uploadPhotoBtn" class="mt-3 px-4 py-2 bg-[#F6F3E7] text-[#2B2B2B] rounded-lg hover:bg-[#E5E5E5]">
+                                Choose File
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" id="cancelReport" class="px-6 py-3 border border-[#E5E5E5] text-[#2B2B2B] font-medium rounded-lg hover:bg-[#F6F3E7]">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-6 py-3 bg-[#B84A4A] text-white font-medium rounded-lg hover:bg-[#9A3A3A] transition duration-300">
+                            <i class="fas fa-paper-plane mr-2"></i> Submit Report
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Footer container -->
+        <div id="footer"></div>
+
+        <!-- Load sidebar.js -->
+        <script src="includes/sidebar.js"></script>
+
+        <script>
+            // Dummy lost pet data based on database structure
+            const lostPets = [
+                {
+                    lost_id: 1,
+                    pet_name: "Max",
+                    species: "dog",
+                    breed: "Golden Retriever",
+                    last_seen_location: "Taman Tun Dr Ismail, Kuala Lumpur",
+                    last_seen_date: "2024-03-28",
+                    description: "Golden retriever with red collar. Friendly and responds to name Max. Has a small white patch on chest.",
+                    photo_path: "animal_picture/animal1.png",
+                    status: "lost",
+                    created_at: "2024-03-28 10:30:00",
+                    adopter_name: "Ahmad Faris",
+                    contact_info: "012-345 6789 | ahmad@gmail.com"
+                },
+                {
+                    lost_id: 2,
+                    pet_name: "Luna",
+                    species: "cat",
+                    breed: "Persian Cat",
+                    last_seen_location: "Subang Jaya, Selangor",
+                    last_seen_date: "2024-03-27",
+                    description: "White Persian cat with blue eyes. Wearing a pink collar with bell. Shy but friendly.",
+                    photo_path: "animal_picture/animal2.jpg",
+                    status: "lost",
+                    created_at: "2024-03-27 15:45:00",
+                    adopter_name: "Sarah Chen",
+                    contact_info: "013-987 6543 | sarah@email.com"
+                },
+                {
+                    lost_id: 3,
+                    pet_name: "Rocky",
+                    species: "dog",
+                    breed: "Siberian Husky",
+                    last_seen_location: "Bukit Bintang, Kuala Lumpur",
+                    last_seen_date: "2024-03-25",
+                    description: "Husky with blue and brown eyes (heterochromia). Very energetic, responds to whistle.",
+                    photo_path: "animal_picture/animal3.jpg",
+                    status: "found",
+                    created_at: "2024-03-25 09:15:00",
+                    adopter_name: "David Wong",
+                    contact_info: "019-876 5432 | davidw@email.com"
+                },
+                {
+                    lost_id: 4,
+                    pet_name: "Misty",
+                    species: "cat",
+                    breed: "Domestic Shorthair",
+                    last_seen_location: "Petaling Jaya, Selangor",
+                    last_seen_date: "2024-03-24",
+                    description: "Gray tabby cat with green eyes. Microchipped. Last seen near SS2 mall.",
+                    photo_path: "animal_picture/animal1.png",
+                    status: "lost",
+                    created_at: "2024-03-24 18:20:00",
+                    adopter_name: "Priya Sharma",
+                    contact_info: "011-223 3445 | priya@email.com"
+                },
+                {
+                    lost_id: 5,
+                    pet_name: "Buddy",
+                    species: "dog",
+                    breed: "Beagle",
+                    last_seen_location: "Johor Bahru, Johor",
+                    last_seen_date: "2024-03-23",
+                    description: "Tri-color beagle with long ears. Wearing blue harness. Very food motivated.",
+                    photo_path: "animal_picture/animal2.jpg",
+                    status: "found",
+                    created_at: "2024-03-23 14:10:00",
+                    adopter_name: "Michael Tan",
+                    contact_info: "016-554 4332 | michael@email.com"
+                },
+                {
+                    lost_id: 6,
+                    pet_name: "Coco",
+                    species: "rabbit",
+                    breed: "Holland Lop",
+                    last_seen_location: "Georgetown, Penang",
+                    last_seen_date: "2024-03-22",
+                    description: "Brown and white rabbit with floppy ears. In a pink carrying cage that was left unattended.",
+                    photo_path: "animal_picture/animal3.jpg",
+                    status: "lost",
+                    created_at: "2024-03-22 11:05:00",
+                    adopter_name: "Nurul Hasanah",
+                    contact_info: "017-665 5443 | nurul@email.com"
+                },
+                {
+                    lost_id: 7,
+                    pet_name: "Simba",
+                    species: "cat",
+                    breed: "Orange Tabby",
+                    last_seen_location: "Kota Kinabalu, Sabah",
+                    last_seen_date: "2024-03-20",
+                    description: "Large orange tabby with white paws. Very friendly and will approach people.",
+                    photo_path: "animal_picture/animal1.png",
+                    status: "lost",
+                    created_at: "2024-03-20 16:30:00",
+                    adopter_name: "Robert Chin",
+                    contact_info: "018-776 6554 | robert@email.com"
+                },
+                {
+                    lost_id: 8,
+                    pet_name: "Daisy",
+                    species: "dog",
+                    breed: "Poodle",
+                    last_seen_location: "Kuching, Sarawak",
+                    last_seen_date: "2024-03-19",
+                    description: "White poodle with groomed fur. Wearing diamond-studded collar. Well-trained.",
+                    photo_path: "animal_picture/animal2.jpg",
+                    status: "found",
+                    created_at: "2024-03-19 13:25:00",
+                    adopter_name: "Amanda Lee",
+                    contact_info: "014-887 7665 | amanda@email.com"
+                },
+                {
+                    lost_id: 9,
+                    pet_name: "Oreo",
+                    species: "cat",
+                    breed: "Tuxedo",
+                    last_seen_location: "Ipoh, Perak",
+                    last_seen_date: "2024-03-18",
+                    description: "Black and white tuxedo cat. Has distinctive black spot on nose. Very vocal.",
+                    photo_path: "animal_picture/animal3.jpg",
+                    status: "lost",
+                    created_at: "2024-03-18 10:45:00",
+                    adopter_name: "Kevin Raj",
+                    contact_info: "015-998 8776 | kevin@email.com"
+                },
+                {
+                    lost_id: 10,
+                    pet_name: "Zeus",
+                    species: "dog",
+                    breed: "German Shepherd",
+                    last_seen_location: "Shah Alam, Selangor",
+                    last_seen_date: "2024-03-17",
+                    description: "Large german shepherd, black and tan. Trained guard dog but friendly to family.",
+                    photo_path: "animal_picture/animal1.png",
+                    status: "lost",
+                    created_at: "2024-03-17 17:15:00",
+                    adopter_name: "Lisa Lim",
+                    contact_info: "010-009 9887 | lisa@email.com"
+                },
+                {
+                    lost_id: 11,
+                    pet_name: "Whiskers",
+                    species: "cat",
+                    breed: "Siamese",
+                    last_seen_location: "Melaka Town, Melaka",
+                    last_seen_date: "2024-03-16",
+                    description: "Seal point siamese with blue eyes. Very attached to owner, might be hiding nearby.",
+                    photo_path: "animal_picture/animal2.jpg",
+                    status: "found",
+                    created_at: "2024-03-16 12:40:00",
+                    adopter_name: "James Kumar",
+                    contact_info: "012-110 0998 | james@email.com"
+                },
+                {
+                    lost_id: 12,
+                    pet_name: "Bruno",
+                    species: "dog",
+                    breed: "Rottweiler",
+                    last_seen_location: "Seremban, Negeri Sembilan",
+                    last_seen_date: "2024-03-15",
+                    description: "Rottweiler with cropped tail. Wearing studded black collar. Gentle giant.",
+                    photo_path: "animal_picture/animal3.jpg",
+                    status: "lost",
+                    created_at: "2024-03-15 09:50:00",
+                    adopter_name: "Siti Aishah",
+                    contact_info: "013-221 1109 | siti@email.com"
+                }
+            ];
+
+            // Pagination variables
+            let currentPage = 1;
+            const itemsPerPage = 8;
+            let filteredLostPets = [...lostPets];
+
+            // DOM Elements
+            const lostPetsContainer = document.getElementById('lostPetsContainer');
+            const resultCount = document.getElementById('resultCount');
+            const currentPageSpan = document.getElementById('currentPage');
+            const totalPagesSpan = document.getElementById('totalPages');
+            const prevPageBtn = document.getElementById('prevPage');
+            const nextPageBtn = document.getElementById('nextPage');
+            const pageNumbers = document.getElementById('pageNumbers');
+            const applyFilterBtn = document.getElementById('applyFilter');
+            const resetFilterBtn = document.getElementById('resetFilter');
+            const reportLostBtn = document.getElementById('reportLostBtn');
+            const statusFilter = document.getElementById('statusFilter');
+            const speciesFilter = document.getElementById('speciesFilter');
+            const locationFilter = document.getElementById('locationFilter');
+            const dateFilter = document.getElementById('dateFilter');
+
+            // Modal elements
+            const lostPetModal = document.getElementById('lostPetModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalContent = document.getElementById('modalContent');
+            const closeModalBtn = document.getElementById('closeModal');
+
+            // Report modal elements
+            const reportLostModal = document.getElementById('reportLostModal');
+            const closeReportModalBtn = document.getElementById('closeReportModal');
+            const cancelReport = document.getElementById('cancelReport');
+            const reportLostForm = document.getElementById('reportLostForm');
+            const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
+            const petPhoto = document.getElementById('petPhoto');
+
+            // Initialize
+            document.addEventListener('DOMContentLoaded', function () {
+                renderLostPets();
+                updatePagination();
+                attachEventListeners();
+
+                // Set today's date as max for date input
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('lastSeenDate').max = today;
+            });
+
+            // Render lost pets for current page
+            function renderLostPets() {
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+                const pagePets = filteredLostPets.slice(startIndex, endIndex);
+
+                lostPetsContainer.innerHTML = '';
+
+                if (pagePets.length === 0) {
+                    lostPetsContainer.innerHTML = `
+                        <div class="col-span-1 md:col-span-2 lg:col-span-4 text-center py-12">
+                            <i class="fas fa-search text-5xl text-[#E5E5E5] mb-4"></i>
+                            <h3 class="text-xl font-semibold text-[#2B2B2B] mb-2">No lost pets found</h3>
+                            <p class="text-[#666]">Try adjusting your filters or report a lost pet.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                pagePets.forEach(pet => {
+                    const card = createLostPetCard(pet);
+                    lostPetsContainer.appendChild(card);
+                });
+
+                resultCount.textContent = filteredLostPets.length;
+            }
+
+            // Create lost pet card HTML
+            function createLostPetCard(pet) {
+                const card = document.createElement('div');
+                card.className = 'lost-pet-card bg-white rounded-xl border border-[#E5E5E5] overflow-hidden card-hover';
+                card.dataset.id = pet.lost_id;
+
+                // Format date
+                const lastSeenDate = new Date(pet.last_seen_date);
+                const formattedDate = lastSeenDate.toLocaleDateString('en-US', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                });
+
+                // Calculate days ago
+                const today = new Date();
+                const timeDiff = today - lastSeenDate;
+                const daysAgo = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+
+                // Get species icon
+                const speciesIcon = getSpeciesIcon(pet.species);
+
+                card.innerHTML = `
+                    <div class="relative">
+                        <img src="${pet.photo_path}" alt="${pet.pet_name}" class="w-full h-48 object-cover">
+                        <div class="absolute top-3 right-3">
+                            <span class="px-3 py-1 rounded-full text-sm font-medium ${pet.status === 'lost' ? 'status-lost' : 'status-found'}">
+                                <i class="fas ${pet.status === 'lost' ? 'fa-search' : 'fa-check-circle'} mr-1"></i> ${pet.status === 'lost' ? 'Lost' : 'Found'}
+                            </span>
+                        </div>
+                        <div class="absolute bottom-3 left-3 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+                            ${daysAgo === 0 ? 'Today' : `${daysAgo} day${daysAgo !== 1 ? 's' : ''} ago`}
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="text-xl font-bold text-[#2B2B2B] mb-2">${pet.pet_name}</h3>
+                        <div class="flex items-center mb-3">
+                            <div class="bg-[#F0F7F4] p-2 rounded-lg mr-3">
+                                <i class="fas ${speciesIcon} text-[#2F5D50]"></i>
+                            </div>
+                            <div>
+                                <p class="text-[#2B2B2B] font-medium">${capitalizeFirstLetter(pet.species)}</p>
+                                <p class="text-[#666] text-sm">${pet.breed}</p>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <div class="flex items-start mb-2">
+                                <i class="fas fa-map-marker-alt text-[#2F5D50] mt-1 mr-2"></i>
+                                <p class="text-[#666] text-sm flex-1">${pet.last_seen_location}</p>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="far fa-calendar text-[#2F5D50] mr-2"></i>
+                                <p class="text-[#666] text-sm">${formattedDate}</p>
+                            </div>
+                        </div>
+                        <p class="text-[#666] text-sm mb-4 line-clamp-2">${pet.description}</p>
+                        <button class="view-details-btn w-full text-center py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300" data-id="${pet.lost_id}">
+                            <i class="fas fa-info-circle mr-2"></i> View Details
+                        </button>
+                    </div>
+                `;
+
+                return card;
+            }
+
+            // Get icon for species
+            function getSpeciesIcon(species) {
+                switch (species) {
+                    case 'dog':
+                        return 'fa-paw';
+                    case 'cat':
+                        return 'fa-cat';
+                    case 'rabbit':
+                        return 'fa-rabbit';
+                    case 'bird':
+                        return 'fa-dove';
+                    default:
+                        return 'fa-paw';
+                }
+            }
+
+            // Capitalize first letter
+            function capitalizeFirstLetter(string) {
+                return string.charAt(0).toUpperCase() + string.slice(1);
+            }
+
+            // Show lost pet details in modal
+            function showLostPetDetails(petId) {
+                const pet = lostPets.find(p => p.lost_id === parseInt(petId));
+                if (!pet)
+                    return;
+
+                // Format dates
+                const lastSeenDate = new Date(pet.last_seen_date);
+                const formattedDate = lastSeenDate.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                const reportedDate = new Date(pet.created_at);
+                const reportedFormatted = reportedDate.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                modalTitle.textContent = `${pet.pet_name} - ${pet.status === 'lost' ? 'Lost' : 'Found'} ${capitalizeFirstLetter(pet.species)}`;
+
+                modalContent.innerHTML = `
+                    <div class="mb-6">
+                        <div class="mb-4">
+                            <img src="${pet.photo_path}" alt="${pet.pet_name}" class="w-full h-64 object-cover rounded-xl">
+                        </div>
+                    
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div class="bg-[#F9F9F9] p-5 rounded-xl">
+                                <h4 class="font-semibold text-[#2B2B2B] mb-3">Pet Information</h4>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-[#666]">Name</span>
+                                        <span class="font-medium">${pet.pet_name}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-[#666]">Species</span>
+                                        <span class="font-medium">${capitalizeFirstLetter(pet.species)}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-[#666]">Breed</span>
+                                        <span class="font-medium">${pet.breed}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-[#666]">Status</span>
+                                        <span class="font-medium ${pet.status === 'lost' ? 'text-[#B84A4A]' : 'text-[#6DBF89]'}">
+                                            ${pet.status === 'lost' ? 'Lost' : 'Found'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        
+                            <div class="bg-[#F9F9F9] p-5 rounded-xl">
+                                <h4 class="font-semibold text-[#2B2B2B] mb-3">Last Seen Details</h4>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-[#666]">Date</span>
+                                        <span class="font-medium">${formattedDate}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-[#666]">Location</span>
+                                        <span class="font-medium">${pet.last_seen_location}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-[#666]">Reported</span>
+                                        <span class="font-medium">${reportedFormatted}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="mb-6">
+                            <h4 class="font-semibold text-[#2B2B2B] mb-2">Description</h4>
+                            <p class="text-[#666] leading-relaxed">${pet.description}</p>
+                        </div>
+                    
+                        <div class="mb-6">
+                            <h4 class="font-semibold text-[#2B2B2B] mb-2">Owner Information</h4>
+                            <div class="bg-[#F0F7F4] p-4 rounded-lg">
+                                <div class="space-y-2">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-user text-[#2F5D50] mr-3"></i>
+                                        <span class="font-medium">${pet.adopter_name}</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <i class="fas fa-phone-alt text-[#2F5D50] mr-3"></i>
+                                        <span>${pet.contact_info}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="flex justify-end space-x-3">
+                            <button type="button" id="reportSightingBtn" class="px-6 py-3 bg-[#6DBF89] text-[#06321F] font-medium rounded-lg hover:bg-[#57A677] transition duration-300">
+                                <i class="fas fa-eye mr-2"></i> Report Sighting
+                            </button>
+                            ${pet.status === 'lost' ? `
+                            <button type="button" id="foundPetBtn" class="px-6 py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">
+                                <i class="fas fa-check-circle mr-2"></i> Mark as Found
+                            </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+
+                openModal();
+
+                // Add event listeners for modal buttons after rendering
+                setTimeout(() => {
+                    const reportSightingBtn = document.getElementById('reportSightingBtn');
+                    if (reportSightingBtn) {
+                        reportSightingBtn.addEventListener('click', () => {
+                            alert(`Terima kasih kerana report sighting untuk ${pet.pet_name}! Owner akan dihubungi.`);
+                            closeModal();
+                        });
+                    }
+
+                    const foundPetBtn = document.getElementById('foundPetBtn');
+                    if (foundPetBtn) {
+                        foundPetBtn.addEventListener('click', () => {
+                            // Update status in the data
+                            const petIndex = lostPets.findIndex(p => p.lost_id === pet.lost_id);
+                            if (petIndex !== -1) {
+                                lostPets[petIndex].status = 'found';
+                            }
+                            alert(`Alhamdulillah! ${pet.pet_name} telah dijumpai dan status telah dikemaskini.`);
+                            closeModal();
+                            // Re-apply current filters
+                            applyFilters();
+                        });
+                    }
+                }, 100);
+            }
+
+            // Open modal
+            function openModal() {
+                lostPetModal.classList.add('show');
+                setTimeout(() => {
+                    const modalContentEl = lostPetModal.querySelector('.modal-content');
+                    modalContentEl.classList.add('show');
+                }, 10);
+            }
+
+            // Close modal
+            function closeModal() {
+                const modalContentEl = lostPetModal.querySelector('.modal-content');
+                modalContentEl.classList.remove('show');
+
+                setTimeout(() => {
+                    lostPetModal.classList.remove('show');
+                }, 300);
+            }
+
+            // Open report modal
+            function openReportModal() {
+                reportLostModal.classList.add('show');
+                setTimeout(() => {
+                    const modalContentEl = reportLostModal.querySelector('.modal-content');
+                    modalContentEl.classList.add('show');
+                }, 10);
+            }
+
+            // Close report modal
+            function closeReportModal() {
+                const modalContentEl = reportLostModal.querySelector('.modal-content');
+                modalContentEl.classList.remove('show');
+
+                setTimeout(() => {
+                    reportLostModal.classList.remove('show');
+                    resetReportForm();
+                }, 300);
+            }
+
+            // Reset report form
+            function resetReportForm() {
+                reportLostForm.reset();
+            }
+
+            // Update pagination controls
+            function updatePagination() {
+                const totalPages = Math.ceil(filteredLostPets.length / itemsPerPage);
+
+                currentPageSpan.textContent = currentPage;
+                totalPagesSpan.textContent = totalPages;
+
+                // Update button states
+                prevPageBtn.disabled = currentPage === 1 || totalPages === 0;
+                nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+
+                // Generate page number buttons
+                pageNumbers.innerHTML = '';
+                const maxVisiblePages = 5;
+                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+                if (endPage - startPage + 1 < maxVisiblePages) {
+                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.className = `page-btn w-10 h-10 rounded-lg border ${i === currentPage ? 'border-[#2F5D50] bg-[#2F5D50] text-white' : 'border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]'}`;
+                    pageBtn.textContent = i;
+                    pageBtn.addEventListener('click', () => {
+                        currentPage = i;
+                        renderLostPets();
+                        updatePagination();
+                        window.scrollTo({top: 0, behavior: 'smooth'});
+                    });
+                    pageNumbers.appendChild(pageBtn);
+                }
+            }
+
+            // Apply filters
+            function applyFilters() {
+                const selectedStatus = statusFilter.value;
+                const selectedSpecies = speciesFilter.value;
+                const selectedLocation = locationFilter.value;
+                const selectedDate = dateFilter.value;
+
+                filteredLostPets = lostPets.filter(pet => {
+                    // Status filter
+                    if (selectedStatus && pet.status !== selectedStatus) {
+                        return false;
+                    }
+
+                    // Species filter
+                    if (selectedSpecies && pet.species !== selectedSpecies) {
+                        return false;
+                    }
+
+                    // Location filter
+                    if (selectedLocation) {
+                        const locationLower = pet.last_seen_location.toLowerCase();
+                        if (!locationLower.includes(selectedLocation.toLowerCase().replace('_', ' '))) {
+                            return false;
+                        }
+                    }
+
+                    // Date filter
+                    if (selectedDate) {
+                        const daysAgo = parseInt(selectedDate);
+                        const lastSeenDate = new Date(pet.last_seen_date);
+                        const today = new Date();
+                        const timeDiff = today - lastSeenDate;
+                        const petDaysAgo = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+
+                        if (petDaysAgo > daysAgo) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                });
+
+                currentPage = 1;
+                renderLostPets();
+                updatePagination();
+            }
+
+            // Reset filters
+            function resetFilters() {
+                statusFilter.value = '';
+                speciesFilter.value = '';
+                locationFilter.value = '';
+                dateFilter.value = '';
+                filteredLostPets = [...lostPets];
+                currentPage = 1;
+                renderLostPets();
+                updatePagination();
+            }
+
+            // Handle report form submission
+            function handleReportSubmit(e) {
+                e.preventDefault();
+
+                // Get form values
+                const petName = document.getElementById('petName').value.trim();
+                const petSpecies = document.getElementById('petSpecies').value;
+                const lastSeenDate = document.getElementById('lastSeenDate').value;
+                const lastSeenTime = document.getElementById('lastSeenTime').value;
+                const lastSeenLocation = document.getElementById('lastSeenLocation').value.trim();
+                const petDescription = document.getElementById('petDescription').value.trim();
+                const contactInfo = document.getElementById('contactInfo').value.trim();
+
+                if (!petName || !petSpecies || !lastSeenDate || !lastSeenLocation || !petDescription || !contactInfo) {
+                    alert('Sila isi semua field yang diperlukan (bertanda *)');
+                    return;
+                }
+
+                // Create new lost pet entry
+                const newLostPet = {
+                    lost_id: lostPets.length + 1,
+                    pet_name: petName,
+                    species: petSpecies,
+                    breed: 'Unknown', // Can be added to form if needed
+                    last_seen_location: lastSeenLocation,
+                    last_seen_date: lastSeenDate,
+                    description: petDescription,
+                    photo_path: 'animal_picture/animal1.png', // Default image
+                    status: 'lost',
+                    created_at: new Date().toISOString(),
+                    adopter_name: 'Anonymous', // Can be added to form
+                    contact_info: contactInfo
+                };
+
+                // Add to beginning of array
+                lostPets.unshift(newLostPet);
+
+                // Reset filters to show new entry
+                resetFilters();
+
+                // Show success message
+                alert(`Report berjaya dihantar! ${petName} telah ditambah ke senarai lost pets. Semoga cepat jumpa! 🐾`);
+
+                // Close modal
+                closeReportModal();
+            }
+
+            // Attach event listeners
+            function attachEventListeners() {
+                applyFilterBtn.addEventListener('click', applyFilters);
+                resetFilterBtn.addEventListener('click', resetFilters);
+                reportLostBtn.addEventListener('click', openReportModal);
+
+                prevPageBtn.addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        renderLostPets();
+                        updatePagination();
+                        window.scrollTo({top: 0, behavior: 'smooth'});
+                    }
+                });
+
+                nextPageBtn.addEventListener('click', () => {
+                    const totalPages = Math.ceil(filteredLostPets.length / itemsPerPage);
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        renderLostPets();
+                        updatePagination();
+                        window.scrollTo({top: 0, behavior: 'smooth'});
+                    }
+                });
+
+                // Close modals
+                closeModalBtn.addEventListener('click', closeModal);
+                closeReportModalBtn.addEventListener('click', closeReportModal);
+                cancelReport.addEventListener('click', closeReportModal);
+
+                // Close modal when clicking outside
+                lostPetModal.addEventListener('click', (e) => {
+                    if (e.target === lostPetModal) {
+                        closeModal();
+                    }
+                });
+
+                reportLostModal.addEventListener('click', (e) => {
+                    if (e.target === reportLostModal) {
+                        closeReportModal();
+                    }
+                });
+
+                // View details button click (event delegation)
+                lostPetsContainer.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('view-details-btn') || e.target.closest('.view-details-btn')) {
+                        const button = e.target.classList.contains('view-details-btn') ? e.target : e.target.closest('.view-details-btn');
+                        const petId = button.dataset.id;
+                        showLostPetDetails(petId);
+                    }
+                });
+
+                // Upload photo button
+                uploadPhotoBtn.addEventListener('click', () => {
+                    petPhoto.click();
+                });
+
+                petPhoto.addEventListener('change', (e) => {
+                    if (e.target.files && e.target.files[0]) {
+                        const fileName = e.target.files[0].name;
+                        uploadPhotoBtn.innerHTML = `<i class="fas fa-check mr-2"></i>${fileName}`;
+                        uploadPhotoBtn.classList.add('bg-[#6DBF89]', 'text-white');
+                    }
+                });
+
+                // Report form submission
+                reportLostForm.addEventListener('submit', handleReportSubmit);
+
+                // Add Enter key support for filters
+                [statusFilter, speciesFilter, locationFilter, dateFilter].forEach(filter => {
+                    filter.addEventListener('keyup', (e) => {
+                        if (e.key === 'Enter') {
+                            applyFilters();
+                        }
+                    });
+                });
+            }
+        </script>
+
+    </body>
+</html>

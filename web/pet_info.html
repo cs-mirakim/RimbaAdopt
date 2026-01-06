@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Buddy - Pet Details - Rimba Adopt</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <style>
+            /* Modal styles */
+            .modal-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 1000;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .modal-content {
+                background-color: white;
+                border-radius: 12px;
+                max-width: 600px;
+                width: 90%;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+
+            /* Animation for modal */
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+
+            @keyframes slideUp {
+                from { transform: translateY(50px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+
+            .modal-overlay.show {
+                display: flex;
+                animation: fadeIn 0.3s ease;
+            }
+
+            .modal-content.show {
+                animation: slideUp 0.3s ease;
+            }
+
+            /* Gender badges */
+            .gender-male {
+                background-color: #2F5D50;
+                color: white;
+            }
+
+            .gender-female {
+                background-color: #C49A6C;
+                color: white;
+            }
+
+            .info-card {
+                border-left: 4px solid #2F5D50;
+            }
+
+            /* Make shelter info static */
+            .shelter-info-container {
+                position: relative;
+                margin-top: 0;
+            }
+        </style>
+    </head>
+    <body class="flex flex-col min-h-screen relative bg-[#F6F3E7]">
+
+        <!-- Header container -->
+        <div id="header"></div>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-4 pt-6 relative z-10 flex justify-center items-start mb-2">
+            <div class="w-full bg-white py-8 px-6 rounded-xl shadow-md" style="max-width: 1450px;">
+
+                <!-- Back Button and Title -->
+                <div class="mb-8">
+                    <div class="flex items-center justify-between mb-2">
+                        <a href="pet_list.html" class="flex items-center text-[#2F5D50] hover:text-[#24483E]">
+                            <i class="fas fa-arrow-left mr-2"></i> Back to Pets
+                        </a>
+                        <div class="bg-[#6DBF89] text-[#06321F] px-4 py-2 rounded-full text-sm font-medium">
+                            <i class="fas fa-heart mr-2"></i> Available for Adoption
+                        </div>
+                    </div>
+                    <h1 class="text-3xl font-bold text-[#2F5D50]">Pet Details</h1>
+                </div>
+
+                <!-- Full Width Pet Image -->
+                <div class="mb-8">
+                    <img src="animal_picture/animal1.png" alt="Buddy" class="w-full h-96 object-cover rounded-xl">
+                </div>
+
+                <!-- Two Column Layout - FIXED -->
+                <div class="flex flex-col lg:flex-row gap-8">
+                    <!-- Left Column: Pet Information -->
+                    <div class="lg:w-2/3">
+                        <div class="bg-white p-6 rounded-xl border border-[#E5E5E5]">
+                            <div class="flex justify-between items-start mb-6">
+                                <div>
+                                    <h2 class="text-2xl font-bold text-[#2B2B2B] mb-2">Buddy</h2>
+                                    <div class="flex items-center flex-wrap gap-3">
+                                        <span class="gender-male px-3 py-1 rounded-full text-sm font-medium">
+                                            <i class="fas fa-mars mr-1"></i> Male
+                                        </span>
+                                        <span class="bg-[#A8E6CF] text-[#2B2B2B] px-3 py-1 rounded-full text-sm">
+                                            <i class="fas fa-paw mr-1"></i> Dog
+                                        </span>
+                                        <span class="bg-[#A8E6CF] text-[#2B2B2B] px-3 py-1 rounded-full text-sm">
+                                            3 years old
+                                        </span>
+                                        <span class="bg-[#A8E6CF] text-[#2B2B2B] px-3 py-1 rounded-full text-sm">
+                                            Large Size
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-[#888] text-sm">Pet ID</p>
+                                    <p class="font-bold text-[#2F5D50]">#PET001</p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div class="info-card bg-[#F9F9F9] p-5 rounded-xl">
+                                    <h3 class="font-semibold text-[#2B2B2B] mb-3 text-lg">Basic Information</h3>
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between">
+                                            <span class="text-[#666]">Breed</span>
+                                            <span class="font-medium">Golden Retriever</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-[#666]">Color</span>
+                                            <span class="font-medium">Golden</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-[#666]">Age</span>
+                                            <span class="font-medium">3 years</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-[#666]">Size</span>
+                                            <span class="font-medium">Large</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-[#666]">Gender</span>
+                                            <span class="font-medium">Male</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="info-card bg-[#F9F9F9] p-5 rounded-xl">
+                                    <h3 class="font-semibold text-[#2B2B2B] mb-3 text-lg">Health & Care</h3>
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between">
+                                            <span class="text-[#666]">Health Status</span>
+                                            <span class="font-medium text-[#6DBF89]">Excellent</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-[#666]">Vaccinated</span>
+                                            <span class="font-medium text-[#6DBF89]">Yes</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-[#666]">Dewormed</span>
+                                            <span class="font-medium text-[#6DBF89]">Yes</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-[#666]">Spayed/Neutered</span>
+                                            <span class="font-medium">Neutered</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-[#666]">Microchipped</span>
+                                            <span class="font-medium text-[#6DBF89]">Yes</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-8">
+                                <h3 class="font-semibold text-[#2B2B2B] mb-3 text-lg">About Buddy</h3>
+                                <div class="text-[#666] leading-relaxed space-y-4">
+                                    <p>
+                                        Buddy is a friendly and energetic golden retriever who loves playing fetch and going for long walks. He has a beautiful golden coat and a wagging tail that never stops!
+                                    </p>
+                                    <p>
+                                        He's great with children and gets along well with other dogs. Buddy knows basic commands like sit, stay, and come. He's house-trained and walks well on a leash.
+                                    </p>
+                                    <p>
+                                        Buddy would do best in an active household where he can get plenty of exercise. He loves water and would enjoy a home with access to a yard or nearby park.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="mb-8">
+                                <h3 class="font-semibold text-[#2B2B2B] mb-3 text-lg">Special Requirements</h3>
+                                <div class="bg-[#F0F7F4] p-4 rounded-lg">
+                                    <ul class="list-disc pl-5 text-[#666] space-y-2">
+                                        <li>Requires daily exercise (at least 1 hour)</li>
+                                        <li>Prefers a home with a yard</li>
+                                        <li>Good with older children (8+)</li>
+                                        <li>Compatible with other dogs</li>
+                                        <li>Regular grooming needed</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Apply for Adoption Button -->
+                            <div class="text-center">
+                                <button id="applyAdoptionBtn" class="px-8 py-4 bg-[#2F5D50] text-white font-bold text-lg rounded-lg hover:bg-[#24483E] transition duration-300">
+                                    <i class="fas fa-heart mr-2"></i> Apply to Adopt Buddy
+                                </button>
+                                <p class="text-[#888] text-sm mt-3">By applying, you agree to our adoption terms and conditions</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Shelter Information - FIXED POSITION -->
+                    <div class="lg:w-1/3 shelter-info-container">
+                        <!-- Shelter Information Card -->
+                        <div class="bg-white p-6 rounded-xl border border-[#E5E5E5] mb-6">
+                            <h3 class="text-xl font-bold text-[#2B2B2B] mb-4">Shelter Information</h3>
+
+                            <div class="flex items-center mb-6">
+                                <div class="w-16 h-16 rounded-full overflow-hidden mr-4">
+                                    <img src="profile_picture/shelter/pic1.png" alt="Happy Paws Shelter" class="w-full h-full object-cover">
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-[#2B2B2B] text-lg">Happy Paws Shelter</h4>
+                                    <div class="flex items-center mt-1">
+                                        <div class="star-rating text-[#C49A6C] mr-2">
+                                            <i class="fas fa-star"></i>
+                                            <i class="fas fa-star"></i>
+                                            <i class="fas fa-star"></i>
+                                            <i class="fas fa-star"></i>
+                                            <i class="fas fa-star-half-alt"></i>
+                                        </div>
+                                        <span class="text-sm text-[#888]">4.5 (42 reviews)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-4 mb-6">
+                                <div class="flex items-start">
+                                    <div class="bg-[#F0F7F4] p-2 rounded-lg mr-3">
+                                        <i class="fas fa-map-marker-alt text-[#2F5D50]"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-[#666] text-sm">Location</p>
+                                        <p class="font-medium">123 Jalan Ampang, Kuala Lumpur</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-start">
+                                    <div class="bg-[#F0F7F4] p-2 rounded-lg mr-3">
+                                        <i class="fas fa-phone-alt text-[#2F5D50]"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-[#666] text-sm">Contact</p>
+                                        <p class="font-medium">+603-1234 5678</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-start">
+                                    <div class="bg-[#F0F7F4] p-2 rounded-lg mr-3">
+                                        <i class="fas fa-envelope text-[#2F5D50]"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-[#666] text-sm">Email</p>
+                                        <p class="font-medium">info@happypaws.org</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-start">
+                                    <div class="bg-[#F0F7F4] p-2 rounded-lg mr-3">
+                                        <i class="fas fa-clock text-[#2F5D50]"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-[#666] text-sm">Operating Hours</p>
+                                        <p class="font-medium">Mon-Fri: 9AM-6PM</p>
+                                        <p class="font-medium">Sat-Sun: 10AM-4PM</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-6">
+                                <h4 class="font-semibold text-[#2B2B2B] mb-2">About This Shelter</h4>
+                                <p class="text-[#666] text-sm">
+                                    Happy Paws Shelter is a non-profit animal rescue organization dedicated to saving the lives of stray, abandoned, and abused animals in the Kuala Lumpur area.
+                                </p>
+                            </div>
+
+                            <a href="shelter_info.html" class="block w-full text-center py-3 bg-[#6DBF89] text-[#06321F] font-medium rounded-lg hover:bg-[#57A677] transition duration-300">
+                                <i class="fas fa-info-circle mr-2"></i> Learn More About Shelter
+                            </a>
+                        </div>
+
+                        <!-- Adoption Stats - UPDATED BASED ON DB -->
+                        <div class="bg-white p-6 rounded-xl border border-[#E5E5E5]">
+                            <h3 class="text-xl font-bold text-[#2B2B2B] mb-4">Adoption Information</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="flex flex-col items-center justify-center p-6 bg-[#F9F9F9] rounded-lg">
+                                    <p class="text-2xl font-bold text-[#2F5D50]">24</p>
+                                    <p class="text-sm text-[#666] mt-1">Days Listed</p>
+                                    <p class="text-xs text-[#888] mt-1">Since: 15 Mar 2024</p>
+                                </div>
+                                <div class="flex flex-col items-center justify-center p-6 bg-[#F9F9F9] rounded-lg">
+                                    <p class="text-2xl font-bold text-[#2F5D50]">3</p>
+                                    <p class="text-sm text-[#666] mt-1">Applications</p>
+                                </div>
+                            </div>
+                            <div class="mt-4 pt-4 border-t border-[#E5E5E5]">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-[#666]">Created Date</span>
+                                    <span class="font-medium">15 March 2024</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[#666]">Last Updated</span>
+                                    <span class="font-medium">28 March 2024</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- Adoption Application Modal -->
+        <div id="adoptionModal" class="modal-overlay">
+            <div class="modal-content p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-[#2B2B2B]">Apply to Adopt Buddy</h3>
+                    <button id="closeModal" class="text-[#888] hover:text-[#2B2B2B]">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+
+                <form id="adoptionForm">
+                    <div class="mb-6">
+                        <p class="text-[#666] mb-4">You're applying to adopt <span class="font-bold text-[#2F5D50]">Buddy</span> from <span class="font-bold text-[#2F5D50]">Happy Paws Shelter</span>.</p>
+                        <div class="bg-[#F0F7F4] p-4 rounded-lg mb-4">
+                            <p class="text-sm text-[#666]"><i class="fas fa-info-circle mr-2 text-[#2F5D50]"></i> Your application will be reviewed by the shelter. They may contact you for additional information or to schedule a meet-and-greet.</p>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="adopterMessage" class="block text-[#2B2B2B] mb-2 font-medium">Why do you want to adopt this pet? *</label>
+                        <textarea id="adopterMessage" name="adopter_message" rows="5" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]" placeholder="Tell us about yourself, your experience with pets, and why you think you'd be a good fit for this animal..." required></textarea>
+                        <p class="text-[#888] text-sm mt-1">Please provide detailed information to help the shelter assess your application.</p>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-[#2B2B2B] mb-2 font-medium">Adoption Terms</label>
+                        <div class="bg-[#F9F9F9] p-4 rounded-lg max-h-40 overflow-y-auto">
+                            <div class="space-y-3">
+                                <div class="flex items-start">
+                                    <input type="checkbox" id="term1" name="terms" class="mt-1 mr-3" required>
+                                    <label for="term1" class="text-[#666] text-sm">I understand that adoption is a lifelong commitment and I am prepared to care for this pet for its entire life.</label>
+                                </div>
+                                <div class="flex items-start">
+                                    <input type="checkbox" id="term2" name="terms" class="mt-1 mr-3" required>
+                                    <label for="term2" class="text-[#666] text-sm">I confirm that I am at least 21 years old and have valid identification.</label>
+                                </div>
+                                <div class="flex items-start">
+                                    <input type="checkbox" id="term3" name="terms" class="mt-1 mr-3" required>
+                                    <label for="term3" class="text-[#666] text-sm">I agree to provide proper veterinary care, nutrition, and living conditions for this pet.</label>
+                                </div>
+                                <div class="flex items-start">
+                                    <input type="checkbox" id="term4" name="terms" class="mt-1 mr-3" required>
+                                    <label for="term4" class="text-[#666] text-sm">I understand that the shelter reserves the right to deny my application at their discretion.</label>
+                                </div>
+                                <div class="flex items-start">
+                                    <input type="checkbox" id="term5" name="terms" class="mt-1 mr-3" required>
+                                    <label for="term5" class="text-[#666] text-sm">I agree to allow a home visit if requested by the shelter as part of the adoption process.</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" id="cancelAdoption" class="px-6 py-3 border border-[#E5E5E5] text-[#2B2B2B] font-medium rounded-lg hover:bg-[#F6F3E7]">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-6 py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">
+                            <i class="fas fa-paper-plane mr-2"></i> Submit Application
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Footer container -->
+        <div id="footer"></div>
+
+        <!-- Load sidebar.js -->
+        <script src="includes/sidebar.js"></script>
+
+        <script>
+            // DOM Elements
+            const adoptionModal = document.getElementById('adoptionModal');
+            const applyAdoptionBtn = document.getElementById('applyAdoptionBtn');
+            const closeModalBtn = document.getElementById('closeModal');
+            const cancelAdoptionBtn = document.getElementById('cancelAdoption');
+            const adoptionForm = document.getElementById('adoptionForm');
+
+            // Initialize
+            document.addEventListener('DOMContentLoaded', function () {
+                attachEventListeners();
+            });
+
+            // Open adoption modal
+            function openAdoptionModal() {
+                adoptionModal.classList.add('show');
+                setTimeout(() => {
+                    const modalContent = adoptionModal.querySelector('.modal-content');
+                    modalContent.classList.add('show');
+                }, 10);
+            }
+
+            // Close adoption modal
+            function closeAdoptionModal() {
+                const modalContent = adoptionModal.querySelector('.modal-content');
+                modalContent.classList.remove('show');
+
+                setTimeout(() => {
+                    adoptionModal.classList.remove('show');
+                    resetAdoptionForm();
+                }, 300);
+            }
+
+            // Reset adoption form
+            function resetAdoptionForm() {
+                adoptionForm.reset();
+            }
+
+            // Handle adoption form submission
+            function handleAdoptionSubmit(e) {
+                e.preventDefault();
+
+                // Validate required fields
+                const adopterMessage = document.getElementById('adopterMessage').value.trim();
+
+                if (!adopterMessage) {
+                    alert('Please tell us why you want to adopt this pet.');
+                    return;
+                }
+
+                // Check if all terms are accepted
+                const terms = document.querySelectorAll('input[name="terms"]');
+                const allTermsAccepted = Array.from(terms).every(term => term.checked);
+
+                if (!allTermsAccepted) {
+                    alert('Please accept all adoption terms to proceed.');
+                    return;
+                }
+
+                // In a real app, this would be sent to a server
+                // For demo, we'll just show a success message
+                alert('Your adoption application has been submitted successfully! The shelter will contact you within 3-5 business days.');
+
+                // Close modal and reset form
+                closeAdoptionModal();
+            }
+
+            // Attach event listeners
+            function attachEventListeners() {
+                applyAdoptionBtn.addEventListener('click', openAdoptionModal);
+                closeModalBtn.addEventListener('click', closeAdoptionModal);
+                cancelAdoptionBtn.addEventListener('click', closeAdoptionModal);
+
+                // Close modal when clicking outside
+                adoptionModal.addEventListener('click', (e) => {
+                    if (e.target === adoptionModal) {
+                        closeAdoptionModal();
+                    }
+                });
+
+                // Adoption form submission
+                adoptionForm.addEventListener('submit', handleAdoptionSubmit);
+            }
+        </script>
+
+    </body>
+</html>

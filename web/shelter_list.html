@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Shelter List - Rimba Adopt</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <style>
+            .card-hover:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+                transition: all 0.3s ease;
+            }
+
+            .active-page {
+                background-color: #2F5D50;
+                color: white;
+            }
+
+            .star-rating {
+                color: #C49A6C;
+            }
+
+            /* Custom scrollbar */
+            ::-webkit-scrollbar {
+                width: 8px;
+            }
+
+            ::-webkit-scrollbar-track {
+                background: #f1f1f1;
+                border-radius: 10px;
+            }
+
+            ::-webkit-scrollbar-thumb {
+                background: #c1c1c1;
+                border-radius: 10px;
+            }
+
+            ::-webkit-scrollbar-thumb:hover {
+                background: #a8a8a8;
+            }
+        </style>
+    </head>
+    <body class="flex flex-col min-h-screen relative bg-[#F6F3E7]">
+
+        <!-- Header container -->
+        <div id="header"></div>
+
+        <!-- Main Dashboard Content -->
+        <main class="flex-1 p-4 pt-6 relative z-10 flex justify-center items-start mb-2">
+            <div class="w-full bg-white py-8 px-6 rounded-xl shadow-md" style="max-width: 1450px;">
+
+                <!-- Dashboard Title -->
+                <div class="mb-8">
+                    <h1 class="text-3xl font-bold text-[#2F5D50] border-b-2 border-[#E5E5E5] pb-4">Find Shelters</h1>
+                    <p class="text-[#2B2B2B] mt-2">Browse and connect with animal shelters in your area</p>
+                </div>
+
+                <!-- Filter Section -->
+                <div class="mb-8 p-6 bg-[#F9F9F9] rounded-lg border border-[#E5E5E5]">
+                    <h2 class="text-xl font-semibold text-[#2F5D50] mb-4">Filter Shelters</h2>
+                    <div class="flex flex-wrap gap-6">
+                        <!-- State Filter -->
+                        <div class="flex-1 min-w-[250px]">
+                            <label class="block text-[#2B2B2B] mb-2 font-medium">State</label>
+                            <select id="stateFilter" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]">
+                                <option value="">All States</option>
+                                <option value="kuala_lumpur">Kuala Lumpur</option>
+                                <option value="selangor">Selangor</option>
+                                <option value="johor">Johor</option>
+                                <option value="penang">Penang</option>
+                                <option value="perak">Perak</option>
+                                <option value="sabah">Sabah</option>
+                                <option value="sarawak">Sarawak</option>
+                            </select>
+                        </div>
+
+                        <!-- Rating Filter -->
+                        <div class="flex-1 min-w-[250px]">
+                            <label class="block text-[#2B2B2B] mb-2 font-medium">Minimum Rating</label>
+                            <select id="ratingFilter" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]">
+                                <option value="0">Any Rating</option>
+                                <option value="4">4 Stars & Above</option>
+                                <option value="3">3 Stars & Above</option>
+                                <option value="2">2 Stars & Above</option>
+                                <option value="1">1 Star & Above</option>
+                            </select>
+                        </div>
+
+                        <!-- Filter Buttons -->
+                        <div class="flex items-end gap-3">
+                            <button id="applyFilter" class="px-6 py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">
+                                <i class="fas fa-filter mr-2"></i>Apply Filters
+                            </button>
+                            <button id="resetFilter" class="px-6 py-3 bg-[#E5E5E5] text-[#2B2B2B] font-medium rounded-lg hover:bg-[#D5D5D5] transition duration-300">
+                                <i class="fas fa-redo mr-2"></i>Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Count -->
+                <div class="flex justify-between items-center mb-6">
+                    <p class="text-[#2B2B2B]">
+                        Showing <span id="resultCount" class="font-semibold">8</span> shelters
+                    </p>
+                    <div class="text-[#2B2B2B]">
+                        Page <span id="currentPage" class="font-semibold">1</span> of <span id="totalPages" class="font-semibold">3</span>
+                    </div>
+                </div>
+
+                <!-- Shelters Grid (4x2 layout) -->
+                <div id="sheltersContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <!-- Shelter cards will be dynamically generated here -->
+                    <!-- Example of one card structure -->
+                    <div class="shelter-card bg-white rounded-xl border border-[#E5E5E5] overflow-hidden card-hover">
+                        <div class="relative">
+                            <img src="profile_picture/shelter/pic1.png" alt="Happy Paws Shelter" class="w-full h-48 object-cover">
+                            <div class="absolute top-3 right-3 bg-[#6DBF89] text-[#06321F] px-3 py-1 rounded-full text-sm font-medium">
+                                <i class="fas fa-check-circle mr-1"></i> Approved
+                            </div>
+                        </div>
+                        <div class="p-5">
+                            <h3 class="text-xl font-bold text-[#2B2B2B] mb-2">Happy Paws Shelter</h3>
+                            <div class="flex items-center mb-3">
+                                <i class="fas fa-map-marker-alt text-[#2F5D50] mr-2"></i>
+                                <span class="text-[#2B2B2B]">Kuala Lumpur</span>
+                            </div>
+                            <div class="flex items-center mb-4">
+                                <div class="star-rating mr-2">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star-half-alt"></i>
+                                </div>
+                                <span class="text-[#2B2B2B] font-medium">4.5</span>
+                                <span class="text-[#888] ml-1">(42 reviews)</span>
+                            </div>
+                            <div class="mb-4">
+                                <span class="inline-block bg-[#A8E6CF] text-[#2B2B2B] px-3 py-1 rounded-full text-sm mr-2 mb-2">
+                                    <i class="fas fa-paw mr-1"></i> Dogs
+                                </span>
+                                <span class="inline-block bg-[#A8E6CF] text-[#2B2B2B] px-3 py-1 rounded-full text-sm mr-2 mb-2">
+                                    <i class="fas fa-cat mr-1"></i> Cats
+                                </span>
+                            </div>
+                            <a href="shelter_info.html" class="block w-full text-center py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- More cards will be generated by JavaScript -->
+                </div>
+
+                <!-- Pagination -->
+                <div class="flex justify-center items-center mt-8">
+                    <nav class="flex items-center space-x-2">
+                        <button id="prevPage" class="p-3 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7] disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+
+                        <div id="pageNumbers" class="flex space-x-2">
+                            <!-- Page numbers will be generated here -->
+                            <button class="page-btn w-10 h-10 rounded-lg border border-[#2F5D50] bg-[#2F5D50] text-white">1</button>
+                            <button class="page-btn w-10 h-10 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]">2</button>
+                            <button class="page-btn w-10 h-10 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]">3</button>
+                        </div>
+
+                        <button id="nextPage" class="p-3 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </nav>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- Footer container -->
+        <div id="footer"></div>
+
+        <!-- Load sidebar.js -->
+        <script src="includes/sidebar.js"></script>
+
+        <script>
+            // Dummy shelter data
+            const shelters = [
+                {
+                    id: 1,
+                    name: "Happy Paws Shelter",
+                    location: "Kuala Lumpur",
+                    state: "kuala_lumpur",
+                    rating: 4.5,
+                    reviewCount: 42,
+                    pets: ["Dogs", "Cats"],
+                    description: "Dedicated to rescuing and rehoming stray animals in KL area.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 2,
+                    name: "Furry Friends Haven",
+                    location: "Selangor",
+                    state: "selangor",
+                    rating: 4.2,
+                    reviewCount: 28,
+                    pets: ["Dogs", "Cats", "Rabbits"],
+                    description: "Providing safe haven for abandoned pets since 2010.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 3,
+                    name: "Second Chance Sanctuary",
+                    location: "Johor",
+                    state: "johor",
+                    rating: 4.8,
+                    reviewCount: 56,
+                    pets: ["Dogs", "Cats"],
+                    description: "Specializing in rehabilitation of abused animals.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 4,
+                    name: "Whisker Woods Shelter",
+                    location: "Penang",
+                    state: "penang",
+                    rating: 4.0,
+                    reviewCount: 35,
+                    pets: ["Cats", "Birds"],
+                    description: "Focused on feline rescue and adoption services.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 5,
+                    name: "Barkville Rescue Center",
+                    location: "Selangor",
+                    state: "selangor",
+                    rating: 3.8,
+                    reviewCount: 22,
+                    pets: ["Dogs"],
+                    description: "Canine-focused shelter with training programs.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 6,
+                    name: "Paws & Claws Shelter",
+                    location: "Kuala Lumpur",
+                    state: "kuala_lumpur",
+                    rating: 4.6,
+                    reviewCount: 47,
+                    pets: ["Dogs", "Cats", "Small Animals"],
+                    description: "Comprehensive animal care and adoption services.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 7,
+                    name: "Sunshine Animal Refuge",
+                    location: "Sabah",
+                    state: "sabah",
+                    rating: 4.3,
+                    reviewCount: 31,
+                    pets: ["Dogs", "Cats", "Others"],
+                    description: "Serving East Malaysia with compassion and care.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 8,
+                    name: "Rainbow Rescue Home",
+                    location: "Sarawak",
+                    state: "sarawak",
+                    rating: 4.1,
+                    reviewCount: 19,
+                    pets: ["Cats", "Birds"],
+                    description: "Small shelter making big differences in pets' lives.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 9,
+                    name: "Gentle Giants Sanctuary",
+                    location: "Perak",
+                    state: "perak",
+                    rating: 4.7,
+                    reviewCount: 39,
+                    pets: ["Dogs", "Large Animals"],
+                    description: "Specializing in large breed dog rescue.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 10,
+                    name: "Urban Animal Allies",
+                    location: "Kuala Lumpur",
+                    state: "kuala_lumpur",
+                    rating: 4.4,
+                    reviewCount: 52,
+                    pets: ["Dogs", "Cats"],
+                    description: "City-focused rescue and community education.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 11,
+                    name: "Coastal Critter Care",
+                    location: "Johor",
+                    state: "johor",
+                    rating: 3.9,
+                    reviewCount: 24,
+                    pets: ["Dogs", "Cats", "Marine Animals"],
+                    description: "Coastal rescue and rehabilitation center.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 12,
+                    name: "Mountainview Animal Shelter",
+                    location: "Sabah",
+                    state: "sabah",
+                    rating: 4.5,
+                    reviewCount: 33,
+                    pets: ["Dogs", "Cats", "Wildlife"],
+                    description: "Shelter in the highlands helping all creatures.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 13,
+                    name: "Heartwarming Homes",
+                    location: "Selangor",
+                    state: "selangor",
+                    rating: 4.2,
+                    reviewCount: 41,
+                    pets: ["Dogs", "Cats"],
+                    description: "Creating loving matches between pets and families.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 14,
+                    name: "Precious Paws Project",
+                    location: "Penang",
+                    state: "penang",
+                    rating: 4.8,
+                    reviewCount: 67,
+                    pets: ["Cats"],
+                    description: "Exclusively feline rescue with TNR programs.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 15,
+                    name: "Loyal Companions Shelter",
+                    location: "Kuala Lumpur",
+                    state: "kuala_lumpur",
+                    rating: 4.0,
+                    reviewCount: 29,
+                    pets: ["Dogs"],
+                    description: "Focus on senior dog rescue and adoption.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 16,
+                    name: "Island Animal Oasis",
+                    location: "Sarawak",
+                    state: "sarawak",
+                    rating: 4.3,
+                    reviewCount: 18,
+                    pets: ["Dogs", "Cats", "Birds"],
+                    description: "Island community shelter serving remote areas.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 17,
+                    name: "Hope Haven for Animals",
+                    location: "Johor",
+                    state: "johor",
+                    rating: 4.6,
+                    reviewCount: 44,
+                    pets: ["Dogs", "Cats", "Small Animals"],
+                    description: "Providing hope and healing for abandoned pets.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 18,
+                    name: "Tender Care Shelter",
+                    location: "Perak",
+                    state: "perak",
+                    rating: 4.1,
+                    reviewCount: 26,
+                    pets: ["Cats", "Rabbits", "Guinea Pigs"],
+                    description: "Specializing in small animal rescue and care.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 19,
+                    name: "Forever Friends Foundation",
+                    location: "Selangor",
+                    state: "selangor",
+                    rating: 4.7,
+                    reviewCount: 58,
+                    pets: ["Dogs", "Cats"],
+                    description: "Committed to finding forever homes for all pets.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 20,
+                    name: "New Beginnings Animal Rescue",
+                    location: "Kuala Lumpur",
+                    state: "kuala_lumpur",
+                    rating: 4.4,
+                    reviewCount: 37,
+                    pets: ["Dogs", "Cats"],
+                    description: "Helping pets start their new life chapters.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 21,
+                    name: "Pawsitive Outcomes",
+                    location: "Penang",
+                    state: "penang",
+                    rating: 4.2,
+                    reviewCount: 32,
+                    pets: ["Dogs", "Cats"],
+                    description: "Creating positive outcomes for homeless pets.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 22,
+                    name: "Critter Comforts Shelter",
+                    location: "Sabah",
+                    state: "sabah",
+                    rating: 3.7,
+                    reviewCount: 21,
+                    pets: ["Dogs", "Cats", "Reptiles"],
+                    description: "Caring for all types of animals in need.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 23,
+                    name: "Safe Haven Sanctuary",
+                    location: "Sarawak",
+                    state: "sarawak",
+                    rating: 4.5,
+                    reviewCount: 28,
+                    pets: ["Dogs", "Cats"],
+                    description: "Providing safe haven for abused and neglected animals.",
+                    image: "profile_picture/shelter/pic1.png"
+                },
+                {
+                    id: 24,
+                    name: "Loving Paws Rescue",
+                    location: "Johor",
+                    state: "johor",
+                    rating: 4.3,
+                    reviewCount: 46,
+                    pets: ["Dogs", "Cats"],
+                    description: "Rescue with focus on medical care and rehabilitation.",
+                    image: "profile_picture/shelter/pic1.png"
+                }
+            ];
+
+            // Pagination variables
+            let currentPage = 1;
+            const itemsPerPage = 8;
+            let filteredShelters = [...shelters];
+
+            // DOM Elements
+            const sheltersContainer = document.getElementById('sheltersContainer');
+            const resultCount = document.getElementById('resultCount');
+            const currentPageSpan = document.getElementById('currentPage');
+            const totalPagesSpan = document.getElementById('totalPages');
+            const prevPageBtn = document.getElementById('prevPage');
+            const nextPageBtn = document.getElementById('nextPage');
+            const pageNumbers = document.getElementById('pageNumbers');
+            const applyFilterBtn = document.getElementById('applyFilter');
+            const resetFilterBtn = document.getElementById('resetFilter');
+            const stateFilter = document.getElementById('stateFilter');
+            const ratingFilter = document.getElementById('ratingFilter');
+
+            // Initialize
+            document.addEventListener('DOMContentLoaded', function () {
+                renderShelters();
+                updatePagination();
+                attachEventListeners();
+            });
+
+            // Render shelters for current page
+            function renderShelters() {
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+                const pageShelters = filteredShelters.slice(startIndex, endIndex);
+
+                sheltersContainer.innerHTML = '';
+
+                pageShelters.forEach(shelter => {
+                    const card = createShelterCard(shelter);
+                    sheltersContainer.appendChild(card);
+                });
+
+                resultCount.textContent = filteredShelters.length;
+            }
+
+            // Create shelter card HTML
+            function createShelterCard(shelter) {
+                const card = document.createElement('div');
+                card.className = 'shelter-card bg-white rounded-xl border border-[#E5E5E5] overflow-hidden card-hover';
+
+                // Generate star HTML
+                const starsHTML = generateStars(shelter.rating);
+
+                // Generate pet tags HTML
+                const petTagsHTML = shelter.pets.map(pet =>
+                        `<span class="inline-block bg-[#A8E6CF] text-[#2B2B2B] px-3 py-1 rounded-full text-sm mr-2 mb-2">
+                        <i class="fas ${getPetIcon(pet)} mr-1"></i> ${pet}
+                    </span>`
+                ).join('');
+
+                card.innerHTML = `
+                    <div class="relative">
+                        <img src="${shelter.image}" alt="${shelter.name}" class="w-full h-48 object-cover">
+                        <div class="absolute top-3 right-3 bg-[#6DBF89] text-[#06321F] px-3 py-1 rounded-full text-sm font-medium">
+                            <i class="fas fa-check-circle mr-1"></i> Approved
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="text-xl font-bold text-[#2B2B2B] mb-2">${shelter.name}</h3>
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-map-marker-alt text-[#2F5D50] mr-2"></i>
+                            <span class="text-[#2B2B2B]">${shelter.location}</span>
+                        </div>
+                        <div class="flex items-center mb-4">
+                            <div class="star-rating mr-2">
+                                ${starsHTML}
+                            </div>
+                            <span class="text-[#2B2B2B] font-medium">${shelter.rating}</span>
+                            <span class="text-[#888] ml-1">(${shelter.reviewCount} reviews)</span>
+                        </div>
+                        <div class="mb-4">
+                            ${petTagsHTML}
+                        </div>
+                        <p class="text-[#666] text-sm mb-4 line-clamp-2">${shelter.description}</p>
+                        <a href="shelter_info.html" class="block w-full text-center py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">
+                            View Details
+                        </a>
+                    </div>
+                `;
+
+                return card;
+            }
+
+            // Generate star rating HTML
+            function generateStars(rating) {
+                let starsHTML = '';
+                const fullStars = Math.floor(rating);
+                const hasHalfStar = rating % 1 >= 0.5;
+
+                for (let i = 1; i <= 5; i++) {
+                    if (i <= fullStars) {
+                        starsHTML += '<i class="fas fa-star"></i>';
+                    } else if (i === fullStars + 1 && hasHalfStar) {
+                        starsHTML += '<i class="fas fa-star-half-alt"></i>';
+                    } else {
+                        starsHTML += '<i class="far fa-star"></i>';
+                    }
+                }
+
+                return starsHTML;
+            }
+
+            // Get icon for pet type
+            function getPetIcon(petType) {
+                switch (petType.toLowerCase()) {
+                    case 'dogs':
+                        return 'fa-paw';
+                    case 'cats':
+                        return 'fa-cat';
+                    case 'rabbits':
+                        return 'fa-rabbit';
+                    case 'birds':
+                        return 'fa-dove';
+                    case 'small animals':
+                        return 'fa-otter';
+                    case 'large animals':
+                        return 'fa-horse';
+                    case 'marine animals':
+                        return 'fa-fish';
+                    case 'wildlife':
+                        return 'fa-hippo';
+                    case 'reptiles':
+                        return 'fa-dragon';
+                    default:
+                        return 'fa-paw';
+                }
+            }
+
+            // Update pagination controls
+            function updatePagination() {
+                const totalPages = Math.ceil(filteredShelters.length / itemsPerPage);
+
+                currentPageSpan.textContent = currentPage;
+                totalPagesSpan.textContent = totalPages;
+
+                // Update button states
+                prevPageBtn.disabled = currentPage === 1;
+                nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+
+                // Generate page number buttons
+                pageNumbers.innerHTML = '';
+                const maxVisiblePages = 5;
+                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+                if (endPage - startPage + 1 < maxVisiblePages) {
+                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.className = `page-btn w-10 h-10 rounded-lg border ${i === currentPage ? 'border-[#2F5D50] bg-[#2F5D50] text-white' : 'border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]'}`;
+                    pageBtn.textContent = i;
+                    pageBtn.addEventListener('click', () => {
+                        currentPage = i;
+                        renderShelters();
+                        updatePagination();
+                    });
+                    pageNumbers.appendChild(pageBtn);
+                }
+            }
+
+            // Apply filters
+            function applyFilters() {
+                const selectedState = stateFilter.value;
+                const minRating = parseFloat(ratingFilter.value);
+
+                filteredShelters = shelters.filter(shelter => {
+                    // State filter
+                    if (selectedState && shelter.state !== selectedState) {
+                        return false;
+                    }
+
+                    // Rating filter
+                    if (minRating > 0 && shelter.rating < minRating) {
+                        return false;
+                    }
+
+                    return true;
+                });
+
+                currentPage = 1;
+                renderShelters();
+                updatePagination();
+            }
+
+            // Reset filters
+            function resetFilters() {
+                stateFilter.value = '';
+                ratingFilter.value = '0';
+                filteredShelters = [...shelters];
+                currentPage = 1;
+                renderShelters();
+                updatePagination();
+            }
+
+            // Attach event listeners
+            function attachEventListeners() {
+                applyFilterBtn.addEventListener('click', applyFilters);
+                resetFilterBtn.addEventListener('click', resetFilters);
+
+                prevPageBtn.addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        renderShelters();
+                        updatePagination();
+                    }
+                });
+
+                nextPageBtn.addEventListener('click', () => {
+                    const totalPages = Math.ceil(filteredShelters.length / itemsPerPage);
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        renderShelters();
+                        updatePagination();
+                    }
+                });
+
+                // Add Enter key support for filters
+                [stateFilter, ratingFilter].forEach(filter => {
+                    filter.addEventListener('keyup', (e) => {
+                        if (e.key === 'Enter') {
+                            applyFilters();
+                        }
+                    });
+                });
+            }
+        </script>
+
+    </body>
+</html>

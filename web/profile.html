@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <title>Profile Page - Rimba Adopt</title>
+
+        <!-- Minor utility styles to ensure consistent spacing and nice scrollbar for internal content -->
+        <style>
+            /* Tweak: scrollbar for the inner content (optional, looks nicer) */
+            .inner-scroll::-webkit-scrollbar { width: 8px; }
+            .inner-scroll::-webkit-scrollbar-thumb { background: rgba(43,43,43,0.12); border-radius: 6px; }
+            /* Make sure body stays full height and flex column layout works consistently */
+            html, body { height: 100%; }
+        </style>
+    </head>
+    <body class="bg-[#F6F3E7] min-h-screen flex flex-col">
+
+        <!-- Header -->
+        <div id="header"></div>
+
+        <!-- MAIN: centered, footer-safe -->
+        <main class="flex-1 flex items-center justify-center p-6">
+            <div class="w-full max-w-7xl bg-white py-6 rounded-xl shadow-md mx-auto flex flex-col md:flex-row"
+                 style="max-height: calc(100vh - 180px); overflow: hidden;">
+                <!-- LEFT PANEL: CENTERED -->
+                <aside class="w-full md:w-80 px-6 py-6 border-b md:border-b-0 md:border-r border-[#E5E5E5] flex flex-col items-center gap-6">
+                    <!-- role radios -->
+                    <div class="w-full flex flex-col items-center gap-2">
+                        <label class="block text-sm font-medium text-[#2B2B2B] mb-1 text-center">Profile Type</label>
+                        <div class="flex gap-2 flex-wrap justify-center" role="radiogroup" aria-label="Profile role switcher">
+                            <label class="inline-flex items-center gap-2 cursor-pointer text-xs">
+                                <input type="radio" name="profile_role" value="adopter" class="cursor-pointer accent-[#6DBF89]" />
+                                <span class="px-3 py-1 rounded bg-[#A8E6CF] text-[#2B2B2B] font-medium">Adopter</span>
+                            </label>
+                            <label class="inline-flex items-center gap-2 cursor-pointer text-xs">
+                                <input type="radio" name="profile_role" value="shelter" class="cursor-pointer accent-[#6DBF89]" />
+                                <span class="px-3 py-1 rounded bg-[#A8E6CF] text-[#2B2B2B] font-medium">Shelter</span>
+                            </label>
+                            <label class="inline-flex items-center gap-2 cursor-pointer text-xs">
+                                <input type="radio" name="profile_role" value="admin" class="cursor-pointer accent-[#6DBF89]" />
+                                <span class="px-3 py-1 rounded bg-[#C49A6C] text-white font-medium">Admin</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- avatar + name + badge -->
+                    <div class="mt-4 flex flex-col items-center w-full gap-2">
+                        <div class="w-28 h-28 bg-[#6DBF89] rounded-full flex items-center justify-center text-3xl font-bold text-white">
+                            <span id="profile-initial">U</span>
+                        </div>
+                        <h1 id="profile-name" class="text-xl md:text-2xl font-bold text-[#2B2B2B]">User Name</h1>
+                        <span id="profile-role-badge" class="inline-block mt-1 text-xs px-3 py-1 rounded bg-[#A8E6CF] text-[#2B2B2B] font-medium">ADOPTER</span>
+                    </div>
+
+
+
+                    <!-- action buttons -->
+                    <div class="w-full max-w-[160px] flex flex-col items-center mt-4 gap-2">
+                        <button onclick="openEditModal()" class="w-40 px-4 py-2 bg-[#2F5D50] text-white rounded hover:bg-[#24483E] transition-colors font-medium">
+                            Edit Profile
+                        </button>
+                        <button onclick="confirmDelete()" class="w-full max-w-[160px] px-4 py-2 bg-[#B84A4A] text-white rounded hover:bg-[#8B3A3A] transition-colors font-medium">
+                            Delete Account
+                        </button>
+                    </div>
+
+                </aside>
+
+                <!-- RIGHT PANEL: scrollable details -->
+                <section class="flex-1 px-6 py-6 inner-scroll" style="overflow-y: auto; max-height: calc(100% - 0px);">
+                    <div id="profile-content"></div>
+                </section>
+            </div>
+        </main>
+
+
+
+        <!-- Footer -->
+        <div id="footer"></div>
+
+        <!-- Edit Profile Modal -->
+        <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                <div class="sticky top-0 bg-white border-b border-[#E5E5E5] px-6 py-4 flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-[#2B2B2B]">Edit Profile</h2>
+                    <button onclick="closeEditModal()" class="p-2 rounded hover:bg-[#F6F3E7] transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <form id="edit-form" class="p-6" onsubmit="saveProfile(event)"></form>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div id="delete-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-[#B84A4A] rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-xl font-bold text-[#2B2B2B] mb-2">Delete Account?</h2>
+                    <p class="text-[#2B2B2B] opacity-75">Are you sure you want to delete your account? This action cannot be undone.</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="closeDeleteModal()" class="flex-1 px-4 py-2 bg-[#E5E5E5] text-[#2B2B2B] rounded hover:bg-[#D5D5D5] transition-colors font-medium">
+                        Cancel
+                    </button>
+                    <button onclick="deleteAccount()" class="flex-1 px-4 py-2 bg-[#B84A4A] text-white rounded hover:bg-[#8B3A3A] transition-colors font-medium">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Alert (Hidden by default) -->
+        <div id="success-alert" class="fixed top-20 right-6 bg-[#6DBF89] text-[#06321F] px-6 py-3 rounded-lg shadow-lg hidden z-50 flex items-center gap-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span id="alert-message">Profile updated successfully!</span>
+        </div>
+
+        <script>
+            // (SAME JavaScript as you already had, unchanged except we ensure profile-content exists)
+            // Mock data untuk setiap user type
+            const profileData = {
+                adopter: {
+                    user_id: 1,
+                    name: 'Ahmad Bin Ali',
+                    email: 'ahmad@example.com',
+                    phone: '012-3456789',
+                    role: 'adopter',
+                    address: '123, Jalan Merdeka, Kuala Lumpur',
+                    occupation: 'Software Engineer',
+                    household_type: 'Apartment',
+                    has_other_pets: true,
+                    notes: 'Love cats and dogs. Have experience with pets.'
+                },
+                shelter: {
+                    user_id: 2,
+                    name: 'Siti Nurhaliza',
+                    email: 'shelter@example.com',
+                    phone: '013-9876543',
+                    role: 'shelter',
+                    shelter_name: 'Paws & Claws Shelter',
+                    shelter_address: '456, Jalan Harmoni, Petaling Jaya',
+                    shelter_description: 'A non-profit animal shelter dedicated to rescuing and rehoming abandoned pets.',
+                    website: 'https://pawsandclaws.com',
+                    operating_hours: 'Mon-Fri: 9AM-6PM, Sat-Sun: 10AM-4PM',
+                    approval_status: 'approved'
+                },
+                admin: {
+                    user_id: 3,
+                    name: 'Dr. Farah Ahmad',
+                    email: 'admin@rimba.com',
+                    phone: '019-2345678',
+                    role: 'admin',
+                    position: 'Senior Administrator'
+                }
+            };
+
+            let currentRole = 'adopter'; // default
+
+            function renderProfile(role) {
+                currentRole = role;
+                const data = profileData[role];
+                const contentDiv = document.getElementById('profile-content');
+
+                document.getElementById('profile-name').textContent = data.name;
+                document.getElementById('profile-initial').textContent = data.name.charAt(0).toUpperCase();
+                document.getElementById('profile-role-badge').textContent = role.toUpperCase();
+
+                const badge = document.getElementById('profile-role-badge');
+                if (role === 'admin') {
+                    badge.className = 'inline-block mt-1 text-xs px-3 py-1 rounded bg-[#C49A6C] text-white font-medium';
+                } else {
+                    badge.className = 'inline-block mt-1 text-xs px-3 py-1 rounded bg-[#A8E6CF] text-[#2B2B2B] font-medium';
+                }
+
+                if (role === 'adopter') {
+                    contentDiv.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-[#2F5D50] mb-3 border-b border-[#E5E5E5] pb-2">Personal Information</h3>
+                    ${renderField('Email', data.email)}
+                    ${renderField('Phone', data.phone)}
+                    ${renderField('Address', data.address)}
+                    ${renderField('Occupation', data.occupation)}
+                  </div>
+                  <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-[#2F5D50] mb-3 border-b border-[#E5E5E5] pb-2">Household Details</h3>
+                    ${renderField('Household Type', data.household_type)}
+                    ${renderField('Has Other Pets', data.has_other_pets ? 'Yes' : 'No')}
+                    ${renderField('Notes', data.notes, true)}
+                  </div>
+                </div>
+              `;
+                } else if (role === 'shelter') {
+                    contentDiv.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-[#2F5D50] mb-3 border-b border-[#E5E5E5] pb-2">Contact Information</h3>
+                    ${renderField('Email', data.email)}
+                    ${renderField('Phone', data.phone)}
+                    ${renderField('Website', data.website, false, true)}
+                  </div>
+                  <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-[#2F5D50] mb-3 border-b border-[#E5E5E5] pb-2">Shelter Details</h3>
+                    ${renderField('Shelter Name', data.shelter_name)}
+                    ${renderField('Operating Hours', data.operating_hours)}
+                    ${renderStatusBadge('Approval Status', data.approval_status)}
+                  </div>
+                  <div class="md:col-span-2 space-y-4">
+                    ${renderField('Shelter Address', data.shelter_address)}
+                    ${renderField('Description', data.shelter_description, true)}
+                  </div>
+                </div>
+              `;
+                } else if (role === 'admin') {
+                    contentDiv.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-[#2F5D50] mb-3 border-b border-[#E5E5E5] pb-2">Administrator Information</h3>
+                    ${renderField('Email', data.email)}
+                    ${renderField('Phone', data.phone)}
+                    ${renderField('Position', data.position)}
+                  </div>
+                  <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-[#2F5D50] mb-3 border-b border-[#E5E5E5] pb-2">System Access</h3>
+                    <div class="bg-[#F6F3E7] p-4 rounded-lg">
+                      <p class="text-sm text-[#2B2B2B] mb-2">Administrator privileges enabled</p>
+                      <div class="flex gap-2 flex-wrap">
+                        <span class="text-xs px-2 py-1 rounded bg-[#A8E6CF] text-[#2B2B2B]">User Management</span>
+                        <span class="text-xs px-2 py-1 rounded bg-[#A8E6CF] text-[#2B2B2B]">Site Settings</span>
+                        <span class="text-xs px-2 py-1 rounded bg-[#A8E6CF] text-[#2B2B2B]">Full Access</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `;
+                }
+            }
+
+            function renderField(label, value, isTextarea = false, isLink = false) {
+                if (isLink) {
+                    return `
+                <div>
+                  <label class="block text-sm font-medium text-[#2B2B2B] mb-1">${label}</label>
+                  <a href="${value}" target="_blank" class="text-[#2F5D50] hover:text-[#24483E] underline break-all">${value}</a>
+                </div>
+              `;
+                }
+                return `
+              <div>
+                <label class="block text-sm font-medium text-[#2B2B2B] mb-1">${label}</label>
+                <p class="text-[#2B2B2B] ${isTextarea ? 'whitespace-pre-wrap' : ''}">${value}</p>
+              </div>
+            `;
+            }
+
+            function renderStatusBadge(label, status) {
+                const statusColors = {
+                    approved: 'bg-[#6DBF89] text-[#06321F]',
+                    pending: 'bg-[#C49A6C] text-white',
+                    rejected: 'bg-[#B84A4A] text-white'
+                };
+                return `
+              <div>
+                <label class="block text-sm font-medium text-[#2B2B2B] mb-1">${label}</label>
+                <span class="inline-block px-3 py-1 rounded text-sm font-medium ${statusColors[status]}">${status.toUpperCase()}</span>
+              </div>
+            `;
+            }
+
+            function populateEditForm(role) {
+                const data = profileData[role];
+                const form = document.getElementById('edit-form');
+
+                let formHTML = `
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-[#2B2B2B] mb-1">Name *</label>
+                  <input type="text" name="name" value="${data.name}" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-[#2B2B2B] mb-1">Email *</label>
+                  <input type="email" name="email" value="${data.email}" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-[#2B2B2B] mb-1">Phone</label>
+                  <input type="tel" name="phone" value="${data.phone}" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">
+                </div>
+            `;
+
+                if (role === 'adopter') {
+                    formHTML += `
+                <div>
+                  <label class="block text-sm font-medium text-[#2B2B2B] mb-1">Occupation</label>
+                  <input type="text" name="occupation" value="${data.occupation}" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium text-[#2B2B2B] mb-1">Address</label>
+                  <input type="text" name="address" value="${data.address}" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-[#2B2B2B] mb-1">Household Type</label>
+                  <select name="household_type" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">
+                    <option value="Apartment" ${data.household_type === 'Apartment' ? 'selected' : ''}>Apartment</option>
+                    <option value="House" ${data.household_type === 'House' ? 'selected' : ''}>House</option>
+                    <option value="Condo" ${data.household_type === 'Condo' ? 'selected' : ''}>Condo</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-[#2B2B2B] mb-1">Has Other Pets</label>
+                  <select name="has_other_pets" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">
+                    <option value="true" ${data.has_other_pets ? 'selected' : ''}>Yes</option>
+                    <option value="false" ${!data.has_other_pets ? 'selected' : ''}>No</option>
+                  </select>
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium text-[#2B2B2B] mb-1">Notes</label>
+                  <textarea name="notes" rows="3" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">${data.notes}</textarea>
+                </div>
+              `;
+                } else if (role === 'shelter') {
+                    formHTML += `
+                <div>
+                  <label class="block text-sm font-medium text-[#2B2B2B] mb-1">Shelter Name *</label>
+                  <input type="text" name="shelter_name" value="${data.shelter_name}" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium text-[#2B2B2B] mb-1">Shelter Address *</label>
+                  <input type="text" name="shelter_address" value="${data.shelter_address}" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-[#2B2B2B] mb-1">Website</label>
+                  <input type="url" name="website" value="${data.website}" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-[#2B2B2B] mb-1">Operating Hours</label>
+                  <input type="text" name="operating_hours" value="${data.operating_hours}" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium text-[#2B2B2B] mb-1">Description</label>
+                  <textarea name="shelter_description" rows="3" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">${data.shelter_description}</textarea>
+                </div>
+              `;
+                } else if (role === 'admin') {
+                    formHTML += `
+                <div>
+                  <label class="block text-sm font-medium text-[#2B2B2B] mb-1">Position</label>
+                  <input type="text" name="position" value="${data.position}" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">
+                </div>
+              `;
+                }
+
+                formHTML += `
+              </div>
+              <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[#E5E5E5]">
+                <button type="button" onclick="closeEditModal()" class="px-6 py-2 bg-[#E5E5E5] text-[#2B2B2B] rounded hover:bg-[#D5D5D5] transition-colors font-medium">Cancel</button>
+                <button type="submit" class="px-6 py-2 bg-[#2F5D50] text-white rounded hover:bg-[#24483E] transition-colors font-medium">Save Changes</button>
+              </div>
+            `;
+
+                form.innerHTML = formHTML;
+            }
+
+            function openEditModal() {
+                populateEditForm(currentRole);
+                document.getElementById('edit-modal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeEditModal() {
+                document.getElementById('edit-modal').classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }
+            function confirmDelete() {
+                document.getElementById('delete-modal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeDeleteModal() {
+                document.getElementById('delete-modal').classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }
+
+            function saveProfile(event) {
+                event.preventDefault();
+                const formData = new FormData(event.target);
+                Object.keys(profileData[currentRole]).forEach(key => {
+                    if (formData.has(key)) {
+                        let value = formData.get(key);
+                        if (key === 'has_other_pets')
+                            value = value === 'true';
+                        profileData[currentRole][key] = value;
+                    }
+                });
+                renderProfile(currentRole);
+                closeEditModal();
+                showAlert('Profile updated successfully!');
+            }
+
+            function deleteAccount() {
+                showAlert('Account deleted successfully! Redirecting...', 'danger');
+                closeDeleteModal();
+                setTimeout(() => {
+                    alert('In production, user would be redirected to login page.');
+                }, 2000);
+            }
+
+            function showAlert(message, type = 'success') {
+                const alert = document.getElementById('success-alert');
+                const alertMessage = document.getElementById('alert-message');
+                alertMessage.textContent = message;
+
+                if (type === 'danger') {
+                    alert.className = 'fixed top-20 right-6 bg-[#B84A4A] text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 z-50';
+                } else {
+                    alert.className = 'fixed top-20 right-6 bg-[#6DBF89] text-[#06321F] px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 z-50';
+                }
+
+                alert.classList.remove('hidden');
+                setTimeout(() => alert.classList.add('hidden'), 3000);
+            }
+
+            // --- Profile role radio (independent of sidebar) ---
+            document.addEventListener('change', (e) => {
+                if (e.target.name === 'profile_role') {
+                    renderProfile(e.target.value);
+
+                    const badge = document.getElementById('profile-role-badge');
+
+                    if (e.target.value === 'admin') {
+                        badge.className = 'inline-block mt-1 text-xs px-3 py-1 rounded bg-[#C49A6C] text-white font-medium';
+                    } else {
+                        badge.className = 'inline-block mt-1 text-xs px-3 py-1 rounded bg-[#A8E6CF] text-[#2B2B2B] font-medium';
+                    }
+
+                    badge.textContent = e.target.value.toUpperCase();
+                }
+            });
+
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeEditModal();
+                    closeDeleteModal();
+                }
+            });
+
+            // Initialize default role on page load
+            renderProfile(currentRole);
+
+            // Set radio button default
+            document.querySelector(`input[name="profile_role"][value="${currentRole}"]`).checked = true;
+        </script>
+
+        <!-- Load header, sidebar, footer (kept same as your implementation) -->
+        <script src="includes/sidebar.js"></script>
+    </body>
+</html>

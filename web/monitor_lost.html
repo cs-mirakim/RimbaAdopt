@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Monitor Lost Animals - Rimba Adopt</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+        <style>
+            /* Custom utility classes based on your theme */
+            .text-main { color: #2B2B2B; }
+            .bg-primary { background-color: #2F5D50; }
+            .hover-bg-primary-dark { background-color: #24483E; }
+            .text-white-on-dark { color: #FFFFFF; }
+            .border-divider { border-color: #E5E5E5; }
+            /* Status Chip Styles */
+            .chip-lost { background-color: #B84A4A; color: #FFFFFF; }
+            .chip-found { background-color: #A8E6CF; color: #2B2B2B; }
+            /* Modal Styles */
+            .modal {
+                transition: opacity 0.25s ease;
+            }
+            /* Custom focus styles */
+            .custom-focus:focus {
+                outline: none;
+                ring: 2px;
+                ring-color: #2F5D50;
+                border-color: #2F5D50;
+            }
+            /* Equal width for action buttons */
+            .action-button {
+                width: 130px;
+                padding: 0.5rem 0;
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body class="flex flex-col min-h-screen relative bg-[#F6F3E7] text-main">
+        <div id="header"></div>
+        <main class="flex-1 p-4 pt-6 relative z-10 flex justify-center items-start mb-2" style="background-color: #F6F3E7;">
+            <div class="w-full bg-white py-8 px-6 rounded-3xl shadow-xl border" style="max-width: 1450px; border-color: #E5E5E5;">
+                <div class="mb-8 flex justify-between items-center">
+                    <div>
+                        <h1 class="text-4xl font-extrabold" style="color: #2F5D50;">Monitor Lost Animals</h1>
+                        <p class="mt-2 text-lg" style="color: #2B2B2B;">Track and manage your lost pet reports here.</p>
+                    </div>
+                    <button onclick="openModal('createModal')" class="px-6 py-3 rounded-xl text-white font-semibold hover:bg-[#24483E] transition duration-150 shadow-lg flex items-center space-x-2" style="background-color: #2F5D50;">
+                        <i class="fas fa-plus"></i>
+                        <span>Report Lost Pet</span>
+                    </button>
+                </div>
+                <hr style="border-top: 1px solid #E5E5E5; margin-bottom: 1.5rem; margin-top: 1.5rem;" />
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 space-y-4 md:space-y-0">
+                    <div class="flex flex-wrap gap-2 text-sm font-medium">
+                        <button class="px-5 py-2 rounded-full text-white hover:bg-[#24483E] transition duration-150 shadow-md filter-btn bg-primary" data-status="all">All (8)</button>
+                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#B84A4A] text-[#B84A4A]" data-status="lost">🔴 Lost (5)</button>
+                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#6DBF89] text-[#57A677]" data-status="found">✅ Found (3)</button>
+                    </div>
+                    <div class="relative w-full md:w-80">
+                        <input type="text" id="searchInput" placeholder="Search Pet Name..." class="w-full py-2.5 pl-10 pr-4 border rounded-xl transition duration-150 shadow-sm text-base custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;">
+                        <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                </div>
+                <div class="overflow-x-auto rounded-xl border shadow-lg" style="border-color: #E5E5E5;">
+                    <table class="min-w-full divide-y" style="border-color: #E5E5E5;">
+                        <thead style="background-color: #F6F3E7;">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 5%;">No.</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Pet</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Species</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Last Seen Location</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Last Seen Date</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Status</th>
+                                <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 18%;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lost-animal-list" class="bg-white divide-y" style="border-color: #E5E5E5;">
+                            <!-- Data akan diisi oleh JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="pagination-controls" class="flex justify-between items-center mt-6">
+                    <div class="text-sm" style="color: #2B2B2B;">
+                        Showing <span id="start-index" class="font-semibold">1</span> to <span id="end-index" class="font-semibold">8</span> of <span id="total-items" class="font-semibold">8</span> reports
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="prev-btn" class="px-4 py-2 text-sm rounded-xl border text-[#2B2B2B] hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150" style="border-color: #E5E5E5;">
+                            Previous
+                        </button>
+                        <button id="next-btn" class="px-4 py-2 text-sm rounded-xl border text-[#2B2B2B] hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150" style="border-color: #E5E5E5;">
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Create/Edit Modal -->
+        <div id="createModal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+            <div class="bg-white rounded-2xl p-8 w-full max-w-2xl mx-4 shadow-2xl transform transition-transform duration-300 scale-95" role="dialog" aria-modal="true" style="color: #2B2B2B;">
+                <div class="flex justify-between items-center border-b pb-3 mb-4" style="border-color: #E5E5E5;">
+                    <h3 class="text-2xl font-bold" style="color: #2F5D50;" id="modalTitle">Report Lost Pet</h3>
+                    <button onclick="closeModal('createModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                <div class="max-h-[70vh] overflow-y-auto pr-2">
+                    <form id="reportForm" class="space-y-4">
+                        <div>
+                            <label for="petName" class="block text-sm font-medium" style="color: #2B2B2B;">Pet Name: <span class="text-red-500">*</span></label>
+                            <input type="text" id="petName" required class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="Enter pet's name">
+                        </div>
+                        <div>
+                            <label for="species" class="block text-sm font-medium" style="color: #2B2B2B;">Species: <span class="text-red-500">*</span></label>
+                            <select id="species" required class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;">
+                                <option value="">Select species</option>
+                                <option value="Dog">Dog</option>
+                                <option value="Cat">Cat</option>
+                                <option value="Rabbit">Rabbit</option>
+                                <option value="Bird">Bird</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="lastSeenLocation" class="block text-sm font-medium" style="color: #2B2B2B;">Last Seen Location: <span class="text-red-500">*</span></label>
+                            <input type="text" id="lastSeenLocation" required class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="E.g., Near Taman Jaya Park, Petaling Jaya">
+                        </div>
+                        <div>
+                            <label for="lastSeenDate" class="block text-sm font-medium" style="color: #2B2B2B;">Last Seen Date: <span class="text-red-500">*</span></label>
+                            <input type="date" id="lastSeenDate" required class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;">
+                        </div>
+                        <div>
+                            <label for="description" class="block text-sm font-medium" style="color: #2B2B2B;">Description:</label>
+                            <textarea id="description" rows="4" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="Describe your pet - color, size, unique markings, temperament, etc."></textarea>
+                            <p class="text-xs text-gray-500 mt-1">Provide as much detail as possible to help others identify your pet.</p>
+                        </div>
+                        <div>
+                            <label for="photoPath" class="block text-sm font-medium" style="color: #2B2B2B;">Pet Photo: (Optional)</label>
+                            <input type="text" id="photoPath" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="Path to pet photo (e.g., animal_picture/pet1.jpg)">
+                            <p class="text-xs text-gray-500 mt-1">A photo greatly increases the chance of finding your pet.</p>
+                        </div>
+                    </form>
+                </div>
+                <div class="flex justify-end pt-4 space-x-3">
+                    <button onclick="closeModal('createModal')" class="px-5 py-2 rounded-xl border text-[#2B2B2B] hover:bg-gray-100 transition duration-150 font-medium" style="border-color: #E5E5E5;">
+                        Cancel
+                    </button>
+                    <button onclick="saveReport()" class="px-6 py-2 rounded-xl text-white font-medium hover:bg-[#24483E] transition duration-150 shadow-md" style="background-color: #2F5D50;">
+                        Submit Report
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mark as Found Modal -->
+        <div id="foundModal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+            <div class="bg-white rounded-2xl p-8 w-full max-w-md mx-4 shadow-2xl transform transition-transform duration-300 scale-95" role="dialog" aria-modal="true" style="color: #2B2B2B;">
+                <div class="flex justify-between items-center border-b pb-3 mb-4" style="border-color: #E5E5E5;">
+                    <h3 class="text-2xl font-bold" style="color: #57A677;">Mark as Found</h3>
+                    <button onclick="closeModal('foundModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                <div class="text-gray-700">
+                    <p class="mb-4 text-lg" style="color: #2B2B2B;">Great news! Have you found <strong id="foundPetName" style="color: #2B2B2B;"></strong>?</p>
+                    <p class="mb-6 text-sm italic text-white font-medium p-3 rounded-lg border" style="background-color: #A8E6CF; border-color: #6DBF89; color: #2B2B2B;">
+                        Once marked as found, this report will be moved to the "Found" section and cannot be edited.
+                    </p>
+                    <div>
+                        <label for="foundNotes" class="block text-sm font-medium" style="color: #2B2B2B;">Additional Notes (Optional):</label>
+                        <textarea id="foundNotes" rows="3" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="Where/how did you find your pet?"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button onclick="closeModal('foundModal')" class="px-5 py-2 rounded-xl border text-[#2B2B2B] hover:bg-gray-100 transition duration-150 font-medium" style="border-color: #E5E5E5;">
+                        Cancel
+                    </button>
+                    <button id="confirmFoundBtn" class="px-5 py-2 rounded-xl text-white font-semibold hover:bg-green-700 transition duration-200 shadow-md" style="background-color: #57A677;">
+                        Yes, Mark as Found
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- View Details Modal (Read-only for Found pets) -->
+        <div id="viewModal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+            <div class="bg-white rounded-2xl p-8 w-full max-w-2xl mx-4 shadow-2xl transform transition-transform duration-300 scale-95" role="dialog" aria-modal="true" style="color: #2B2B2B;">
+                <div class="flex justify-between items-center border-b pb-3 mb-4" style="border-color: #E5E5E5;">
+                    <h3 class="text-2xl font-bold" style="color: #2F5D50;">Pet Details</h3>
+                    <button onclick="closeModal('viewModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                <div class="max-h-[70vh] overflow-y-auto pr-2">
+                    <div class="space-y-4">
+                        <div class="p-3 rounded-lg border" style="background-color: #A8E6CF; border-color: #6DBF89;">
+                            <p class="text-sm font-semibold" style="color: #2B2B2B;">✅ This pet has been found!</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600">Pet Name:</label>
+                                <p class="font-semibold" id="viewPetName" style="color: #2B2B2B;"></p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600">Species:</label>
+                                <p class="font-semibold" id="viewSpecies" style="color: #2B2B2B;"></p>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600">Last Seen Location:</label>
+                            <p class="font-semibold" id="viewLocation" style="color: #2B2B2B;"></p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600">Last Seen Date:</label>
+                            <p class="font-semibold" id="viewDate" style="color: #2B2B2B;"></p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600">Description:</label>
+                            <p class="font-semibold" id="viewDescription" style="color: #2B2B2B;"></p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600">Report Created:</label>
+                            <p class="font-semibold" id="viewCreatedAt" style="color: #2B2B2B;"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end pt-4">
+                    <button onclick="closeModal('viewModal')" class="px-6 py-2 rounded-xl text-white font-medium hover:bg-[#24483E] transition duration-150 shadow-md" style="background-color: #2F5D50;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="footer"></div>
+        <script src="includes/sidebar.js"></script>
+        <script>
+                        // =======================================================
+                        // 1. Dummy Data Setup
+                        // =======================================================
+                        const DUMMY_DATA = [
+                            {id: 1, petName: "Max", species: "Dog", lastSeenLocation: "Taman Jaya Park, Petaling Jaya", lastSeenDate: "2025-12-01", description: "Golden Retriever, friendly, wearing blue collar", photoPath: "animal_picture/animal1.png", status: "lost", createdAt: "2025-12-01 10:30:00"},
+                            {id: 2, petName: "Whiskers", species: "Cat", lastSeenLocation: "SS2 Area, Petaling Jaya", lastSeenDate: "2025-11-28", description: "Orange tabby cat, very shy, has white paws", photoPath: "animal_picture/animal2.jpg", status: "lost", createdAt: "2025-11-28 14:20:00"},
+                            {id: 3, petName: "Luna", species: "Cat", lastSeenLocation: "Near Sunway Pyramid", lastSeenDate: "2025-11-25", description: "Black and white cat, very vocal", photoPath: "animal_picture/animal3.jpg", status: "found", createdAt: "2025-11-25 09:15:00"},
+                            {id: 4, petName: "Buddy", species: "Dog", lastSeenLocation: "Damansara Utama", lastSeenDate: "2025-11-20", description: "Small brown terrier, limps on right front leg", photoPath: "animal_picture/animal1.png", status: "lost", createdAt: "2025-11-20 16:45:00"},
+                            {id: 5, petName: "Charlie", species: "Rabbit", lastSeenLocation: "Kota Damansara", lastSeenDate: "2025-11-15", description: "White rabbit with brown spots", photoPath: "animal_picture/animal2.jpg", status: "found", createdAt: "2025-11-15 11:00:00"},
+                            {id: 6, petName: "Bella", species: "Dog", lastSeenLocation: "Subang Jaya SS15", lastSeenDate: "2025-12-05", description: "Husky mix, blue eyes, very energetic", photoPath: "animal_picture/animal3.jpg", status: "lost", createdAt: "2025-12-05 08:30:00"},
+                            {id: 7, petName: "Milo", species: "Cat", lastSeenLocation: "USJ 1", lastSeenDate: "2025-11-10", description: "Grey Persian cat, fluffy, likes to hide", photoPath: "animal_picture/animal1.png", status: "found", createdAt: "2025-11-10 13:20:00"},
+                            {id: 8, petName: "Rocky", species: "Dog", lastSeenLocation: "Ara Damansara", lastSeenDate: "2025-12-03", description: "German Shepherd, well-trained, responds to commands", photoPath: "animal_picture/animal2.jpg", status: "lost", createdAt: "2025-12-03 15:10:00"},
+                        ];
+
+                        const ITEMS_PER_PAGE = 10;
+                        let currentPage = 1;
+                        let filteredData = DUMMY_DATA;
+                        let currentStatusFilter = 'all';
+                        let currentReportId = null;
+                        let isEditMode = false;
+
+                        // =======================================================
+                        // 2. MODAL FUNCTIONS
+                        // =======================================================
+                        function openModal(modalId, reportId = null) {
+                            const modal = document.getElementById(modalId);
+                            currentReportId = reportId;
+
+                            if (modalId === 'createModal') {
+                                if (reportId) {
+                                    // Edit mode
+                                    isEditMode = true;
+                                    const report = DUMMY_DATA.find(r => r.id === reportId);
+                                    if (report) {
+                                        document.getElementById('modalTitle').textContent = 'Edit Lost Pet Report';
+                                        document.getElementById('petName').value = report.petName;
+                                        document.getElementById('species').value = report.species;
+                                        document.getElementById('lastSeenLocation').value = report.lastSeenLocation;
+                                        document.getElementById('lastSeenDate').value = report.lastSeenDate;
+                                        document.getElementById('description').value = report.description;
+                                        document.getElementById('photoPath').value = report.photoPath;
+                                    }
+                                } else {
+                                    // Create mode
+                                    isEditMode = false;
+                                    document.getElementById('modalTitle').textContent = 'Report Lost Pet';
+                                    document.getElementById('reportForm').reset();
+                                }
+                            } else if (modalId === 'foundModal' && reportId) {
+                                const report = DUMMY_DATA.find(r => r.id === reportId);
+                                if (report) {
+                                    document.getElementById('foundPetName').textContent = report.petName;
+                                    document.getElementById('confirmFoundBtn').onclick = () => confirmMarkAsFound(reportId);
+                                }
+                            } else if (modalId === 'viewModal' && reportId) {
+                                const report = DUMMY_DATA.find(r => r.id === reportId);
+                                if (report) {
+                                    document.getElementById('viewPetName').textContent = report.petName;
+                                    document.getElementById('viewSpecies').textContent = report.species;
+                                    document.getElementById('viewLocation').textContent = report.lastSeenLocation;
+                                    document.getElementById('viewDate').textContent = report.lastSeenDate;
+                                    document.getElementById('viewDescription').textContent = report.description || 'No description provided.';
+                                    document.getElementById('viewCreatedAt').textContent = report.createdAt;
+                                }
+                            }
+
+                            modal.classList.remove('hidden');
+                            setTimeout(() => {
+                                modal.classList.remove('opacity-0');
+                                modal.querySelector('div:nth-child(1)').classList.remove('scale-95');
+                            }, 10);
+                        }
+
+                        function closeModal(modalId) {
+                            const modal = document.getElementById(modalId);
+                            modal.classList.add('opacity-0');
+                            modal.querySelector('div:nth-child(1)').classList.add('scale-95');
+                            setTimeout(() => {
+                                modal.classList.add('hidden');
+                                if (modalId === 'createModal') {
+                                    document.getElementById('reportForm').reset();
+                                } else if (modalId === 'foundModal') {
+                                    document.getElementById('foundNotes').value = '';
+                                }
+                            }, 300);
+                        }
+
+                        function saveReport() {
+                            const petName = document.getElementById('petName').value;
+                            const species = document.getElementById('species').value;
+                            const lastSeenLocation = document.getElementById('lastSeenLocation').value;
+                            const lastSeenDate = document.getElementById('lastSeenDate').value;
+                            const description = document.getElementById('description').value;
+                            const photoPath = document.getElementById('photoPath').value;
+
+                            if (!petName || !species || !lastSeenLocation || !lastSeenDate) {
+                                alert('Please fill in all required fields!');
+                                return;
+                            }
+
+                            if (isEditMode && currentReportId) {
+                                // Update existing report
+                                const report = DUMMY_DATA.find(r => r.id === currentReportId);
+                                if (report) {
+                                    report.petName = petName;
+                                    report.species = species;
+                                    report.lastSeenLocation = lastSeenLocation;
+                                    report.lastSeenDate = lastSeenDate;
+                                    report.description = description;
+                                    report.photoPath = photoPath || report.photoPath;
+                                    alert('Report updated successfully!');
+                                }
+                            } else {
+                                // Create new report
+                                const newReport = {
+                                    id: DUMMY_DATA.length + 1,
+                                    petName,
+                                    species,
+                                    lastSeenLocation,
+                                    lastSeenDate,
+                                    description,
+                                    photoPath: photoPath || 'animal_picture/animal1.png',
+                                    status: 'lost',
+                                    createdAt: new Date().toLocaleString('en-GB', {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        second: '2-digit'
+                                    }).replace(/(\d+)\/(\d+)\/(\d+),/, '$3-$2-$1')
+                                };
+                                DUMMY_DATA.unshift(newReport);
+                                alert('Lost pet report submitted successfully!');
+                            }
+
+                            closeModal('createModal');
+                            filterAndRender();
+                        }
+
+                        function confirmMarkAsFound(reportId) {
+                            const report = DUMMY_DATA.find(r => r.id === reportId);
+                            if (report) {
+                                report.status = 'found';
+                                alert(`${report.petName} has been marked as found!`);
+                                closeModal('foundModal');
+                                filterAndRender();
+                            }
+                        }
+
+                        // =======================================================
+                        // 3. Rendering Logic
+                        // =======================================================
+                        function getStatusChipClass(status) {
+                            return status === 'lost' ? 'chip-lost' : 'chip-found';
+                        }
+
+                        function renderTable(data, page) {
+                            const tableBody = document.getElementById('lost-animal-list');
+                            tableBody.innerHTML = '';
+                            const start = (page - 1) * ITEMS_PER_PAGE;
+                            const end = start + ITEMS_PER_PAGE;
+                            const paginatedItems = data.slice(start, end);
+
+                            paginatedItems.forEach((item, index) => {
+                                const statusChipClass = getStatusChipClass(item.status);
+                                const itemNumber = start + index + 1;
+
+                                let actionButtons;
+                                if (item.status === 'lost') {
+                                    actionButtons = `
+                            <div class="flex flex-col items-center space-y-2">
+                                <button onclick="openModal('createModal', ${item.id})" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View/Edit</button>
+                                <button onclick="openModal('foundModal', ${item.id})" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-green-700" style="background-color: #57A677;">Mark as Found</button>
+                            </div>`;
+                                } else {
+                                    actionButtons = `
+                            <button onclick="openModal('viewModal', ${item.id})" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View Details</button>`;
+                                }
+
+                                const row = `
+                        <tr class="hover:bg-gray-50 transition duration-100">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color: #2B2B2B;">${itemNumber}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10">
+                                        <img class="h-10 w-10 rounded-full object-cover" src="${item.photoPath}" alt="${item.petName}" onerror="this.src='https://via.placeholder.com/40x40?text=Pet'">
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium" style="color: #2B2B2B;">${item.petName}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">${item.species}</td>
+                            <td class="px-6 py-4 text-sm" style="color: #2B2B2B;">${item.lastSeenLocation}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">${item.lastSeenDate}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusChipClass}">
+                                    ${item.status === 'lost' ? '🔴 Lost' : '✅ Found'}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                ${actionButtons}
+                            </td>
+                        </tr>
+                    `;
+                                tableBody.innerHTML += row;
+                            });
+
+                            renderPaginationControls(data.length);
+                        }
+
+                        // =======================================================
+                        // 4. Pagination & Filtering Logic
+                        // =======================================================
+                        function renderPaginationControls(totalItems) {
+                            const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+                            document.getElementById('total-items').textContent = totalItems;
+                            document.getElementById('start-index').textContent = Math.min(totalItems, (currentPage - 1) * ITEMS_PER_PAGE + 1);
+                            document.getElementById('end-index').textContent = Math.min(totalItems, currentPage * ITEMS_PER_PAGE);
+                            document.getElementById('prev-btn').disabled = currentPage === 1;
+                            document.getElementById('next-btn').disabled = currentPage === totalPages || totalItems === 0;
+                        }
+
+                        document.getElementById('prev-btn').addEventListener('click', () => {
+                            if (currentPage > 1) {
+                                currentPage--;
+                                renderTable(filteredData, currentPage);
+                            }
+                        });
+
+                        document.getElementById('next-btn').addEventListener('click', () => {
+                            const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+                            if (currentPage < totalPages) {
+                                currentPage++;
+                                renderTable(filteredData, currentPage);
+                            }
+                        });
+
+                        function filterAndRender() {
+                            if (currentStatusFilter === 'all') {
+                                filteredData = DUMMY_DATA;
+                            } else {
+                                filteredData = DUMMY_DATA.filter(item => item.status === currentStatusFilter);
+                            }
+                            currentPage = 1;
+                            renderTable(filteredData, currentPage);
+                            updateFilterButtonCounts();
+                        }
+
+                        function updateFilterButtonCounts() {
+                            const counts = {
+                                'all': DUMMY_DATA.length,
+                                'lost': DUMMY_DATA.filter(item => item.status === 'lost').length,
+                                'found': DUMMY_DATA.filter(item => item.status === 'found').length
+                            };
+
+                            document.querySelectorAll('.filter-btn').forEach(btn => {
+                                const status = btn.getAttribute('data-status');
+                                const count = counts[status];
+                                const text = btn.textContent.replace(/\(\d+\)/, `(${count})`);
+                                btn.textContent = text;
+                            });
+                        }
+
+                        function updateFilterButtonStyles() {
+                            document.querySelectorAll('.filter-btn').forEach(btn => {
+                                const btnStatus = btn.getAttribute('data-status');
+
+                                btn.className = 'px-5 py-2 rounded-full text-sm font-medium transition duration-150 filter-btn';
+
+                                if (btnStatus === currentStatusFilter) {
+                                    if (btnStatus === 'all') {
+                                        btn.classList.add('bg-primary', 'text-white', 'shadow-md');
+                                    } else if (btnStatus === 'lost') {
+                                        btn.classList.add('chip-lost', 'shadow-md');
+                                    } else if (btnStatus === 'found') {
+                                        btn.classList.add('chip-found', 'shadow-md');
+                                    }
+                                } else {
+                                    btn.classList.add('border', 'hover:bg-[#F6F3E7]');
+                                    if (btnStatus === 'all') {
+                                        btn.classList.add('border-[#2F5D50]', 'text-[#2F5D50]');
+                                    } else if (btnStatus === 'lost') {
+                                        btn.classList.add('border-[#B84A4A]', 'text-[#B84A4A]');
+                                    } else if (btnStatus === 'found') {
+                                        btn.classList.add('border-[#6DBF89]', 'text-[#57A677]');
+                                    }
+                                }
+                            });
+                        }
+
+                        document.querySelectorAll('.filter-btn').forEach(button => {
+                            button.addEventListener('click', (e) => {
+                                currentStatusFilter = e.target.getAttribute('data-status');
+                                updateFilterButtonStyles();
+                                filterAndRender();
+                            });
+                        });
+
+                        // Search functionality
+                        document.getElementById('searchInput').addEventListener('input', function (e) {
+                            const searchTerm = e.target.value.toLowerCase();
+                            if (searchTerm.trim() === '') {
+                                filterAndRender();
+                                return;
+                            }
+                            const filtered = DUMMY_DATA.filter(item =>
+                                item.petName.toLowerCase().includes(searchTerm)
+                            );
+                            filteredData = filtered;
+                            currentPage = 1;
+                            renderTable(filteredData, currentPage);
+                        });
+
+                        // Initial load
+                        window.onload = () => {
+                            updateFilterButtonStyles();
+                            updateFilterButtonCounts();
+                            renderTable(filteredData, currentPage);
+                        };
+        </script>
+    </body>
+</html>

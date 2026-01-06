@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Manage Pets - Rimba Adopt</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+        <style>
+            /* Custom utility classes based on your theme */
+            .text-main { color: #2B2B2B; }
+            .bg-primary { background-color: #2F5D50; }
+            .hover-bg-primary-dark { background-color: #24483E; }
+            .text-white-on-dark { color: #FFFFFF; }
+            .border-divider { border-color: #E5E5E5; }
+
+            /* Chip Styles */
+            .chip-male { background-color: #A8E6CF; color: #2B2B2B; }
+            .chip-female { background-color: #F8BBD0; color: #2B2B2B; }
+            .chip-small { background-color: #BBDEFB; color: #2B2B2B; }
+            .chip-medium { background-color: #C8E6C9; color: #2B2B2B; }
+            .chip-large { background-color: #FFECB3; color: #2B2B2B; }
+
+            /* Modal Styles */
+            .modal {
+                transition: opacity 0.25s ease;
+            }
+
+            /* Custom focus styles */
+            .custom-focus:focus {
+                outline: none;
+                ring: 2px;
+                ring-color: #2F5D50;
+                border-color: #2F5D50;
+            }
+
+            /* Fixed width for action buttons */
+            .action-button {
+                min-width: 40px;
+                padding: 0.4rem 0.6rem;
+                text-align: center;
+            }
+
+            /* Status indicator */
+            .status-indicator {
+                display: inline-block;
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                margin-right: 6px;
+            }
+        </style>
+    </head>
+    <body class="flex flex-col min-h-screen relative bg-[#F6F3E7] text-main">
+        <div id="header"></div>
+        <main class="flex-1 p-4 pt-6 relative z-10 flex justify-center items-start mb-2" style="background-color: #F6F3E7;">
+            <div class="w-full bg-white py-8 px-6 rounded-3xl shadow-xl border" style="max-width: 1450px; border-color: #E5E5E5;">
+                <div class="mb-8 flex justify-between items-center">
+                    <div>
+                        <h1 class="text-4xl font-extrabold" style="color: #2F5D50;">Manage Pets</h1>
+                        <p class="mt-2 text-lg" style="color: #2B2B2B;">Add, edit, and manage your shelter pets here.</p>
+                    </div>
+                    <button onclick="openModal('createModal')" class="px-6 py-3 rounded-xl text-white font-semibold hover:bg-[#24483E] transition duration-150 shadow-lg flex items-center space-x-2" style="background-color: #2F5D50;">
+                        <i class="fas fa-plus"></i>
+                        <span>Add New Pet</span>
+                    </button>
+                </div>
+                <hr style="border-top: 1px solid #E5E5E5; margin-bottom: 1.5rem; margin-top: 1.5rem;" />
+
+                <!-- Filters Section -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
+                    <div class="flex flex-wrap gap-2 text-sm font-medium">
+                        <button class="px-5 py-2 rounded-full text-white hover:bg-[#24483E] transition duration-150 shadow-md filter-btn bg-primary" data-filter="all">All Pets (12)</button>
+                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#A8E6CF] text-[#2B2B2B]" data-filter="gender-male">♂ Male (7)</button>
+                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#F8BBD0] text-[#2B2B2B]" data-filter="gender-female">♀ Female (5)</button>
+                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#BBDEFB] text-[#2B2B2B]" data-filter="size-small">Small (4)</button>
+                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#C8E6C9] text-[#2B2B2B]" data-filter="size-medium">Medium (5)</button>
+                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#FFECB3] text-[#2B2B2B]" data-filter="size-large">Large (3)</button>
+                    </div>
+                    <div class="relative w-full md:w-80">
+                        <input type="text" id="searchInput" placeholder="Search by name or species..." class="w-full py-2.5 pl-10 pr-4 border rounded-xl transition duration-150 shadow-sm text-base custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;">
+                        <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                </div>
+
+                <!-- Age Filter -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium mb-2" style="color: #2B2B2B;">Age Filter:</label>
+                    <div class="flex flex-wrap gap-2">
+                        <button class="px-4 py-2 text-sm rounded-full border hover:bg-[#F6F3E7] transition duration-150 age-filter-btn border-[#2F5D50] text-[#2F5D50]" data-age="all">All Ages</button>
+                        <button class="px-4 py-2 text-sm rounded-full border hover:bg-[#F6F3E7] transition duration-150 age-filter-btn border-[#2F5D50] text-[#2F5D50]" data-age="0-1">0-1 year</button>
+                        <button class="px-4 py-2 text-sm rounded-full border hover:bg-[#F6F3E7] transition duration-150 age-filter-btn border-[#2F5D50] text-[#2F5D50]" data-age="1-3">1-3 years</button>
+                        <button class="px-4 py-2 text-sm rounded-full border hover:bg-[#F6F3E7] transition duration-150 age-filter-btn border-[#2F5D50] text-[#2F5D50]" data-age="3-5">3-5 years</button>
+                        <button class="px-4 py-2 text-sm rounded-full border hover:bg-[#F6F3E7] transition duration-150 age-filter-btn border-[#2F5D50] text-[#2F5D50]" data-age="5+">5+ years</button>
+                    </div>
+                </div>
+
+                <!-- Pets Table -->
+                <div class="overflow-x-auto rounded-xl border shadow-lg" style="border-color: #E5E5E5;">
+                    <table class="min-w-full divide-y" style="border-color: #E5E5E5;">
+                        <thead style="background-color: #F6F3E7;">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 5%;">ID</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 8%;">Picture</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Name</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Species</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Breed</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 7%;">Age</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 8%;">Gender</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 8%;">Size</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Color</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Health Status</th>
+                                <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 12%;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pets-list" class="bg-white divide-y" style="border-color: #E5E5E5;">
+                            <!-- Data akan diisi oleh JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div id="pagination-controls" class="flex justify-between items-center mt-6">
+                    <div class="text-sm" style="color: #2B2B2B;">
+                        Showing <span id="start-index" class="font-semibold">1</span> to <span id="end-index" class="font-semibold">8</span> of <span id="total-items" class="font-semibold">12</span> pets
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="prev-btn" class="px-4 py-2 text-sm rounded-xl border text-[#2B2B2B] hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150" style="border-color: #E5E5E5;">
+                            Previous
+                        </button>
+                        <button id="next-btn" class="px-4 py-2 text-sm rounded-xl border text-[#2B2B2B] hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150" style="border-color: #E5E5E5;">
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Create/Edit Modal -->
+        <div id="createModal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+            <div class="bg-white rounded-2xl p-8 w-full max-w-2xl mx-4 shadow-2xl transform transition-transform duration-300 scale-95" role="dialog" aria-modal="true" style="color: #2B2B2B;">
+                <div class="flex justify-between items-center border-b pb-3 mb-4" style="border-color: #E5E5E5;">
+                    <h3 class="text-2xl font-bold" style="color: #2F5D50;" id="modalTitle">Add New Pet</h3>
+                    <button onclick="closeModal('createModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                <div class="max-h-[70vh] overflow-y-auto pr-2">
+                    <form id="petForm" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="petName" class="block text-sm font-medium" style="color: #2B2B2B;">Pet Name: <span class="text-red-500">*</span></label>
+                                <input type="text" id="petName" required class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="Enter pet's name">
+                            </div>
+                            <div>
+                                <label for="species" class="block text-sm font-medium" style="color: #2B2B2B;">Species: <span class="text-red-500">*</span></label>
+                                <select id="species" required class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;">
+                                    <option value="">Select species</option>
+                                    <option value="Dog">Dog</option>
+                                    <option value="Cat">Cat</option>
+                                    <option value="Rabbit">Rabbit</option>
+                                    <option value="Bird">Bird</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="breed" class="block text-sm font-medium" style="color: #2B2B2B;">Breed: (Optional)</label>
+                                <input type="text" id="breed" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="E.g., Golden Retriever, Persian">
+                            </div>
+                            <div>
+                                <label for="age" class="block text-sm font-medium" style="color: #2B2B2B;">Age (years): (Optional)</label>
+                                <input type="number" id="age" min="0" max="30" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="E.g., 3">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="gender" class="block text-sm font-medium" style="color: #2B2B2B;">Gender: <span class="text-red-500">*</span></label>
+                                <select id="gender" required class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;">
+                                    <option value="">Select gender</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="size" class="block text-sm font-medium" style="color: #2B2B2B;">Size: <span class="text-red-500">*</span></label>
+                                <select id="size" required class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;">
+                                    <option value="">Select size</option>
+                                    <option value="small">Small</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="large">Large</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="color" class="block text-sm font-medium" style="color: #2B2B2B;">Color: (Optional)</label>
+                                <input type="text" id="color" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="E.g., Golden, Black and White">
+                            </div>
+                            <div>
+                                <label for="healthStatus" class="block text-sm font-medium" style="color: #2B2B2B;">Health Status: (Optional)</label>
+                                <input type="text" id="healthStatus" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="E.g., Vaccinated, Dewormed">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="description" class="block text-sm font-medium" style="color: #2B2B2B;">Description: (Optional)</label>
+                            <textarea id="description" rows="3" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="Describe the pet's personality, behavior, special needs, etc."></textarea>
+                        </div>
+
+                        <div>
+                            <label for="photoPath" class="block text-sm font-medium" style="color: #2B2B2B;">Pet Photo: (Optional)</label>
+                            <input type="text" id="photoPath" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="animal_picture/animal1.png">
+                            <p class="text-xs text-gray-500 mt-1">Enter the path to the pet's photo. Use: animal_picture/animal1.png, animal2.jpg, or animal3.jpg</p>
+                        </div>
+                    </form>
+                </div>
+                <div class="flex justify-end pt-4 space-x-3">
+                    <button onclick="closeModal('createModal')" class="px-5 py-2 rounded-xl border text-[#2B2B2B] hover:bg-gray-100 transition duration-150 font-medium" style="border-color: #E5E5E5;">
+                        Cancel
+                    </button>
+                    <button onclick="savePet()" class="px-6 py-2 rounded-xl text-white font-medium hover:bg-[#24483E] transition duration-150 shadow-md" style="background-color: #2F5D50;">
+                        Save Pet
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div id="deleteModal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+            <div class="bg-white rounded-2xl p-8 w-full max-w-md mx-4 shadow-2xl transform transition-transform duration-300 scale-95" role="dialog" aria-modal="true" style="color: #2B2B2B;">
+                <div class="flex justify-between items-center border-b pb-3 mb-4" style="border-color: #E5E5E5;">
+                    <h3 class="text-2xl font-bold" style="color: #B84A4A;">Delete Pet</h3>
+                    <button onclick="closeModal('deleteModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                <div class="text-gray-700">
+                    <p class="mb-4 text-lg" style="color: #2B2B2B;">Are you sure you want to delete <strong id="deletePetName" style="color: #2B2B2B;"></strong>?</p>
+                    <p class="mb-6 text-sm italic text-white font-medium p-3 rounded-lg border" style="background-color: #B84A4A; border-color: #B84A4A; color: #FFFFFF;">
+                        ⚠️ This action cannot be undone. All information about this pet will be permanently deleted.
+                    </p>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button onclick="closeModal('deleteModal')" class="px-5 py-2 rounded-xl border text-[#2B2B2B] hover:bg-gray-100 transition duration-150 font-medium" style="border-color: #E5E5E5;">
+                        Cancel
+                    </button>
+                    <button id="confirmDeleteBtn" class="px-5 py-2 rounded-xl text-white font-semibold hover:bg-red-700 transition duration-200 shadow-md" style="background-color: #B84A4A;">
+                        Yes, Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="footer"></div>
+        <script src="includes/sidebar.js"></script>
+        <script>
+                        // =======================================================
+                        // 1. Dummy Data Setup (based on pets table structure)
+                        // =======================================================
+                        const DUMMY_PETS = [
+                            {pet_id: 1, shelter_id: 1, name: "Max", species: "Dog", breed: "Golden Retriever", age: 3, gender: "male", size: "large", color: "Golden", description: "Friendly and energetic", health_status: "Vaccinated, dewormed", photo_path: "animal_picture/animal1.png", created_at: "2025-12-01 10:30:00"},
+                            {pet_id: 2, shelter_id: 1, name: "Luna", species: "Cat", breed: "Persian", age: 2, gender: "female", size: "small", color: "White", description: "Calm and affectionate", health_status: "Vaccinated", photo_path: "animal_picture/animal2.jpg", created_at: "2025-11-28 14:20:00"},
+                            {pet_id: 3, shelter_id: 2, name: "Rocky", species: "Dog", breed: "German Shepherd", age: 4, gender: "male", size: "large", color: "Black and Tan", description: "Protective and loyal", health_status: "Vaccinated, microchipped", photo_path: "animal_picture/animal3.jpg", created_at: "2025-11-25 09:15:00"},
+                            {pet_id: 4, shelter_id: 1, name: "Bella", species: "Cat", breed: "Siamese", age: 1, gender: "female", size: "small", color: "Cream", description: "Playful and vocal", health_status: "Vaccinated", photo_path: "animal_picture/animal1.png", created_at: "2025-11-20 16:45:00"},
+                            {pet_id: 5, shelter_id: 3, name: "Charlie", species: "Dog", breed: "Beagle", age: 5, gender: "male", size: "medium", color: "Tri-color", description: "Friendly and curious", health_status: "Vaccinated, neutered", photo_path: "animal_picture/animal2.jpg", created_at: "2025-11-15 11:00:00"},
+                            {pet_id: 6, shelter_id: 2, name: "Daisy", species: "Rabbit", breed: "Holland Lop", age: 2, gender: "female", size: "small", color: "Brown", description: "Gentle and shy", health_status: "Healthy", photo_path: "animal_picture/animal3.jpg", created_at: "2025-12-05 08:30:00"},
+                            {pet_id: 7, shelter_id: 1, name: "Buddy", species: "Dog", breed: "Mixed Breed", age: 2, gender: "male", size: "medium", color: "Brown", description: "Very friendly with kids", health_status: "Vaccinated", photo_path: "animal_picture/animal1.png", created_at: "2025-11-10 13:20:00"},
+                            {pet_id: 8, shelter_id: 3, name: "Molly", species: "Cat", breed: "Maine Coon", age: 3, gender: "female", size: "large", color: "Tabby", description: "Loves attention", health_status: "Vaccinated", photo_path: "animal_picture/animal2.jpg", created_at: "2025-12-03 15:10:00"},
+                            {pet_id: 9, shelter_id: 2, name: "Zeus", species: "Dog", breed: "Rottweiler", age: 4, gender: "male", size: "large", color: "Black and Brown", description: "Strong and protective", health_status: "Vaccinated, trained", photo_path: "animal_picture/animal3.jpg", created_at: "2025-11-28 09:45:00"},
+                            {pet_id: 10, shelter_id: 1, name: "Coco", species: "Bird", breed: "Cockatiel", age: 1, gender: "female", size: "small", color: "Grey and Yellow", description: "Can whistle tunes", health_status: "Healthy", photo_path: "animal_picture/animal1.png", created_at: "2025-11-22 11:30:00"},
+                            {pet_id: 11, shelter_id: 3, name: "Oscar", species: "Cat", breed: "Domestic Shorthair", age: 2, gender: "male", size: "medium", color: "Orange Tabby", description: "Independent but affectionate", health_status: "Vaccinated", photo_path: "animal_picture/animal2.jpg", created_at: "2025-12-01 16:20:00"},
+                            {pet_id: 12, shelter_id: 2, name: "Ruby", species: "Dog", breed: "Poodle", age: 6, gender: "female", size: "small", color: "White", description: "Smart and trainable", health_status: "Vaccinated, groomed regularly", photo_path: "animal_picture/animal3.jpg", created_at: "2025-11-18 14:10:00"}
+                        ];
+
+                        const ITEMS_PER_PAGE = 8;
+                        let currentPage = 1;
+                        let filteredPets = DUMMY_PETS;
+                        let currentFilter = 'all';
+                        let currentAgeFilter = 'all';
+                        let currentPetId = null;
+                        let isEditMode = false;
+
+                        // =======================================================
+                        // 2. MODAL FUNCTIONS
+                        // =======================================================
+                        function openModal(modalId, petId = null) {
+                            const modal = document.getElementById(modalId);
+                            currentPetId = petId;
+
+                            if (modalId === 'createModal') {
+                                if (petId) {
+                                    // Edit mode
+                                    isEditMode = true;
+                                    const pet = DUMMY_PETS.find(p => p.pet_id === petId);
+                                    if (pet) {
+                                        document.getElementById('modalTitle').textContent = 'Edit Pet Details';
+                                        document.getElementById('petName').value = pet.name;
+                                        document.getElementById('species').value = pet.species;
+                                        document.getElementById('breed').value = pet.breed || '';
+                                        document.getElementById('age').value = pet.age || '';
+                                        document.getElementById('gender').value = pet.gender;
+                                        document.getElementById('size').value = pet.size;
+                                        document.getElementById('color').value = pet.color || '';
+                                        document.getElementById('healthStatus').value = pet.health_status || '';
+                                        document.getElementById('description').value = pet.description || '';
+                                        document.getElementById('photoPath').value = pet.photo_path || '';
+                                    }
+                                } else {
+                                    // Create mode
+                                    isEditMode = false;
+                                    document.getElementById('modalTitle').textContent = 'Add New Pet';
+                                    document.getElementById('petForm').reset();
+                                }
+                            } else if (modalId === 'deleteModal' && petId) {
+                                const pet = DUMMY_PETS.find(p => p.pet_id === petId);
+                                if (pet) {
+                                    document.getElementById('deletePetName').textContent = pet.name;
+                                    document.getElementById('confirmDeleteBtn').onclick = () => confirmDeletePet(petId);
+                                }
+                            }
+
+                            modal.classList.remove('hidden');
+                            setTimeout(() => {
+                                modal.classList.remove('opacity-0');
+                                modal.querySelector('div:nth-child(1)').classList.remove('scale-95');
+                            }, 10);
+                        }
+
+                        function closeModal(modalId) {
+                            const modal = document.getElementById(modalId);
+                            modal.classList.add('opacity-0');
+                            modal.querySelector('div:nth-child(1)').classList.add('scale-95');
+                            setTimeout(() => {
+                                modal.classList.add('hidden');
+                                if (modalId === 'createModal') {
+                                    document.getElementById('petForm').reset();
+                                }
+                            }, 300);
+                        }
+
+                        function savePet() {
+                            const petName = document.getElementById('petName').value;
+                            const species = document.getElementById('species').value;
+                            const breed = document.getElementById('breed').value;
+                            const age = document.getElementById('age').value ? parseInt(document.getElementById('age').value) : null;
+                            const gender = document.getElementById('gender').value;
+                            const size = document.getElementById('size').value;
+                            const color = document.getElementById('color').value;
+                            const healthStatus = document.getElementById('healthStatus').value;
+                            const description = document.getElementById('description').value;
+                            const photoPath = document.getElementById('photoPath').value;
+
+                            if (!petName || !species || !gender || !size) {
+                                alert('Please fill in all required fields!');
+                                return;
+                            }
+
+                            if (isEditMode && currentPetId) {
+                                // Update existing pet
+                                const pet = DUMMY_PETS.find(p => p.pet_id === currentPetId);
+                                if (pet) {
+                                    pet.name = petName;
+                                    pet.species = species;
+                                    pet.breed = breed;
+                                    pet.age = age;
+                                    pet.gender = gender;
+                                    pet.size = size;
+                                    pet.color = color;
+                                    pet.health_status = healthStatus;
+                                    pet.description = description;
+                                    pet.photo_path = photoPath || 'animal_picture/animal1.png';
+                                    alert('Pet updated successfully!');
+                                }
+                            } else {
+                                // Create new pet
+                                const newPet = {
+                                    pet_id: DUMMY_PETS.length + 1,
+                                    shelter_id: 1, // Default shelter ID for demo
+                                    name: petName,
+                                    species: species,
+                                    breed: breed,
+                                    age: age,
+                                    gender: gender,
+                                    size: size,
+                                    color: color,
+                                    health_status: healthStatus,
+                                    description: description,
+                                    photo_path: photoPath || 'animal_picture/animal1.png',
+                                    created_at: new Date().toLocaleString('en-GB', {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        second: '2-digit'
+                                    }).replace(/(\d+)\/(\d+)\/(\d+),/, '$3-$2-$1')
+                                };
+                                DUMMY_PETS.unshift(newPet);
+                                alert('New pet added successfully!');
+                            }
+
+                            closeModal('createModal');
+                            filterAndRender();
+                        }
+
+                        function confirmDeletePet(petId) {
+                            const index = DUMMY_PETS.findIndex(p => p.pet_id === petId);
+                            if (index !== -1) {
+                                const petName = DUMMY_PETS[index].name;
+                                DUMMY_PETS.splice(index, 1);
+                                alert(`${petName} has been deleted!`);
+                                closeModal('deleteModal');
+                                filterAndRender();
+                            }
+                        }
+
+                        // =======================================================
+                        // 3. Rendering Logic
+                        // =======================================================
+                        function getGenderChipClass(gender) {
+                            return gender === 'male' ? 'chip-male' : 'chip-female';
+                        }
+
+                        function getSizeChipClass(size) {
+                            switch (size) {
+                                case 'small':
+                                    return 'chip-small';
+                                case 'medium':
+                                    return 'chip-medium';
+                                case 'large':
+                                    return 'chip-large';
+                                default:
+                                    return 'chip-small';
+                            }
+                        }
+
+                        function renderTable(data, page) {
+                            const tableBody = document.getElementById('pets-list');
+                            tableBody.innerHTML = '';
+                            const start = (page - 1) * ITEMS_PER_PAGE;
+                            const end = start + ITEMS_PER_PAGE;
+                            const paginatedItems = data.slice(start, end);
+
+                            paginatedItems.forEach((item, index) => {
+                                const genderChipClass = getGenderChipClass(item.gender);
+                                const sizeChipClass = getSizeChipClass(item.size);
+                                const itemNumber = start + index + 1;
+
+                                const row = `
+                        <tr class="hover:bg-gray-50 transition duration-100">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color: #2B2B2B;">${item.pet_id}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex-shrink-0 h-12 w-12">
+                                    <img class="h-12 w-12 rounded-full object-cover border" src="${item.photo_path}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/48x48?text=Pet'" style="border-color: #E5E5E5;">
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-bold" style="color: #2B2B2B;">${item.name}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">${item.species}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">${item.breed || '-'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color: #2B2B2B;">${item.age !== null ? item.age + ' yrs' : '-'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${genderChipClass}">
+                                    ${item.gender === 'male' ? '♂ Male' : '♀ Female'}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${sizeChipClass}">
+                                    ${item.size.charAt(0).toUpperCase() + item.size.slice(1)}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">${item.color || '-'}</td>
+                            <td class="px-6 py-4 text-sm" style="color: #2B2B2B;">${item.health_status || '-'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <div class="flex justify-center space-x-2">
+                                    <button onclick="openModal('createModal', ${item.pet_id})" class="action-button px-3 py-2 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button onclick="openModal('deleteModal', ${item.pet_id})" class="action-button px-3 py-2 rounded-lg font-semibold text-white hover:bg-red-700" style="background-color: #B84A4A;" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                                tableBody.innerHTML += row;
+                            });
+
+                            renderPaginationControls(data.length);
+                        }
+
+                        // =======================================================
+                        // 4. Pagination & Filtering Logic
+                        // =======================================================
+                        function renderPaginationControls(totalItems) {
+                            const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+                            document.getElementById('total-items').textContent = totalItems;
+                            document.getElementById('start-index').textContent = Math.min(totalItems, (currentPage - 1) * ITEMS_PER_PAGE + 1);
+                            document.getElementById('end-index').textContent = Math.min(totalItems, currentPage * ITEMS_PER_PAGE);
+                            document.getElementById('prev-btn').disabled = currentPage === 1;
+                            document.getElementById('next-btn').disabled = currentPage === totalPages || totalItems === 0;
+                        }
+
+                        document.getElementById('prev-btn').addEventListener('click', () => {
+                            if (currentPage > 1) {
+                                currentPage--;
+                                renderTable(filteredPets, currentPage);
+                            }
+                        });
+
+                        document.getElementById('next-btn').addEventListener('click', () => {
+                            const totalPages = Math.ceil(filteredPets.length / ITEMS_PER_PAGE);
+                            if (currentPage < totalPages) {
+                                currentPage++;
+                                renderTable(filteredPets, currentPage);
+                            }
+                        });
+
+                        function filterAndRender() {
+                            let filtered = DUMMY_PETS;
+
+                            // Apply gender/size filter
+                            if (currentFilter !== 'all') {
+                                if (currentFilter.startsWith('gender-')) {
+                                    const gender = currentFilter.split('-')[1];
+                                    filtered = filtered.filter(pet => pet.gender === gender);
+                                } else if (currentFilter.startsWith('size-')) {
+                                    const size = currentFilter.split('-')[1];
+                                    filtered = filtered.filter(pet => pet.size === size);
+                                }
+                            }
+
+                            // Apply age filter
+                            if (currentAgeFilter !== 'all') {
+                                filtered = filtered.filter(pet => {
+                                    if (!pet.age)
+                                        return false;
+
+                                    switch (currentAgeFilter) {
+                                        case '0-1':
+                                            return pet.age >= 0 && pet.age <= 1;
+                                        case '1-3':
+                                            return pet.age > 1 && pet.age <= 3;
+                                        case '3-5':
+                                            return pet.age > 3 && pet.age <= 5;
+                                        case '5+':
+                                            return pet.age > 5;
+                                        default:
+                                            return true;
+                                    }
+                                });
+                            }
+
+                            filteredPets = filtered;
+                            currentPage = 1;
+                            renderTable(filteredPets, currentPage);
+                            updateFilterButtonCounts();
+                        }
+
+                        function updateFilterButtonCounts() {
+                            // Update main filter buttons
+                            const allCount = DUMMY_PETS.length;
+                            const maleCount = DUMMY_PETS.filter(p => p.gender === 'male').length;
+                            const femaleCount = DUMMY_PETS.filter(p => p.gender === 'female').length;
+                            const smallCount = DUMMY_PETS.filter(p => p.size === 'small').length;
+                            const mediumCount = DUMMY_PETS.filter(p => p.size === 'medium').length;
+                            const largeCount = DUMMY_PETS.filter(p => p.size === 'large').length;
+
+                            document.querySelectorAll('.filter-btn').forEach(btn => {
+                                const filter = btn.getAttribute('data-filter');
+                                let count = 0;
+
+                                switch (filter) {
+                                    case 'all':
+                                        count = allCount;
+                                        break;
+                                    case 'gender-male':
+                                        count = maleCount;
+                                        break;
+                                    case 'gender-female':
+                                        count = femaleCount;
+                                        break;
+                                    case 'size-small':
+                                        count = smallCount;
+                                        break;
+                                    case 'size-medium':
+                                        count = mediumCount;
+                                        break;
+                                    case 'size-large':
+                                        count = largeCount;
+                                        break;
+                                }
+
+                                btn.textContent = btn.textContent.replace(/\(\d+\)/, `(${count})`);
+                            });
+
+                            // Update age filter buttons
+                            const age0_1 = DUMMY_PETS.filter(p => p.age !== null && p.age >= 0 && p.age <= 1).length;
+                            const age1_3 = DUMMY_PETS.filter(p => p.age !== null && p.age > 1 && p.age <= 3).length;
+                            const age3_5 = DUMMY_PETS.filter(p => p.age !== null && p.age > 3 && p.age <= 5).length;
+                            const age5plus = DUMMY_PETS.filter(p => p.age !== null && p.age > 5).length;
+
+                            document.querySelectorAll('.age-filter-btn').forEach(btn => {
+                                const ageFilter = btn.getAttribute('data-age');
+                                let count = 0;
+
+                                switch (ageFilter) {
+                                    case 'all':
+                                        count = allCount;
+                                        break;
+                                    case '0-1':
+                                        count = age0_1;
+                                        break;
+                                    case '1-3':
+                                        count = age1_3;
+                                        break;
+                                    case '3-5':
+                                        count = age3_5;
+                                        break;
+                                    case '5+':
+                                        count = age5plus;
+                                        break;
+                                }
+
+                                btn.textContent = btn.textContent.replace(/\(\d+\)/, `(${count})`);
+                            });
+                        }
+
+                        function updateFilterButtonStyles() {
+                            // Update main filter buttons
+                            document.querySelectorAll('.filter-btn').forEach(btn => {
+                                const btnFilter = btn.getAttribute('data-filter');
+
+                                btn.className = 'px-5 py-2 rounded-full text-sm font-medium transition duration-150 filter-btn';
+
+                                if (btnFilter === currentFilter) {
+                                    if (btnFilter === 'all') {
+                                        btn.classList.add('bg-primary', 'text-white', 'shadow-md');
+                                    } else if (btnFilter.startsWith('gender-')) {
+                                        if (btnFilter === 'gender-male') {
+                                            btn.classList.add('chip-male', 'shadow-md');
+                                        } else {
+                                            btn.classList.add('chip-female', 'shadow-md');
+                                        }
+                                    } else if (btnFilter.startsWith('size-')) {
+                                        if (btnFilter === 'size-small') {
+                                            btn.classList.add('chip-small', 'shadow-md');
+                                        } else if (btnFilter === 'size-medium') {
+                                            btn.classList.add('chip-medium', 'shadow-md');
+                                        } else {
+                                            btn.classList.add('chip-large', 'shadow-md');
+                                        }
+                                    }
+                                } else {
+                                    btn.classList.add('border', 'hover:bg-[#F6F3E7]');
+                                    if (btnFilter === 'all') {
+                                        btn.classList.add('border-[#2F5D50]', 'text-[#2F5D50]');
+                                    } else if (btnFilter === 'gender-male') {
+                                        btn.classList.add('border-[#A8E6CF]', 'text-[#2B2B2B]');
+                                    } else if (btnFilter === 'gender-female') {
+                                        btn.classList.add('border-[#F8BBD0]', 'text-[#2B2B2B]');
+                                    } else if (btnFilter === 'size-small') {
+                                        btn.classList.add('border-[#BBDEFB]', 'text-[#2B2B2B]');
+                                    } else if (btnFilter === 'size-medium') {
+                                        btn.classList.add('border-[#C8E6C9]', 'text-[#2B2B2B]');
+                                    } else if (btnFilter === 'size-large') {
+                                        btn.classList.add('border-[#FFECB3]', 'text-[#2B2B2B]');
+                                    }
+                                }
+                            });
+
+                            // Update age filter buttons
+                            document.querySelectorAll('.age-filter-btn').forEach(btn => {
+                                const btnAgeFilter = btn.getAttribute('data-age');
+
+                                btn.className = 'px-4 py-2 text-sm rounded-full border hover:bg-[#F6F3E7] transition duration-150 age-filter-btn';
+
+                                if (btnAgeFilter === currentAgeFilter) {
+                                    btn.classList.add('bg-primary', 'text-white', 'shadow-md');
+                                    btn.classList.remove('border-[#2F5D50]', 'text-[#2F5D50]');
+                                } else {
+                                    btn.classList.add('border-[#2F5D50]', 'text-[#2F5D50]');
+                                    btn.classList.remove('bg-primary', 'text-white', 'shadow-md');
+                                }
+                            });
+                        }
+
+                        // Filter button event listeners
+                        document.querySelectorAll('.filter-btn').forEach(button => {
+                            button.addEventListener('click', (e) => {
+                                currentFilter = e.target.getAttribute('data-filter');
+                                updateFilterButtonStyles();
+                                filterAndRender();
+                            });
+                        });
+
+                        // Age filter button event listeners
+                        document.querySelectorAll('.age-filter-btn').forEach(button => {
+                            button.addEventListener('click', (e) => {
+                                currentAgeFilter = e.target.getAttribute('data-age');
+                                updateFilterButtonStyles();
+                                filterAndRender();
+                            });
+                        });
+
+                        // Search functionality
+                        document.getElementById('searchInput').addEventListener('input', function (e) {
+                            const searchTerm = e.target.value.toLowerCase();
+                            if (searchTerm.trim() === '') {
+                                filterAndRender();
+                                return;
+                            }
+                            const filtered = DUMMY_PETS.filter(item =>
+                                item.name.toLowerCase().includes(searchTerm) ||
+                                        item.species.toLowerCase().includes(searchTerm)
+                            );
+                            filteredPets = filtered;
+                            currentPage = 1;
+                            renderTable(filteredPets, currentPage);
+                        });
+
+                        // Initial load
+                        window.onload = () => {
+                            updateFilterButtonStyles();
+                            updateFilterButtonCounts();
+                            renderTable(filteredPets, currentPage);
+                        };
+        </script>
+    </body>
+</html>

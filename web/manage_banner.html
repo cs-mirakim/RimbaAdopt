@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Manage Banners - Rimba Adopt Admin</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+            .banner-preview {
+                transition: all 0.3s ease;
+            }
+
+            .banner-preview:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            }
+
+            .sortable-ghost {
+                opacity: 0.4;
+            }
+
+            .sortable-drag {
+                opacity: 0.8;
+                transform: rotate(5deg);
+            }
+
+            .upload-area {
+                border: 2px dashed #E5E5E5;
+                border-radius: 12px;
+                transition: all 0.3s ease;
+            }
+
+            .upload-area:hover, .upload-area.dragover {
+                border-color: #2F5D50;
+                background-color: rgba(47, 93, 80, 0.05);
+            }
+
+            .image-preview {
+                border-radius: 8px;
+                overflow: hidden;
+                background-color: #F6F3E7;
+            }
+
+            .status-badge {
+                display: inline-block;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 500;
+            }
+        </style>
+    </head>
+    <body class="flex flex-col min-h-screen relative bg-[#F6F3E7]">
+
+        <!-- Header container -->
+        <div id="header"></div>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-4 pt-6 relative z-10 flex justify-center items-start mb-2">
+            <div class="w-full bg-white py-8 px-6 rounded-xl shadow-md" style="max-width: 1450px;">
+
+                <!-- Page Header -->
+                <div class="mb-8 pb-4 border-b border-[#E5E5E5]">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-4xl font-extrabold" style="color: #2F5D50;">Manage Banners</h1>
+                            <p class="mt-2 text-lg" style="color: #2B2B2B;">
+                                Upload, organize, and manage homepage banner images
+                            </p>
+                        </div>
+                        <a href="dashboard_admin.html" class="flex items-center gap-2 px-4 py-2 rounded-lg text-white hover:bg-[#24483E] transition" style="background-color: #2F5D50;">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                            </svg>
+                            <span>Back to Dashboard</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Stats Overview -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-[#F6F3E7] p-5 rounded-lg shadow-sm border-l-4 border-[#2F5D50]">
+                        <p class="text-sm font-medium" style="color: #2F5D50;">Total Banners</p>
+                        <p class="text-3xl font-bold" style="color: #2B2B2B;">5</p>
+                        <p class="text-xs text-gray-500 mt-1">Active on homepage</p>
+                    </div>
+
+                    <div class="bg-[#F6F3E7] p-5 rounded-lg shadow-sm border-l-4 border-[#6DBF89]">
+                        <p class="text-sm font-medium" style="color: #57A677;">Storage Used</p>
+                        <p class="text-3xl font-bold" style="color: #2B2B2B;">8.2 MB</p>
+                        <p class="text-xs text-gray-500 mt-1">of 50 MB available</p>
+                    </div>
+
+                    <div class="bg-[#F6F3E7] p-5 rounded-lg shadow-sm border-l-4 border-[#C49A6C]">
+                        <p class="text-sm font-medium" style="color: #C49A6C;">Last Updated</p>
+                        <p class="text-3xl font-bold" style="color: #2B2B2B;">2 days</p>
+                        <p class="text-xs text-gray-500 mt-1">ago</p>
+                    </div>
+
+                    <div class="bg-[#F6F3E7] p-5 rounded-lg shadow-sm border-l-4 border-[#B84A4A]">
+                        <p class="text-sm font-medium" style="color: #B84A4A;">Max Banners</p>
+                        <p class="text-3xl font-bold" style="color: #2B2B2B;">10</p>
+                        <p class="text-xs text-gray-500 mt-1">maximum allowed</p>
+                    </div>
+                </div>
+
+                <!-- Main Content Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Left Column: Banner List -->
+                    <div class="lg:col-span-2">
+                        <!-- Active Banners Section -->
+                        <div class="border border-[#E5E5E5] rounded-xl p-6 shadow-sm mb-6">
+                            <div class="flex items-center justify-between mb-6">
+                                <h2 class="text-xl font-semibold" style="color: #2B2B2B;">Active Banners</h2>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm" style="color: #2B2B2B;">Drag to reorder</span>
+                                    <svg class="w-5 h-5" style="color: #2F5D50;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- Banner List -->
+                            <div class="space-y-4" id="bannerList">
+                                <!-- Banner 1 -->
+                                <div class="banner-item flex items-center gap-4 p-4 border border-[#E5E5E5] rounded-lg hover:bg-[#F6F3E7] transition cursor-move" data-id="1">
+                                    <div class="flex-shrink-0">
+                                        <span class="w-10 h-10 rounded-lg flex items-center justify-center" style="background-color: #2F5D50; color: white; font-weight: bold;">1</span>
+                                    </div>
+                                    <div class="image-preview w-24 h-16 flex-shrink-0">
+                                        <img src="banner/banner1.jpg" alt="Banner 1" class="w-full h-full object-cover">
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <h3 class="font-medium" style="color: #2B2B2B;">Homepage Hero 1</h3>
+                                                <p class="text-sm text-gray-500">banner1.jpg • 1920x400 • 1.2 MB</p>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="status-badge" style="background-color: #6DBF89; color: #06321F;">Active</span>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2">
+                                            <input type="text" class="w-full px-3 py-2 border border-[#E5E5E5] rounded text-sm" value="Adopt a friend, save a life" placeholder="Banner caption">
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 flex-shrink-0">
+                                        <button class="p-2 hover:bg-[#E5E5E5] rounded transition" title="Preview">
+                                            <svg class="w-5 h-5" style="color: #2F5D50;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                            </svg>
+                                        </button>
+                                        <button class="p-2 hover:bg-red-50 rounded transition delete-banner" title="Delete" data-id="1">
+                                            <svg class="w-5 h-5" style="color: #B84A4A;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Banner 2 -->
+                                <div class="banner-item flex items-center gap-4 p-4 border border-[#E5E5E5] rounded-lg hover:bg-[#F6F3E7] transition cursor-move" data-id="2">
+                                    <div class="flex-shrink-0">
+                                        <span class="w-10 h-10 rounded-lg flex items-center justify-center" style="background-color: #2F5D50; color: white; font-weight: bold;">2</span>
+                                    </div>
+                                    <div class="image-preview w-24 h-16 flex-shrink-0">
+                                        <img src="banner/banner2.jpg" alt="Banner 2" class="w-full h-full object-cover">
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <h3 class="font-medium" style="color: #2B2B2B;">Happy Pets Collection</h3>
+                                                <p class="text-sm text-gray-500">banner2.jpg • 1920x400 • 1.4 MB</p>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="status-badge" style="background-color: #6DBF89; color: #06321F;">Active</span>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2">
+                                            <input type="text" class="w-full px-3 py-2 border border-[#E5E5E5] rounded text-sm" value="Find your perfect companion" placeholder="Banner caption">
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 flex-shrink-0">
+                                        <button class="p-2 hover:bg-[#E5E5E5] rounded transition" title="Preview">
+                                            <svg class="w-5 h-5" style="color: #2F5D50;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                            </svg>
+                                        </button>
+                                        <button class="p-2 hover:bg-red-50 rounded transition delete-banner" title="Delete" data-id="2">
+                                            <svg class="w-5 h-5" style="color: #B84A4A;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Banner 3 -->
+                                <div class="banner-item flex items-center gap-4 p-4 border border-[#E5E5E5] rounded-lg hover:bg-[#F6F3E7] transition cursor-move" data-id="3">
+                                    <div class="flex-shrink-0">
+                                        <span class="w-10 h-10 rounded-lg flex items-center justify-center" style="background-color: #2F5D50; color: white; font-weight: bold;">3</span>
+                                    </div>
+                                    <div class="image-preview w-24 h-16 flex-shrink-0">
+                                        <img src="banner/banner3.jpg" alt="Banner 3" class="w-full h-full object-cover">
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <h3 class="font-medium" style="color: #2B2B2B;">Adoption Success Stories</h3>
+                                                <p class="text-sm text-gray-500">banner3.jpg • 1920x400 • 1.1 MB</p>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="status-badge" style="background-color: #6DBF89; color: #06321F;">Active</span>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2">
+                                            <input type="text" class="w-full px-3 py-2 border border-[#E5E5E5] rounded text-sm" value="Join our happy family of adopters" placeholder="Banner caption">
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 flex-shrink-0">
+                                        <button class="p-2 hover:bg-[#E5E5E5] rounded transition" title="Preview">
+                                            <svg class="w-5 h-5" style="color: #2F5D50;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                            </svg>
+                                        </button>
+                                        <button class="p-2 hover:bg-red-50 rounded transition delete-banner" title="Delete" data-id="3">
+                                            <svg class="w-5 h-5" style="color: #B84A4A;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Banner 4 -->
+                                <div class="banner-item flex items-center gap-4 p-4 border border-[#E5E5E5] rounded-lg hover:bg-[#F6F3E7] transition cursor-move" data-id="4">
+                                    <div class="flex-shrink-0">
+                                        <span class="w-10 h-10 rounded-lg flex items-center justify-center" style="background-color: #2F5D50; color: white; font-weight: bold;">4</span>
+                                    </div>
+                                    <div class="image-preview w-24 h-16 flex-shrink-0">
+                                        <img src="banner/banner4.jpg" alt="Banner 4" class="w-full h-full object-cover">
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <h3 class="font-medium" style="color: #2B2B2B;">Volunteer Opportunities</h3>
+                                                <p class="text-sm text-gray-500">banner4.jpg • 1920x400 • 1.5 MB</p>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="status-badge" style="background-color: #6DBF89; color: #06321F;">Active</span>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2">
+                                            <input type="text" class="w-full px-3 py-2 border border-[#E5E5E5] rounded text-sm" value="Help us help them" placeholder="Banner caption">
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 flex-shrink-0">
+                                        <button class="p-2 hover:bg-[#E5E5E5] rounded transition" title="Preview">
+                                            <svg class="w-5 h-5" style="color: #2F5D50;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                            </svg>
+                                        </button>
+                                        <button class="p-2 hover:bg-red-50 rounded transition delete-banner" title="Delete" data-id="4">
+                                            <svg class="w-5 h-5" style="color: #B84A4A;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Banner 5 -->
+                                <div class="banner-item flex items-center gap-4 p-4 border border-[#E5E5E5] rounded-lg hover:bg-[#F6F3E7] transition cursor-move" data-id="5">
+                                    <div class="flex-shrink-0">
+                                        <span class="w-10 h-10 rounded-lg flex items-center justify-center" style="background-color: #2F5D50; color: white; font-weight: bold;">5</span>
+                                    </div>
+                                    <div class="image-preview w-24 h-16 flex-shrink-0">
+                                        <img src="banner/banner5.jpg" alt="Banner 5" class="w-full h-full object-cover">
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <h3 class="font-medium" style="color: #2B2B2B;">Upcoming Events</h3>
+                                                <p class="text-sm text-gray-500">banner5.jpg • 1920x400 • 1.3 MB</p>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="status-badge" style="background-color: #6DBF89; color: #06321F;">Active</span>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2">
+                                            <input type="text" class="w-full px-3 py-2 border border-[#E5E5E5] rounded text-sm" value="Join our next adoption day" placeholder="Banner caption">
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 flex-shrink-0">
+                                        <button class="p-2 hover:bg-[#E5E5E5] rounded transition" title="Preview">
+                                            <svg class="w-5 h-5" style="color: #2F5D50;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                            </svg>
+                                        </button>
+                                        <button class="p-2 hover:bg-red-50 rounded transition delete-banner" title="Delete" data-id="5">
+                                            <svg class="w-5 h-5" style="color: #B84A4A;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Save Order Button -->
+                            <div class="mt-6 pt-4 border-t border-[#E5E5E5] flex justify-end">
+                                <button id="saveOrderBtn" class="px-6 py-2 text-white rounded-lg hover:bg-[#24483E] transition" style="background-color: #2F5D50;">
+                                    Save Banner Order
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Preview Section -->
+                        <div class="border border-[#E5E5E5] rounded-xl p-6 shadow-sm">
+                            <h2 class="text-xl font-semibold mb-4" style="color: #2B2B2B;">Banner Preview</h2>
+                            <p class="text-sm text-gray-500 mb-4">How your banners will appear on the homepage</p>
+
+                            <div class="relative overflow-hidden rounded-lg" style="height: 250px; background-color: #F6F3E7;">
+                                <div id="bannerPreview" class="absolute inset-0">
+                                    <div class="banner-preview-slide active">
+                                        <div class="w-full h-full bg-gradient-to-r from-[#2F5D50] to-[#57A677] flex items-center justify-center">
+                                            <div class="text-center text-white p-6">
+                                                <h3 class="text-2xl font-bold mb-2">Adopt a friend, save a life</h3>
+                                                <p class="opacity-90">Preview of banner 1</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Preview Navigation -->
+                                <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                                    <span class="w-3 h-3 rounded-full bg-white cursor-pointer preview-dot active"></span>
+                                    <span class="w-3 h-3 rounded-full bg-white opacity-50 cursor-pointer preview-dot"></span>
+                                    <span class="w-3 h-3 rounded-full bg-white opacity-50 cursor-pointer preview-dot"></span>
+                                    <span class="w-3 h-3 rounded-full bg-white opacity-50 cursor-pointer preview-dot"></span>
+                                    <span class="w-3 h-3 rounded-full bg-white opacity-50 cursor-pointer preview-dot"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Upload & Settings -->
+                    <div class="lg:col-span-1">
+                        <!-- Upload New Banner -->
+                        <div class="border border-[#E5E5E5] rounded-xl p-6 shadow-sm mb-6">
+                            <h2 class="text-xl font-semibold mb-4" style="color: #2B2B2B;">Upload New Banner</h2>
+                            <p class="text-sm text-gray-500 mb-4">Upload a new image to add to your banner rotation</p>
+
+                            <div class="upload-area p-8 text-center mb-4" id="uploadArea">
+                                <svg class="w-12 h-12 mx-auto mb-4" style="color: #2F5D50;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                <p class="font-medium mb-1" style="color: #2B2B2B;">Drag & drop your image here</p>
+                                <p class="text-sm text-gray-500 mb-4">or click to browse</p>
+                                <input type="file" id="bannerUpload" accept="image/*" class="hidden">
+                                <label for="bannerUpload" class="inline-block px-4 py-2 text-white rounded-lg cursor-pointer hover:bg-[#24483E] transition" style="background-color: #2F5D50;">
+                                    Choose File
+                                </label>
+                                <p class="text-xs text-gray-500 mt-4">Supports: JPG, PNG, GIF • Max size: 5MB • Recommended: 1920x400px</p>
+                            </div>
+
+                            <!-- File Preview (hidden by default) -->
+                            <div id="filePreview" class="hidden">
+                                <div class="mb-4">
+                                    <div class="image-preview w-full h-40 mb-2">
+                                        <img id="previewImage" class="w-full h-full object-cover">
+                                    </div>
+                                    <p id="fileName" class="text-sm font-medium" style="color: #2B2B2B;"></p>
+                                    <p id="fileSize" class="text-xs text-gray-500"></p>
+                                </div>
+
+                                <!-- Banner Details Form -->
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium mb-1" style="color: #2B2B2B;">Banner Title</label>
+                                        <input type="text" id="bannerTitle" class="w-full px-3 py-2 border border-[#E5E5E5] rounded" placeholder="Enter banner title">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium mb-1" style="color: #2B2B2B;">Caption Text</label>
+                                        <input type="text" id="bannerCaption" class="w-full px-3 py-2 border border-[#E5E5E5] rounded" placeholder="Enter caption text">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium mb-1" style="color: #2B2B2B;">Position</label>
+                                        <select id="bannerPosition" class="w-full px-3 py-2 border border-[#E5E5E5] rounded">
+                                            <option value="1">Position 1 (First)</option>
+                                            <option value="2">Position 2</option>
+                                            <option value="3">Position 3</option>
+                                            <option value="4">Position 4</option>
+                                            <option value="5">Position 5</option>
+                                            <option value="6">Position 6 (Last)</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="flex items-center">
+                                            <input type="checkbox" id="bannerActive" class="mr-2" checked>
+                                            <span class="text-sm" style="color: #2B2B2B;">Set as active immediately</span>
+                                        </label>
+                                    </div>
+
+                                    <div class="flex gap-2 pt-2">
+                                        <button id="cancelUpload" class="flex-1 px-4 py-2 border border-[#E5E5E5] rounded-lg hover:bg-[#F6F3E7] transition" style="color: #2B2B2B;">
+                                            Cancel
+                                        </button>
+                                        <button id="uploadBanner" class="flex-1 px-4 py-2 text-white rounded-lg hover:bg-[#24483E] transition" style="background-color: #2F5D50;">
+                                            Upload Banner
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Banner Settings -->
+                        <div class="border border-[#E5E5E5] rounded-xl p-6 shadow-sm">
+                            <h2 class="text-xl font-semibold mb-4" style="color: #2B2B2B;">Banner Settings</h2>
+
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-1" style="color: #2B2B2B;">Transition Speed</label>
+                                    <select class="w-full px-3 py-2 border border-[#E5E5E5] rounded">
+                                        <option value="3000">3 seconds</option>
+                                        <option value="5000" selected>5 seconds</option>
+                                        <option value="7000">7 seconds</option>
+                                        <option value="10000">10 seconds</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium mb-1" style="color: #2B2B2B;">Animation Type</label>
+                                    <select class="w-full px-3 py-2 border border-[#E5E5E5] rounded">
+                                        <option value="fade">Fade</option>
+                                        <option value="slide" selected>Slide</option>
+                                        <option value="zoom">Zoom</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="mr-2" checked>
+                                        <span class="text-sm" style="color: #2B2B2B;">Auto-play banners</span>
+                                    </label>
+                                </div>
+
+                                <div>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="mr-2" checked>
+                                        <span class="text-sm" style="color: #2B2B2B;">Show navigation arrows</span>
+                                    </label>
+                                </div>
+
+                                <div>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" class="mr-2" checked>
+                                        <span class="text-sm" style="color: #2B2B2B;">Show indicator dots</span>
+                                    </label>
+                                </div>
+
+                                <div class="pt-4 border-t border-[#E5E5E5]">
+                                    <button class="w-full px-4 py-2 text-white rounded-lg hover:bg-[#24483E] transition" style="background-color: #2F5D50;">
+                                        Save Settings
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- Footer container -->
+        <div id="footer"></div>
+
+        <!-- Load sidebar.js -->
+        <script src="includes/sidebar.js"></script>
+
+        <script>
+            // File Upload Handling
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('bannerUpload');
+            const filePreview = document.getElementById('filePreview');
+            const previewImage = document.getElementById('previewImage');
+            const fileName = document.getElementById('fileName');
+            const fileSize = document.getElementById('fileSize');
+            const cancelUploadBtn = document.getElementById('cancelUpload');
+            const uploadBannerBtn = document.getElementById('uploadBanner');
+            const saveOrderBtn = document.getElementById('saveOrderBtn');
+
+            // Drag and drop events
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    handleFileSelect(e.dataTransfer.files[0]);
+                }
+            });
+
+            // Click to upload
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    handleFileSelect(e.target.files[0]);
+                }
+            });
+
+            // Handle file selection
+            function handleFileSelect(file) {
+                // Check file type
+                if (!file.type.match('image.*')) {
+                    alert('Please select an image file');
+                    return;
+                }
+
+                // Check file size (5MB max)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('File size must be less than 5MB');
+                    return;
+                }
+
+                // Show preview
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    previewImage.src = e.target.result;
+                    fileName.textContent = file.name;
+                    fileSize.textContent = formatFileSize(file.size);
+                    filePreview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+
+            // Format file size
+            function formatFileSize(bytes) {
+                if (bytes === 0)
+                    return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            // Cancel upload
+            cancelUploadBtn.addEventListener('click', () => {
+                filePreview.classList.add('hidden');
+                fileInput.value = '';
+            });
+
+            // Upload banner
+            uploadBannerBtn.addEventListener('click', () => {
+                const title = document.getElementById('bannerTitle').value;
+                const caption = document.getElementById('bannerCaption').value;
+                const position = document.getElementById('bannerPosition').value;
+                const active = document.getElementById('bannerActive').checked;
+
+                if (!title.trim()) {
+                    alert('Please enter a banner title');
+                    return;
+                }
+
+                if (!caption.trim()) {
+                    alert('Please enter a caption text');
+                    return;
+                }
+
+                // Simulate upload
+                alert(`Banner uploaded successfully!\nTitle: ${title}\nPosition: ${position}\nActive: ${active ? 'Yes' : 'No'}`);
+
+                // Reset form
+                filePreview.classList.add('hidden');
+                fileInput.value = '';
+                document.getElementById('bannerTitle').value = '';
+                document.getElementById('bannerCaption').value = '';
+                document.getElementById('bannerPosition').value = '1';
+                document.getElementById('bannerActive').checked = true;
+            });
+
+            // Delete banner
+            document.querySelectorAll('.delete-banner').forEach(button => {
+                button.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    const bannerId = this.getAttribute('data-id');
+                    const bannerName = this.closest('.banner-item').querySelector('h3').textContent;
+
+                    if (confirm(`Are you sure you want to delete "${bannerName}"?`)) {
+                        this.closest('.banner-item').style.opacity = '0.5';
+                        setTimeout(() => {
+                            this.closest('.banner-item').remove();
+                            updateBannerNumbers();
+                            alert(`Banner "${bannerName}" deleted successfully.`);
+                        }, 300);
+                    }
+                });
+            });
+
+            // Save order
+            saveOrderBtn.addEventListener('click', () => {
+                saveOrderBtn.textContent = 'Saving...';
+                saveOrderBtn.disabled = true;
+
+                setTimeout(() => {
+                    alert('Banner order saved successfully!');
+                    saveOrderBtn.textContent = 'Save Banner Order';
+                    saveOrderBtn.disabled = false;
+                }, 1000);
+            });
+
+            // Update banner numbers after delete/reorder
+            function updateBannerNumbers() {
+                const banners = document.querySelectorAll('.banner-item');
+                banners.forEach((banner, index) => {
+                    const numberSpan = banner.querySelector('.flex-shrink-0 span');
+                    numberSpan.textContent = index + 1;
+                    numberSpan.style.backgroundColor = '#2F5D50';
+                });
+            }
+
+            // Simple drag and drop (without external library)
+            let draggedItem = null;
+
+            document.querySelectorAll('.banner-item').forEach(item => {
+                item.setAttribute('draggable', 'true');
+
+                item.addEventListener('dragstart', function (e) {
+                    draggedItem = this;
+                    setTimeout(() => {
+                        this.style.opacity = '0.4';
+                    }, 0);
+                });
+
+                item.addEventListener('dragend', function () {
+                    setTimeout(() => {
+                        this.style.opacity = '1';
+                        draggedItem = null;
+                    }, 0);
+                });
+
+                item.addEventListener('dragover', function (e) {
+                    e.preventDefault();
+                });
+
+                item.addEventListener('dragenter', function (e) {
+                    e.preventDefault();
+                    if (this !== draggedItem) {
+                        this.style.backgroundColor = '#E8F5EE';
+                    }
+                });
+
+                item.addEventListener('dragleave', function () {
+                    this.style.backgroundColor = '';
+                });
+
+                item.addEventListener('drop', function (e) {
+                    e.preventDefault();
+                    if (this !== draggedItem) {
+                        const allItems = [...document.querySelectorAll('.banner-item')];
+                        const draggedIndex = allItems.indexOf(draggedItem);
+                        const targetIndex = allItems.indexOf(this);
+
+                        if (draggedIndex < targetIndex) {
+                            this.parentNode.insertBefore(draggedItem, this.nextSibling);
+                        } else {
+                            this.parentNode.insertBefore(draggedItem, this);
+                        }
+
+                        updateBannerNumbers();
+                    }
+                    this.style.backgroundColor = '';
+                });
+            });
+
+            // Banner preview navigation
+            let previewIndex = 0;
+            const previewDots = document.querySelectorAll('.preview-dot');
+            const previewSlides = [
+                {bg: 'from-[#2F5D50] to-[#57A677]', title: 'Adopt a friend, save a life'},
+                {bg: 'from-[#C49A6C] to-[#F59E0B]', title: 'Find your perfect companion'},
+                {bg: 'from-[#8B5CF6] to-[#EC4899]', title: 'Join our happy family of adopters'},
+                {bg: 'from-[#3B82F6] to-[#1D4ED8]', title: 'Help us help them'},
+                {bg: 'from-[#10B981] to-[#047857]', title: 'Join our next adoption day'}
+            ];
+
+            function updatePreview() {
+                const previewContainer = document.getElementById('bannerPreview');
+                const currentSlide = previewSlides[previewIndex];
+
+                previewContainer.innerHTML = `
+                    <div class="banner-preview-slide active w-full h-full">
+                        <div class="w-full h-full bg-gradient-to-r ${currentSlide.bg} flex items-center justify-center">
+                            <div class="text-center text-white p-6">
+                                <h3 class="text-2xl font-bold mb-2">${currentSlide.title}</h3>
+                                <p class="opacity-90">Preview of banner ${previewIndex + 1}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                previewDots.forEach((dot, index) => {
+                    dot.classList.toggle('active', index === previewIndex);
+                    dot.classList.toggle('opacity-50', index !== previewIndex);
+                });
+            }
+
+            previewDots.forEach((dot, index) => {
+                dot.addEventListener('click', () => {
+                    previewIndex = index;
+                    updatePreview();
+                });
+            });
+
+            // Auto rotate preview
+            setInterval(() => {
+                previewIndex = (previewIndex + 1) % previewSlides.length;
+                updatePreview();
+            }, 3000);
+
+            // Initialize preview
+            updatePreview();
+        </script>
+
+    </body>
+</html>
