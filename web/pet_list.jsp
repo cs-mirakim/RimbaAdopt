@@ -190,7 +190,7 @@
         </main>
 
         <!-- Footer container -->
-        <div id="footer"></div>
+        <jsp:include page="includes/footer.jsp" />
 
         <!-- Sidebar container -->
         <jsp:include page="includes/sidebar.jsp" />
