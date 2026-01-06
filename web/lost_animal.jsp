@@ -96,7 +96,7 @@
     <body class="flex flex-col min-h-screen relative bg-[#F6F3E7]">
 
         <!-- Header container -->
-        <!jsp:include page="includes/header.jsp" />
+        <jsp:include page="includes/header.jsp" />
 
         <!-- Main Dashboard Content -->
         <main class="flex-1 p-4 pt-6 relative z-10 flex justify-center items-start mb-2">
@@ -315,8 +315,8 @@
         </div>
 
         <!-- Footer container -->
-        <!jsp:include page="includes/footer.jsp" />
-        <!jsp:include page="includes/sidebar.jsp" />
+        <jsp:include page="includes/footer.jsp" />
+        <jsp:include page="includes/sidebar.jsp" />
         
         <!-- Load sidebar.js -->
         <script src="includes/sidebar.js"></script>
