@@ -12,7 +12,7 @@
     <h1 class="text-lg font-semibold text-center flex-1">Rimba Adopt</h1>
 
     <!-- Right: Profile -->
-    <a href="profile.html"
+    <a href="profile.jsp"
        class="flex items-center gap-2 px-3 py-2 rounded hover:bg-[#24483E] transition-colors ml-auto">
         <span class="text-sm font-medium">Profile</span>
         <div class="w-8 h-8 bg-[#6DBF89] rounded-full flex items-center justify-center text-sm font-bold">

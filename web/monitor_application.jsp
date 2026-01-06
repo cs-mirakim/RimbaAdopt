@@ -47,7 +47,8 @@
     </head>
     <body class="flex flex-col min-h-screen relative bg-[#F6F3E7] text-main">
 
-        <jsp:include page="includes/header.jsp" />
+        <!-- Header container -->
+<jsp:include page="includes/header.jsp" />
 
         <main class="flex-1 p-4 pt-6 relative z-10 flex justify-center items-start mb-2" style="background-color: #F6F3E7;">
             <div class="w-full bg-white py-8 px-6 rounded-3xl shadow-xl border" style="max-width: 1450px; border-color: #E5E5E5;">
@@ -69,7 +70,7 @@
                     </div>
 
                     <div class="relative w-full md:w-80">
-                        <input type="text" id="search-input" placeholder="Search Pet/Shelter..." class="w-full py-2.5 pl-10 pr-4 border rounded-xl transition duration-150 shadow-sm text-base custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;">
+                        <input type="text" placeholder="Search Pet/Shelter..." class="w-full py-2.5 pl-10 pr-4 border rounded-xl transition duration-150 shadow-sm text-base custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;">
                         <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                     </div>
                 </div>
@@ -212,390 +213,239 @@
             </div>
         </div>
 
-        <jsp:include page="includes/footer.jsp" />
+        <!-- Footer container -->
+<jsp:include page="includes/footer.jsp" />
+
+<!-- Sidebar container -->
+<jsp:include page="includes/sidebar.jsp" />
 
         <script src="includes/sidebar.js"></script>
 
         <script>
-                        // =======================================================
-                        // 1. Dummy Data Setup (ES5 compatible)
-                        // =======================================================
-                        var DUMMY_DATA = [
-                            // Simulating Adopter data (Address, Household Type, Notes, etc.)
-                            // This data would normally come from the Adopter table (adopter_id)
-                            // For simplicity, we hardcode it here.
-                            {id: 1, petName: "Kiko (Cat)", petImage: "animal_picture/animal1.png", shelter: "Paws Haven Shelter", date: "2025-11-20", status: "pending", adopterMessage: "We have a quiet apartment and Kiko looks perfect for our family.", shelterResponse: "Your application is currently under review. Please expect a response within 7 working days.", householdType: "apartment", hasOtherPets: false, adopterNotes: "Ready to install a safety net on the balcony."},
-                            {id: 2, petName: "Barkley (Dog)", petImage: "animal_picture/animal2.jpg", shelter: "Kuala Lumpur Rescues", date: "2025-11-25", status: "pending", adopterMessage: "Looking for an energetic dog for my landed house with a big yard.", shelterResponse: "Your application is currently under review. Please expect a response within 7 working days.", householdType: "landed_house", hasOtherPets: true, adopterNotes: "I currently own a small tortoise."},
-                            {id: 3, petName: "Luna (Rabbit)", petImage: "animal_picture/animal3.jpg", shelter: "Paws Haven Shelter", date: "2025-12-01", status: "pending", adopterMessage: "First-time rabbit owner, ready to provide a safe indoor habitat.", shelterResponse: "Your application is currently under review. Please expect a response within 7 working days.", householdType: "apartment", hasOtherPets: false, adopterNotes: ""},
-                            {id: 4, petName: "Milo (Cat)", petImage: "animal_picture/animal1.png", shelter: "Penang Animal Aid", date: "2025-12-05", status: "pending", adopterMessage: "Milo is so cute! We have experience with senior cats.", shelterResponse: "Your application is currently under review. Please expect a response within 7 working days.", householdType: "landed_no_yard", hasOtherPets: false, adopterNotes: "Working from home, so someone is always present."},
-                            {id: 5, petName: "Spot (Dog)", petImage: "animal_picture/animal2.jpg", shelter: "Kuala Lumpur Rescues", date: "2025-12-06", status: "pending", adopterMessage: "A friend recommended Spot. I love large breeds.", shelterResponse: "Your application is currently under review. Please expect a response within 7 working days.", householdType: "landed_house", hasOtherPets: true, adopterNotes: "Large fenced yard available."},
+    // =======================================================
+    // 1. Dummy Data Setup
+    // =======================================================
+    var DUMMY_DATA = [
+        {id: 1, petName: "Kiko (Cat)", petImage: "animal_picture/animal1.png", shelter: "Paws Haven Shelter", date: "2025-11-20", status: "pending", adopterMessage: "We have a quiet apartment and Kiko looks perfect for our family.", shelterResponse: "Your application is currently under review. Please expect a response within 7 working days.", householdType: "apartment", hasOtherPets: false, adopterNotes: "Ready to install a safety net on the balcony."},
+        {id: 2, petName: "Barkley (Dog)", petImage: "animal_picture/animal2.jpg", shelter: "Kuala Lumpur Rescues", date: "2025-11-25", status: "pending", adopterMessage: "Looking for an energetic dog for my landed house with a big yard.", shelterResponse: "Your application is currently under review. Please expect a response within 7 working days.", householdType: "landed_house", hasOtherPets: true, adopterNotes: "I currently own a small tortoise."},
+        {id: 3, petName: "Luna (Rabbit)", petImage: "animal_picture/animal3.jpg", shelter: "Paws Haven Shelter", date: "2025-12-01", status: "pending", adopterMessage: "First-time rabbit owner, ready to provide a safe indoor habitat.", shelterResponse: "Your application is currently under review. Please expect a response within 7 working days.", householdType: "apartment", hasOtherPets: false, adopterNotes: ""},
+        {id: 4, petName: "Milo (Cat)", petImage: "animal_picture/animal1.png", shelter: "Penang Animal Aid", date: "2025-12-05", status: "pending", adopterMessage: "Milo is so cute! We have experience with senior cats.", shelterResponse: "Your application is currently under review. Please expect a response within 7 working days.", householdType: "landed_no_yard", hasOtherPets: false, adopterNotes: "Working from home, so someone is always present."},
+        {id: 5, petName: "Spot (Dog)", petImage: "animal_picture/animal2.jpg", shelter: "Kuala Lumpur Rescues", date: "2025-12-06", status: "pending", adopterMessage: "A friend recommended Spot. I love large breeds.", shelterResponse: "Your application is currently under review. Please expect a response within 7 working days.", householdType: "landed_house", hasOtherPets: true, adopterNotes: "Large fenced yard available."},
 
-                            // Approved (6)
-                            {id: 6, petName: "Gigi (Cat)", petImage: "animal_picture/animal3.jpg", shelter: "Penang Animal Aid", date: "2025-11-01", status: "approved", adopterMessage: "Gigi looks like a great companion. I am excited!", shelterResponse: "Congratulations! Your application is approved. Our team will contact you within 2 days to arrange delivery/pickup.", householdType: "apartment", hasOtherPets: false, adopterNotes: ""},
-                            {id: 7, petName: "Rex (Dog)", petImage: "animal_picture/animal1.png", shelter: "Paws Haven Shelter", date: "2025-11-05", status: "approved", adopterMessage: "Rex is exactly what we are looking for.", shelterResponse: "Congratulations! Your application is approved. Our team will contact you within 2 days to arrange delivery/pickup.", householdType: "landed_house", hasOtherPets: false, adopterNotes: "We live near a dog park."},
-                            {id: 8, petName: "Coco (Bird)", petImage: "animal_picture/animal2.jpg", shelter: "Kuala Lumpur Rescues", date: "2025-11-10", status: "approved", adopterMessage: "I have an existing large aviary.", shelterResponse: "Congratulations! Your application is approved. Our team will contact you within 2 days to arrange delivery/pickup.", householdType: "landed_no_yard", hasOtherPets: true, adopterNotes: "Have other small birds."},
-                            {id: 9, petName: "Shadow (Cat)", petImage: "animal_picture/animal3.jpg", shelter: "Penang Animal Aid", date: "2025-11-12", status: "approved", adopterMessage: "Shadow seems like a gentle cat.", shelterResponse: "Congratulations! Your application is approved. Our team will contact you within 2 days to arrange delivery/pickup.", householdType: "apartment", hasOtherPets: false, adopterNotes: "Quiet environment."},
-                            {id: 10, petName: "Buddy (Dog)", petImage: "animal_picture/animal1.png", shelter: "Paws Haven Shelter", date: "2025-11-15", status: "approved", adopterMessage: "Ready to welcome Buddy home!", shelterResponse: "Congratulations! Your application is approved. Our team will contact you within 2 days to arrange delivery/pickup.", householdType: "landed_house", hasOtherPets: false, adopterNotes: ""},
-                            {id: 11, petName: "Toby (Dog)", petImage: "animal_picture/animal2.jpg", shelter: "Kuala Lumpur Rescues", date: "2025-11-18", status: "approved", adopterMessage: "Looking forward to meeting Toby.", shelterResponse: "Congratulations! Your application is approved. Our team will contact you within 2 days to arrange delivery/pickup.", householdType: "landed_house", hasOtherPets: false, adopterNotes: ""},
+        // Approved (6)
+        {id: 6, petName: "Gigi (Cat)", petImage: "animal_picture/animal3.jpg", shelter: "Penang Animal Aid", date: "2025-11-01", status: "approved", adopterMessage: "Gigi looks like a great companion. I am excited!", shelterResponse: "Congratulations! Your application is approved. Our team will contact you within 2 days to arrange delivery/pickup.", householdType: "apartment", hasOtherPets: false, adopterNotes: ""},
+        {id: 7, petName: "Rex (Dog)", petImage: "animal_picture/animal1.png", shelter: "Paws Haven Shelter", date: "2025-11-05", status: "approved", adopterMessage: "Rex is exactly what we are looking for.", shelterResponse: "Congratulations! Your application is approved. Our team will contact you within 2 days to arrange delivery/pickup.", householdType: "landed_house", hasOtherPets: false, adopterNotes: "We live near a dog park."},
+        {id: 8, petName: "Coco (Bird)", petImage: "animal_picture/animal2.jpg", shelter: "Kuala Lumpur Rescues", date: "2025-11-10", status: "approved", adopterMessage: "I have an existing large aviary.", shelterResponse: "Congratulations! Your application is approved. Our team will contact you within 2 days to arrange delivery/pickup.", householdType: "landed_no_yard", hasOtherPets: true, adopterNotes: "Have other small birds."},
+        {id: 9, petName: "Shadow (Cat)", petImage: "animal_picture/animal3.jpg", shelter: "Penang Animal Aid", date: "2025-11-12", status: "approved", adopterMessage: "Shadow seems like a gentle cat.", shelterResponse: "Congratulations! Your application is approved. Our team will contact you within 2 days to arrange delivery/pickup.", householdType: "apartment", hasOtherPets: false, adopterNotes: "Quiet environment."},
+        {id: 10, petName: "Buddy (Dog)", petImage: "animal_picture/animal1.png", shelter: "Paws Haven Shelter", date: "2025-11-15", status: "approved", adopterMessage: "Ready to welcome Buddy home!", shelterResponse: "Congratulations! Your application is approved. Our team will contact you within 2 days to arrange delivery/pickup.", householdType: "landed_house", hasOtherPets: false, adopterNotes: ""},
+        {id: 11, petName: "Toby (Dog)", petImage: "animal_picture/animal2.jpg", shelter: "Kuala Lumpur Rescues", date: "2025-11-18", status: "approved", adopterMessage: "Looking forward to meeting Toby.", shelterResponse: "Congratulations! Your application is approved. Our team will contact you within 2 days to arrange delivery/pickup.", householdType: "landed_house", hasOtherPets: false, adopterNotes: ""},
 
-                            // Rejected (3)
-                            {id: 12, petName: "Bella (Cat)", petImage: "animal_picture/animal3.jpg", shelter: "Penang Animal Aid", date: "2025-10-01", status: "rejected", adopterMessage: "Bella looks sweet.", shelterResponse: "Upon consideration, your application was rejected due to unsuitable living conditions for this pet. Please check our criteria.", householdType: "apartment", hasOtherPets: false, adopterNotes: ""},
-                            {id: 13, petName: "Max (Dog)", petImage: "animal_picture/animal1.png", shelter: "Paws Haven Shelter", date: "2025-10-15", status: "rejected", adopterMessage: "We love large dogs.", shelterResponse: "Upon consideration, your application was rejected due to lack of a secure fence. Please check our criteria.", householdType: "landed_no_yard", hasOtherPets: false, adopterNotes: ""},
-                            {id: 14, petName: "Leo (Cat)", petImage: "animal_picture/animal2.jpg", shelter: "Kuala Lumpur Rescues", date: "2025-10-20", status: "rejected", adopterMessage: "Leo would be a great addition.", shelterResponse: "Upon consideration, your application was rejected because you already reached the maximum allowed pets.", householdType: "apartment", hasOtherPets: true, adopterNotes: ""},
 
-                            // Cancelled (1)
-                            {id: 15, petName: "Ziggy (Rabbit)", petImage: "animal_picture/animal3.jpg", shelter: "Penang Animal Aid", date: "2025-09-01", status: "cancelled", adopterMessage: "Excited about adopting Ziggy.", shelterResponse: "We are sad to see you cancel. We hope you will return in the future!", householdType: "apartment", hasOtherPets: false, adopterNotes: ""}
-                        ];
 
-                        var ITEMS_PER_PAGE = 10;
-                        var currentPage = 1;
-                        var filteredData = DUMMY_DATA;
-                        var currentStatusFilter = 'all';
-                        var currentApplicationId = null;
 
-                        // =======================================================
-                        // 2. MODAL FUNCTIONS (ES5 compatible)
-                        // =======================================================
-                        function openModal(modalId, appId) {
-                            var modal = document.getElementById(modalId);
-                            var application = null;
 
-                            // Find application by ID
-                            for (var i = 0; i < DUMMY_DATA.length; i++) {
-                                if (DUMMY_DATA[i].id === appId) {
-                                    application = DUMMY_DATA[i];
-                                    break;
-                                }
-                            }
 
-                            currentApplicationId = appId;
 
-                            if (modalId === 'editModal' && application) {
-                                document.getElementById('modalPetName').textContent = application.petName;
-                                document.getElementById('formPetDetails').textContent = application.petName + ' from ' + application.shelter;
-                                document.getElementById('formRequestDate').textContent = application.date;
-                                document.getElementById('formShelterResponse').textContent = application.shelterResponse;
+        // Rejected (3)
+        {id: 12, petName: "Bella (Cat)", petImage: "animal_picture/animal3.jpg", shelter: "Penang Animal Aid", date: "2025-10-01", status: "rejected", adopterMessage: "Bella looks sweet.", shelterResponse: "Upon consideration, your application was rejected due to unsuitable living conditions for this pet. Please check our criteria.", householdType: "apartment", hasOtherPets: false, adopterNotes: ""},
+        {id: 13, petName: "Max (Dog)", petImage: "animal_picture/animal1.png", shelter: "Paws Haven Shelter", date: "2025-10-15", status: "rejected", adopterMessage: "We love large dogs.", shelterResponse: "Upon consideration, your application was rejected due to lack of a secure fence. Please check our criteria.", householdType: "landed_no_yard", hasOtherPets: false, adopterNotes: ""},
+        {id: 14, petName: "Leo (Cat)", petImage: "animal_picture/animal2.jpg", shelter: "Kuala Lumpur Rescues", date: "2025-10-20", status: "rejected", adopterMessage: "Leo would be a great addition.", shelterResponse: "Upon consideration, your application was rejected because you already reached the maximum allowed pets.", householdType: "apartment", hasOtherPets: true, adopterNotes: ""},
 
-                                // Populate editable fields with dummy Adopter data
-                                document.getElementById('adopterMessage').value = application.adopterMessage || '';
-                                document.getElementById('householdType').value = application.householdType || 'apartment';
-                                document.getElementById('hasOtherPets').checked = application.hasOtherPets || false;
-                                document.getElementById('adopterNotes').value = application.adopterNotes || '';
 
-                            } else if (modalId === 'cancelModal' && application) {
-                                document.getElementById('cancelPetName').textContent = application.petName;
-                                document.getElementById('cancelShelterName').textContent = application.shelter;
-                                document.getElementById('confirmCancelBtn').onclick = function () {
-                                    confirmCancellation(application.id);
-                                };
-                            }
 
-                            modal.classList.remove('hidden');
-                            setTimeout(function () {
-                                modal.classList.remove('opacity-0');
-                                modal.querySelector('div:nth-child(1)').classList.remove('scale-95'); // Modal content
-                            }, 10);
-                        }
 
-                        function closeModal(modalId) {
-                            var modal = document.getElementById(modalId);
-                            modal.classList.add('opacity-0');
-                            modal.querySelector('div:nth-child(1)').classList.add('scale-95');
-                            setTimeout(function () {
-                                modal.classList.add('hidden');
-                            }, 300);
-                        }
+        // Cancelled (1)
+        {id: 15, petName: "Ziggy (Rabbit)", petImage: "animal_picture/animal3.jpg", shelter: "Penang Animal Aid", date: "2025-09-01", status: "cancelled", adopterMessage: "Excited about adopting Ziggy.", shelterResponse: "We are sad to see you cancel. We hope you will return in the future!", householdType: "apartment", hasOtherPets: false, adopterNotes: ""}
+    ];
 
-                        function saveApplicationChanges() {
-                            if (!currentApplicationId)
-                                return;
 
-                            var application = null;
-                            for (var i = 0; i < DUMMY_DATA.length; i++) {
-                                if (DUMMY_DATA[i].id === currentApplicationId) {
-                                    application = DUMMY_DATA[i];
-                                    break;
-                                }
-                            }
 
-                            if (application) {
-                                // Update application data with form values
-                                application.adopterMessage = document.getElementById('adopterMessage').value;
-                                application.householdType = document.getElementById('householdType').value;
-                                application.hasOtherPets = document.getElementById('hasOtherPets').checked;
-                                application.adopterNotes = document.getElementById('adopterNotes').value;
+    var ITEMS_PER_PAGE = 10;
+    var currentPage = 1;
+    var filteredData = DUMMY_DATA;
+    var currentStatusFilter = 'all';
+    var currentApplicationId = null;
 
-                                // Show success message (in real app, this would be an AJAX call)
-                                alert('Application updated successfully!');
-                                closeModal('editModal');
 
-                                // Re-render table to reflect changes
-                                filterAndRender();
-                            }
-                        }
 
-                        function confirmCancellation(appId) {
-                            var reason = document.getElementById('cancellationReason').value;
 
-                            // Dummy cancellation logic:
-                            console.log('Application ' + appId + ' officially cancelled. Reason: ' + reason);
-                            // In a real application, an AJAX request would be sent here.
 
-                            // Close modal and refresh table (in a real app, you'd update DUMMY_DATA status and re-render)
-                            closeModal('cancelModal');
+    // =======================================================
+    // 2. MODAL FUNCTIONS
+    // =======================================================
+    function openModal(modalId, appId) {
+        var modal = document.getElementById(modalId);
+        var application = null;
+        
+        // Find application by ID
+        for (var i = 0; i < DUMMY_DATA.length; i++) {
+            if (DUMMY_DATA[i].id === appId) {
+                application = DUMMY_DATA[i];
+                break;
+            }
+        }
+        
+        currentApplicationId = appId;
 
-                            // Simulating status change for the demo
-                            var index = -1;
-                            for (var i = 0; i < DUMMY_DATA.length; i++) {
-                                if (DUMMY_DATA[i].id === appId) {
-                                    index = i;
-                                    break;
-                                }
-                            }
+        if (modalId === 'editModal' && application) {
+            document.getElementById('modalPetName').textContent = application.petName;
+            document.getElementById('formPetDetails').textContent = application.petName + ' from ' + application.shelter;
+            document.getElementById('formRequestDate').textContent = application.date;
+            document.getElementById('formShelterResponse').textContent = application.shelterResponse;
 
-                            if (index !== -1) {
-                                DUMMY_DATA[index].status = 'cancelled';
-                                DUMMY_DATA[index].shelterResponse = 'We are sad to see you cancel. We hope you will return in the future!';
-                                // Clear the reason textarea
-                                document.getElementById('cancellationReason').value = '';
-                                // Re-render table to reflect the change
-                                filterAndRender();
-                            }
-                        }
+            // Populate editable fields with dummy Adopter data
+            document.getElementById('adopterMessage').value = application.adopterMessage || '';
+            document.getElementById('householdType').value = application.householdType || 'apartment';
+            document.getElementById('hasOtherPets').checked = application.hasOtherPets || false;
+            document.getElementById('adopterNotes').value = application.adopterNotes || '';
 
-                        // =======================================================
-                        // 3. Rendering Logic (ES5 compatible)
-                        // =======================================================
+        } else if (modalId === 'cancelModal' && application) {
+            document.getElementById('cancelPetName').textContent = application.petName;
+            document.getElementById('cancelShelterName').textContent = application.shelter;
+            document.getElementById('confirmCancelBtn').onclick = function() {
+                confirmCancellation(application.id);
+            };
+        }
 
-                        function getStatusChipClass(status) {
-                            switch (status) {
-                                case 'pending':
-                                    return 'chip-pending';
-                                case 'approved':
-                                    return 'chip-approved';
-                                case 'rejected':
-                                    return 'chip-rejected';
-                                case 'cancelled':
-                                    return 'chip-cancelled';
-                                default:
-                                    return 'bg-gray-200 text-gray-800';
-                            }
-                        }
+        modal.classList.remove('hidden');
+        setTimeout(function() {
+            modal.classList.remove('opacity-0');
+            modal.querySelector('div:nth-child(1)').classList.remove('scale-95');
+        }, 10);
+    }
 
-                        function renderTable(data, page) {
-                            var tableBody = document.getElementById('application-list');
-                            tableBody.innerHTML = '';
+    function closeModal(modalId) {
+        var modal = document.getElementById(modalId);
+        modal.classList.add('opacity-0');
+        modal.querySelector('div:nth-child(1)').classList.add('scale-95');
+        setTimeout(function() {
+            modal.classList.add('hidden');
+        }, 300);
+    }
 
-                            var start = (page - 1) * ITEMS_PER_PAGE;
-                            var end = start + ITEMS_PER_PAGE;
-                            var paginatedItems = data.slice(start, end);
+    function saveApplicationChanges() {
+        if (!currentApplicationId) {
+            return;
+        }
 
-                            for (var i = 0; i < paginatedItems.length; i++) {
-                                var item = paginatedItems[i];
-                                var statusChipClass = getStatusChipClass(item.status);
-                                var itemNumber = start + i + 1;
+        var application = null;
+        for (var i = 0; i < DUMMY_DATA.length; i++) {
+            if (DUMMY_DATA[i].id === currentApplicationId) {
+                application = DUMMY_DATA[i];
+                break;
+            }
+        }
+        
+        if (application) {
+            // Update application data with form values
+            application.adopterMessage = document.getElementById('adopterMessage').value;
+            application.householdType = document.getElementById('householdType').value;
+            application.hasOtherPets = document.getElementById('hasOtherPets').checked;
+            application.adopterNotes = document.getElementById('adopterNotes').value;
 
-                                // Action Buttons - Always show same width buttons
-                                var actionButtons;
-                                if (item.status === 'pending') {
-                                    actionButtons = '<div class="flex flex-col items-center space-y-2">' +
-                                            '<button onclick="openModal(\'editModal\', ' + item.id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View/Edit</button>' +
-                                            '<button onclick="openModal(\'cancelModal\', ' + item.id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-red-700" style="background-color: #B84A4A;">Cancel</button>' +
-                                            '</div>';
-                                } else {
-                                    actionButtons = '<button onclick="openModal(\'editModal\', ' + item.id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View Details</button>';
-                                }
+            // Show success message
+            alert('Application updated successfully!');
+            closeModal('editModal');
 
-                                var row = '<tr class="hover:bg-gray-50 transition duration-100">' +
-                                        '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color: #2B2B2B;">' + itemNumber + '</td>' +
-                                        '<td class="px-6 py-4 whitespace-nowrap">' +
-                                        '<div class="flex items-center">' +
-                                        '<div class="flex-shrink-0 h-10 w-10">' +
-                                        '<img class="h-10 w-10 rounded-full object-cover" src="' + item.petImage + '" alt="' + item.petName + '" onerror="this.src=\'https://via.placeholder.com/40x40?text=Pet\'">' +
-                                        '</div>' +
-                                        '<div class="ml-4">' +
-                                        '<div class="text-sm font-medium" style="color: #2B2B2B;">' + item.petName + '</div>' +
-                                        '</div>' +
-                                        '</div>' +
-                                        '</td>' +
-                                        '<td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">' + item.shelter + '</td>' +
-                                        '<td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">' + item.date + '</td>' +
-                                        '<td class="px-6 py-4 whitespace-nowrap">' +
-                                        '<span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full text-white ' + statusChipClass + '">' +
-                                        item.status.charAt(0).toUpperCase() + item.status.slice(1) +
-                                        '</span>' +
-                                        '</td>' +
-                                        '<td class="px-6 py-4 text-sm truncate max-w-xs" style="color: #2B2B2B;">' +
-                                        item.shelterResponse +
-                                        '</td>' +
-                                        '<td class="px-6 py-4 whitespace-nowrap text-center">' +
-                                        actionButtons +
-                                        '</td>' +
-                                        '</tr>';
+            // Re-render table to reflect changes
+            filterAndRender();
+        }
+    }
 
-                                tableBody.innerHTML += row;
-                            }
+    function confirmCancellation(appId) {
+        var reason = document.getElementById('cancellationReason').value;
 
-                            renderPaginationControls(data.length);
-                        }
+        // Dummy cancellation logic
+        console.log('Application ' + appId + ' officially cancelled. Reason: ' + reason);
 
-                        // =======================================================
-                        // 4. Pagination & Filtering Logic (ES5 compatible)
-                        // =======================================================
-                        function renderPaginationControls(totalItems) {
-                            var totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+        // Close modal
+        closeModal('cancelModal');
 
-                            document.getElementById('total-items').textContent = totalItems;
-                            document.getElementById('start-index').textContent = Math.min(totalItems, (currentPage - 1) * ITEMS_PER_PAGE + 1);
-                            document.getElementById('end-index').textContent = Math.min(totalItems, currentPage * ITEMS_PER_PAGE);
+        // Simulating status change for the demo
+        for (var i = 0; i < DUMMY_DATA.length; i++) {
+            if (DUMMY_DATA[i].id === appId) {
+                DUMMY_DATA[i].status = 'cancelled';
+                DUMMY_DATA[i].shelterResponse = 'We are sad to see you cancel. We hope you will return in the future!';
+                // Clear the reason textarea
+                document.getElementById('cancellationReason').value = '';
+                // Re-render table to reflect the change
+                filterAndRender();
+                break;
+            }
+        }
+    }
 
-                            document.getElementById('prev-btn').disabled = currentPage === 1;
-                            document.getElementById('next-btn').disabled = currentPage === totalPages || totalItems === 0;
-                        }
+    // =======================================================
+    // 3. Rendering Logic
+    // =======================================================
 
-                        document.getElementById('prev-btn').addEventListener('click', function () {
-                            if (currentPage > 1) {
-                                currentPage--;
-                                renderTable(filteredData, currentPage);
-                            }
-                        });
+    function getStatusChipClass(status) {
+        switch (status) {
+            case 'pending':
+                return 'chip-pending';
+            case 'approved':
+                return 'chip-approved';
+            case 'rejected':
+                return 'chip-rejected';
+            case 'cancelled':
+                return 'chip-cancelled';
+            default:
+                return 'bg-gray-200 text-gray-800';
+        }
+    }
 
-                        document.getElementById('next-btn').addEventListener('click', function () {
-                            var totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
-                            if (currentPage < totalPages) {
-                                currentPage++;
-                                renderTable(filteredData, currentPage);
-                            }
-                        });
+    function renderTable(data, page) {
+        var tableBody = document.getElementById('application-list');
+        tableBody.innerHTML = '';
 
-                        function filterAndRender() {
-                            // Re-apply filter based on currentStatusFilter
-                            if (currentStatusFilter === 'all') {
-                                filteredData = DUMMY_DATA;
-                            } else {
-                                filteredData = [];
-                                for (var i = 0; i < DUMMY_DATA.length; i++) {
-                                    if (DUMMY_DATA[i].status === currentStatusFilter) {
-                                        filteredData.push(DUMMY_DATA[i]);
-                                    }
-                                }
-                            }
+        var start = (page - 1) * ITEMS_PER_PAGE;
+        var end = start + ITEMS_PER_PAGE;
+        var paginatedItems = data.slice(start, end);
 
-                            currentPage = 1; // Reset to page 1 after filter/update
-                            renderTable(filteredData, currentPage);
-                            updateFilterButtonCounts();
-                        }
+        for (var i = 0; i < paginatedItems.length; i++) {
+            var item = paginatedItems[i];
+            var statusChipClass = getStatusChipClass(item.status);
+            var itemNumber = start + i + 1;
 
-                        // Update filter button counts based on current filtered data
-                        function updateFilterButtonCounts() {
-                            var counts = {
-                                'all': DUMMY_DATA.length,
-                                'pending': 0,
-                                'approved': 0,
-                                'rejected': 0,
-                                'cancelled': 0
-                            };
+            // Action Buttons
+            var actionButtons;
+            if (item.status === 'pending') {
+                actionButtons = '<div class="flex flex-col items-center space-y-2">' +
+                    '<button onclick="openModal(\'editModal\', ' + item.id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View/Edit</button>' +
+                    '<button onclick="openModal(\'cancelModal\', ' + item.id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-red-700" style="background-color: #B84A4A;">Cancel</button>' +
+                    '</div>';
+            } else {
+                actionButtons = '<button onclick="openModal(\'editModal\', ' + item.id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View Details</button>';
+            }
 
-                            // Count each status
-                            for (var i = 0; i < DUMMY_DATA.length; i++) {
-                                var status = DUMMY_DATA[i].status;
-                                if (status in counts) {
-                                    counts[status]++;
-                                }
-                            }
-
-                            var filterButtons = document.querySelectorAll('.filter-btn');
-                            for (var j = 0; j < filterButtons.length; j++) {
-                                var btn = filterButtons[j];
-                                var status = btn.getAttribute('data-status');
-                                var count = counts[status];
-                                var btnText = btn.textContent;
-
-                                // Remove existing count in parentheses and add new one
-                                var newText = btnText.replace(/\(\d+\)/, '') + '(' + count + ')';
-                                btn.textContent = newText;
-                            }
-                        }
-
-                        // Update filter button styling
-                        function updateFilterButtonStyles() {
-                            var filterButtons = document.querySelectorAll('.filter-btn');
-
-                            for (var i = 0; i < filterButtons.length; i++) {
-                                var btn = filterButtons[i];
-                                var btnStatus = btn.getAttribute('data-status');
-
-                                // Reset semua classes
-                                btn.className = 'px-5 py-2 rounded-full text-sm font-medium transition duration-150 filter-btn';
-
-                                // Set active button
-                                if (btnStatus === currentStatusFilter) {
-                                    if (btnStatus === 'all') {
-                                        btn.classList.add('bg-primary', 'text-white', 'shadow-md');
-                                    } else if (btnStatus === 'pending' || btnStatus === 'cancelled') {
-                                        btn.classList.add('bg-[#C49A6C]', 'text-white', 'border-[#C49A6C]');
-                                    } else if (btnStatus === 'approved') {
-                                        btn.classList.add('bg-[#A8E6CF]', 'text-[#06321F]', 'border-[#6DBF89]');
-                                    } else if (btnStatus === 'rejected') {
-                                        btn.classList.add('bg-[#B84A4A]', 'text-white', 'border-[#B84A4A]');
-                                    }
-                                } else {
-                                    // Inactive button styles
-                                    btn.classList.add('border', 'hover:bg-[#F6F3E7]');
-                                    if (btnStatus === 'all') {
-                                        btn.classList.add('border-[#2F5D50]', 'text-[#2F5D50]');
-                                    } else if (btnStatus === 'pending' || btnStatus === 'cancelled') {
-                                        btn.classList.add('border-[#C49A6C]', 'text-[#C49A6C]');
-                                    } else if (btnStatus === 'approved') {
-                                        btn.classList.add('border-[#6DBF89]', 'text-[#57A677]');
-                                    } else if (btnStatus === 'rejected') {
-                                        btn.classList.add('border-[#B84A4A]', 'text-[#B84A4A]');
-                                    }
-                                }
-                            }
-                        }
-
-                        // Add event listeners to filter buttons
-                        var filterButtons = document.querySelectorAll('.filter-btn');
-                        for (var i = 0; i < filterButtons.length; i++) {
-                            filterButtons[i].addEventListener('click', function (e) {
-                                var newStatus = e.target.getAttribute('data-status');
-                                currentStatusFilter = newStatus;
-
-                                updateFilterButtonStyles();
-                                filterAndRender();
-                            });
-                        }
-
-                        // Search functionality
-                        document.getElementById('search-input').addEventListener('input', function (e) {
-                            var searchTerm = e.target.value.toLowerCase();
-
-                            if (searchTerm.trim() === '') {
-                                filterAndRender();
-                                return;
-                            }
-
-                            var filtered = [];
-                            for (var i = 0; i < DUMMY_DATA.length; i++) {
-                                var item = DUMMY_DATA[i];
-                                if (item.petName.toLowerCase().indexOf(searchTerm) !== -1 ||
-                                        item.shelter.toLowerCase().indexOf(searchTerm) !== -1) {
-                                    filtered.push(item);
-                                }
-                            }
-
-                            filteredData = filtered;
-                            currentPage = 1;
-                            renderTable(filteredData, currentPage);
-                        });
-
-                        // Initial load
-                        window.onload = function () {
-                            updateFilterButtonStyles();
-                            updateFilterButtonCounts();
-                            renderTable(filteredData, currentPage);
-                        };
-        </script>
+            var row = '<tr class="hover:bg-gray-50 transition duration-100">' +
+                '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color: #2B2B2B;">' + itemNumber + '</td>' +
+                '<td class="px-6 py-4 whitespace-nowrap">' +
+                '<div class="flex items-center">' +
+                '<div class="flex-shrink-0 h-10 w-10">' +
+                '<img class="h-10 w-10 rounded-full object-cover" src="' + item.petImage + '" alt="' + item.petName + '" onerror="this.src=\'https://via.placeholder.com/40x40?text=Pet\'">' +
+                '</div>' +
+                '<div class="ml-4">' +
+                '<div class="text-sm font-medium" style="color: #2B2B2B;">' + item.petName + '</div>' +
+                '</div>' +
+                '</div>' +
+                '</td>' +
+                '<td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">' + item.shelter + '</td>' +
+                '<td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">' + item.date + '</td>' +
+                '<td class="px-6 py-4 whitespace-nowrap">' +
+                '<span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full text-white ' + statusChipClass + '">' +
+                item.status.charAt(0).toUpperCase() + item.status.slice(1) +
+                '</span>' +
+                '</td>' +
+                '<td class="px-6 py-4 text-sm truncate max-w-xs" style="color: #2B2B2B;">' +
+                item.shelterResponse +
+                '</td>' +
+                '<td class="px-6 py-4 whitespace-nowrap text-center">' +
+                actionButtons +
+                '</td>' +
+                '</tr>';
+                
+            tableBody.innerHTML += row;
+        }
     </body>
 </html>

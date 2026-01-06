@@ -427,7 +427,7 @@
                             </p>
                         </div>
                         <div class="flex items-center space-x-2">
-                            <a href="admin_dashboard.jsp" class="action-btn action-btn-view">
+                            <a href="dashboard_admin.jsp" class="action-btn action-btn-view">
                                 <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7 7-7m8 14l-7-7 7-7"/>
                                 </svg>
