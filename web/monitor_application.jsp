@@ -270,6 +270,7 @@
             }
         }
         
+        
         currentApplicationId = appId;
 
         if (modalId === 'editModal' && application) {
