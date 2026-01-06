@@ -69,7 +69,7 @@
                                 Upload, organize, and manage homepage banner images
                             </p>
                         </div>
-                        <a href="dashboard_admin.html" class="flex items-center gap-2 px-4 py-2 rounded-lg text-white hover:bg-[#24483E] transition" style="background-color: #2F5D50;">
+                        <a href="dashboard_admin.jsp" class="flex items-center gap-2 px-4 py-2 rounded-lg text-white hover:bg-[#24483E] transition" style="background-color: #2F5D50;">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                             </svg>
