@@ -186,78 +186,78 @@
 
                 if (role === 'adopter') {
                     contentDiv.innerHTML = ''
-                        + '<div class="grid grid-cols-1 md:grid-cols-2 gap-6">'
-                        + '<div class="space-y-4">'
-                        + '<h3 class="text-lg font-semibold text-[#2F5D50] mb-3 border-b border-[#E5E5E5] pb-2">Personal Information</h3>'
-                        + renderField('Email', data.email)
-                        + renderField('Phone', data.phone)
-                        + renderField('Address', data.address)
-                        + renderField('Occupation', data.occupation)
-                        + '</div>'
-                        + '<div class="space-y-4">'
-                        + '<h3 class="text-lg font-semibold text-[#2F5D50] mb-3 border-b border-[#E5E5E5] pb-2">Household Details</h3>'
-                        + renderField('Household Type', data.household_type)
-                        + renderField('Has Other Pets', data.has_other_pets ? 'Yes' : 'No')
-                        + renderField('Notes', data.notes, true)
-                        + '</div>'
-                        + '</div>';
+                            + '<div class="grid grid-cols-1 md:grid-cols-2 gap-6">'
+                            + '<div class="space-y-4">'
+                            + '<h3 class="text-lg font-semibold text-[#2F5D50] mb-3 border-b border-[#E5E5E5] pb-2">Personal Information</h3>'
+                            + renderField('Email', data.email)
+                            + renderField('Phone', data.phone)
+                            + renderField('Address', data.address)
+                            + renderField('Occupation', data.occupation)
+                            + '</div>'
+                            + '<div class="space-y-4">'
+                            + '<h3 class="text-lg font-semibold text-[#2F5D50] mb-3 border-b border-[#E5E5E5] pb-2">Household Details</h3>'
+                            + renderField('Household Type', data.household_type)
+                            + renderField('Has Other Pets', data.has_other_pets ? 'Yes' : 'No')
+                            + renderField('Notes', data.notes, true)
+                            + '</div>'
+                            + '</div>';
                 } else if (role === 'shelter') {
                     contentDiv.innerHTML = ''
-                        + '<div class="grid grid-cols-1 md:grid-cols-2 gap-6">'
-                        + '<div class="space-y-4">'
-                        + '<h3 class="text-lg font-semibold text-[#2F5D50] mb-3 border-b border-[#E5E5E5] pb-2">Contact Information</h3>'
-                        + renderField('Email', data.email)
-                        + renderField('Phone', data.phone)
-                        + renderField('Website', data.website, false, true)
-                        + '</div>'
-                        + '<div class="space-y-4">'
-                        + '<h3 class="text-lg font-semibold text-[#2F5D50] mb-3 border-b border-[#E5E5E5] pb-2">Shelter Details</h3>'
-                        + renderField('Shelter Name', data.shelter_name)
-                        + renderField('Operating Hours', data.operating_hours)
-                        + renderStatusBadge('Approval Status', data.approval_status)
-                        + '</div>'
-                        + '<div class="md:col-span-2 space-y-4">'
-                        + renderField('Shelter Address', data.shelter_address)
-                        + renderField('Description', data.shelter_description, true)
-                        + '</div>'
-                        + '</div>';
+                            + '<div class="grid grid-cols-1 md:grid-cols-2 gap-6">'
+                            + '<div class="space-y-4">'
+                            + '<h3 class="text-lg font-semibold text-[#2F5D50] mb-3 border-b border-[#E5E5E5] pb-2">Contact Information</h3>'
+                            + renderField('Email', data.email)
+                            + renderField('Phone', data.phone)
+                            + renderField('Website', data.website, false, true)
+                            + '</div>'
+                            + '<div class="space-y-4">'
+                            + '<h3 class="text-lg font-semibold text-[#2F5D50] mb-3 border-b border-[#E5E5E5] pb-2">Shelter Details</h3>'
+                            + renderField('Shelter Name', data.shelter_name)
+                            + renderField('Operating Hours', data.operating_hours)
+                            + renderStatusBadge('Approval Status', data.approval_status)
+                            + '</div>'
+                            + '<div class="md:col-span-2 space-y-4">'
+                            + renderField('Shelter Address', data.shelter_address)
+                            + renderField('Description', data.shelter_description, true)
+                            + '</div>'
+                            + '</div>';
                 } else if (role === 'admin') {
                     contentDiv.innerHTML = ''
-                        + '<div class="grid grid-cols-1 md:grid-cols-2 gap-6">'
-                        + '<div class="space-y-4">'
-                        + '<h3 class="text-lg font-semibold text-[#2F5D50] mb-3 border-b border-[#E5E5E5] pb-2">Administrator Information</h3>'
-                        + renderField('Email', data.email)
-                        + renderField('Phone', data.phone)
-                        + renderField('Position', data.position)
-                        + '</div>'
-                        + '<div class="space-y-4">'
-                        + '<h3 class="text-lg font-semibold text-[#2F5D50] mb-3 border-b border-[#E5E5E5] pb-2">System Access</h3>'
-                        + '<div class="bg-[#F6F3E7] p-4 rounded-lg">'
-                        + '<p class="text-sm text-[#2B2B2B] mb-2">Administrator privileges enabled</p>'
-                        + '<div class="flex gap-2 flex-wrap">'
-                        + '<span class="text-xs px-2 py-1 rounded bg-[#A8E6CF] text-[#2B2B2B]">User Management</span>'
-                        + '<span class="text-xs px-2 py-1 rounded bg-[#A8E6CF] text-[#2B2B2B]">Site Settings</span>'
-                        + '<span class="text-xs px-2 py-1 rounded bg-[#A8E6CF] text-[#2B2B2B]">Full Access</span>'
-                        + '</div>'
-                        + '</div>'
-                        + '</div>'
-                        + '</div>';
+                            + '<div class="grid grid-cols-1 md:grid-cols-2 gap-6">'
+                            + '<div class="space-y-4">'
+                            + '<h3 class="text-lg font-semibold text-[#2F5D50] mb-3 border-b border-[#E5E5E5] pb-2">Administrator Information</h3>'
+                            + renderField('Email', data.email)
+                            + renderField('Phone', data.phone)
+                            + renderField('Position', data.position)
+                            + '</div>'
+                            + '<div class="space-y-4">'
+                            + '<h3 class="text-lg font-semibold text-[#2F5D50] mb-3 border-b border-[#E5E5E5] pb-2">System Access</h3>'
+                            + '<div class="bg-[#F6F3E7] p-4 rounded-lg">'
+                            + '<p class="text-sm text-[#2B2B2B] mb-2">Administrator privileges enabled</p>'
+                            + '<div class="flex gap-2 flex-wrap">'
+                            + '<span class="text-xs px-2 py-1 rounded bg-[#A8E6CF] text-[#2B2B2B]">User Management</span>'
+                            + '<span class="text-xs px-2 py-1 rounded bg-[#A8E6CF] text-[#2B2B2B]">Site Settings</span>'
+                            + '<span class="text-xs px-2 py-1 rounded bg-[#A8E6CF] text-[#2B2B2B]">Full Access</span>'
+                            + '</div>'
+                            + '</div>'
+                            + '</div>'
+                            + '</div>';
                 }
             }
 
             function renderField(label, value, isTextarea = false, isLink = false) {
                 if (isLink) {
                     return ''
-                        + '<div>'
-                        + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">' + label + '</label>'
-                        + '<a href="' + value + '" target="_blank" class="text-[#2F5D50] hover:text-[#24483E] underline break-all">' + value + '</a>'
-                        + '</div>';
+                            + '<div>'
+                            + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">' + label + '</label>'
+                            + '<a href="' + value + '" target="_blank" class="text-[#2F5D50] hover:text-[#24483E] underline break-all">' + value + '</a>'
+                            + '</div>';
                 }
                 return ''
-                    + '<div>'
-                    + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">' + label + '</label>'
-                    + '<p class="text-[#2B2B2B] ' + (isTextarea ? 'whitespace-pre-wrap' : '') + '">' + value + '</p>'
-                    + '</div>';
+                        + '<div>'
+                        + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">' + label + '</label>'
+                        + '<p class="text-[#2B2B2B] ' + (isTextarea ? 'whitespace-pre-wrap' : '') + '">' + value + '</p>'
+                        + '</div>';
             }
 
             function renderStatusBadge(label, status) {
@@ -267,10 +267,10 @@
                     rejected: 'bg-[#B84A4A] text-white'
                 };
                 return ''
-                    + '<div>'
-                    + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">' + label + '</label>'
-                    + '<span class="inline-block px-3 py-1 rounded text-sm font-medium ' + (statusColors[status] || '') + '">' + status.toUpperCase() + '</span>'
-                    + '</div>';
+                        + '<div>'
+                        + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">' + label + '</label>'
+                        + '<span class="inline-block px-3 py-1 rounded text-sm font-medium ' + (statusColors[status] || '') + '">' + status.toUpperCase() + '</span>'
+                        + '</div>';
             }
 
             function populateEditForm(role) {
@@ -278,85 +278,85 @@
                 const form = document.getElementById('edit-form');
 
                 let formHTML = ''
-                    + '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">'
-                    + '<div>'
-                    + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Name *</label>'
-                    + '<input type="text" name="name" value="' + data.name + '" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
-                    + '</div>'
-                    + '<div>'
-                    + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Email *</label>'
-                    + '<input type="email" name="email" value="' + data.email + '" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
-                    + '</div>'
-                    + '<div>'
-                    + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Phone</label>'
-                    + '<input type="tel" name="phone" value="' + data.phone + '" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
-                    + '</div>';
+                        + '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">'
+                        + '<div>'
+                        + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Name *</label>'
+                        + '<input type="text" name="name" value="' + data.name + '" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
+                        + '</div>'
+                        + '<div>'
+                        + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Email *</label>'
+                        + '<input type="email" name="email" value="' + data.email + '" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
+                        + '</div>'
+                        + '<div>'
+                        + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Phone</label>'
+                        + '<input type="tel" name="phone" value="' + data.phone + '" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
+                        + '</div>';
 
                 if (role === 'adopter') {
                     formHTML += ''
-                        + '<div>'
-                        + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Occupation</label>'
-                        + '<input type="text" name="occupation" value="' + data.occupation + '" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
-                        + '</div>'
-                        + '<div class="md:col-span-2">'
-                        + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Address</label>'
-                        + '<input type="text" name="address" value="' + data.address + '" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
-                        + '</div>'
-                        + '<div>'
-                        + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Household Type</label>'
-                        + '<select name="household_type" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
-                        + '<option value="Apartment" ' + (data.household_type === 'Apartment' ? 'selected' : '') + '>Apartment</option>'
-                        + '<option value="House" ' + (data.household_type === 'House' ? 'selected' : '') + '>House</option>'
-                        + '<option value="Condo" ' + (data.household_type === 'Condo' ? 'selected' : '') + '>Condo</option>'
-                        + '</select>'
-                        + '</div>'
-                        + '<div>'
-                        + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Has Other Pets</label>'
-                        + '<select name="has_other_pets" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
-                        + '<option value="true" ' + (data.has_other_pets ? 'selected' : '') + '>Yes</option>'
-                        + '<option value="false" ' + (!data.has_other_pets ? 'selected' : '') + '>No</option>'
-                        + '</select>'
-                        + '</div>'
-                        + '<div class="md:col-span-2">'
-                        + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Notes</label>'
-                        + '<textarea name="notes" rows="3" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">' + data.notes + '</textarea>'
-                        + '</div>';
+                            + '<div>'
+                            + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Occupation</label>'
+                            + '<input type="text" name="occupation" value="' + data.occupation + '" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
+                            + '</div>'
+                            + '<div class="md:col-span-2">'
+                            + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Address</label>'
+                            + '<input type="text" name="address" value="' + data.address + '" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
+                            + '</div>'
+                            + '<div>'
+                            + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Household Type</label>'
+                            + '<select name="household_type" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
+                            + '<option value="Apartment" ' + (data.household_type === 'Apartment' ? 'selected' : '') + '>Apartment</option>'
+                            + '<option value="House" ' + (data.household_type === 'House' ? 'selected' : '') + '>House</option>'
+                            + '<option value="Condo" ' + (data.household_type === 'Condo' ? 'selected' : '') + '>Condo</option>'
+                            + '</select>'
+                            + '</div>'
+                            + '<div>'
+                            + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Has Other Pets</label>'
+                            + '<select name="has_other_pets" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
+                            + '<option value="true" ' + (data.has_other_pets ? 'selected' : '') + '>Yes</option>'
+                            + '<option value="false" ' + (!data.has_other_pets ? 'selected' : '') + '>No</option>'
+                            + '</select>'
+                            + '</div>'
+                            + '<div class="md:col-span-2">'
+                            + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Notes</label>'
+                            + '<textarea name="notes" rows="3" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">' + data.notes + '</textarea>'
+                            + '</div>';
                 } else if (role === 'shelter') {
                     formHTML += ''
-                        + '<div>'
-                        + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Shelter Name *</label>'
-                        + '<input type="text" name="shelter_name" value="' + data.shelter_name + '" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
-                        + '</div>'
-                        + '<div class="md:col-span-2">'
-                        + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Shelter Address *</label>'
-                        + '<input type="text" name="shelter_address" value="' + data.shelter_address + '" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
-                        + '</div>'
-                        + '<div>'
-                        + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Website</label>'
-                        + '<input type="url" name="website" value="' + data.website + '" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
-                        + '</div>'
-                        + '<div>'
-                        + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Operating Hours</label>'
-                        + '<input type="text" name="operating_hours" value="' + data.operating_hours + '" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
-                        + '</div>'
-                        + '<div class="md:col-span-2">'
-                        + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Description</label>'
-                        + '<textarea name="shelter_description" rows="3" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">' + data.shelter_description + '</textarea>'
-                        + '</div>';
+                            + '<div>'
+                            + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Shelter Name *</label>'
+                            + '<input type="text" name="shelter_name" value="' + data.shelter_name + '" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
+                            + '</div>'
+                            + '<div class="md:col-span-2">'
+                            + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Shelter Address *</label>'
+                            + '<input type="text" name="shelter_address" value="' + data.shelter_address + '" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
+                            + '</div>'
+                            + '<div>'
+                            + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Website</label>'
+                            + '<input type="url" name="website" value="' + data.website + '" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
+                            + '</div>'
+                            + '<div>'
+                            + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Operating Hours</label>'
+                            + '<input type="text" name="operating_hours" value="' + data.operating_hours + '" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
+                            + '</div>'
+                            + '<div class="md:col-span-2">'
+                            + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Description</label>'
+                            + '<textarea name="shelter_description" rows="3" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">' + data.shelter_description + '</textarea>'
+                            + '</div>';
                 } else if (role === 'admin') {
                     formHTML += ''
-                        + '<div>'
-                        + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Position</label>'
-                        + '<input type="text" name="position" value="' + data.position + '" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
-                        + '</div>';
+                            + '<div>'
+                            + '<label class="block text-sm font-medium text-[#2B2B2B] mb-1">Position</label>'
+                            + '<input type="text" name="position" value="' + data.position + '" class="w-full px-3 py-2 border border-[#E5E5E5] rounded focus:outline-none focus:ring-2 focus:ring-[#2F5D50]">'
+                            + '</div>';
                 }
 
                 formHTML += ''
-                    + '</div>'
-                    + '<div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[#E5E5E5]">'
-                    + '<button type="button" onclick="closeEditModal()" class="px-6 py-2 bg-[#E5E5E5] text-[#2B2B2B] rounded hover:bg-[#D5D5D5] transition-colors font-medium">Cancel</button>'
-                    + '<button type="submit" class="px-6 py-2 bg-[#2F5D50] text-white rounded hover:bg-[#24483E] transition-colors font-medium">Save Changes</button>'
-                    + '</div>';
+                        + '</div>'
+                        + '<div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[#E5E5E5]">'
+                        + '<button type="button" onclick="closeEditModal()" class="px-6 py-2 bg-[#E5E5E5] text-[#2B2B2B] rounded hover:bg-[#D5D5D5] transition-colors font-medium">Cancel</button>'
+                        + '<button type="submit" class="px-6 py-2 bg-[#2F5D50] text-white rounded hover:bg-[#24483E] transition-colors font-medium">Save Changes</button>'
+                        + '</div>';
 
                 form.innerHTML = formHTML;
             }
@@ -452,7 +452,7 @@
 
         <!-- Sidebar container -->
         <jsp:include page="includes/sidebar.jsp" />
-        
+
         <!-- Load sidebar.js -->
         <script src="includes/sidebar.js"></script>
     </body>

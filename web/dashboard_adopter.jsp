@@ -1,4 +1,18 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="com.rimba.adopt.util.SessionUtil" %>
+<%
+    if (!SessionUtil.isLoggedIn(request)) {
+        response.sendRedirect("login.jsp");
+        return;
+    }
+
+    String userRole = SessionUtil.getUserRole(request);
+    if (!"adopter".equals(userRole)) {
+        response.sendRedirect("login.jsp?error=Access denied");
+        return;
+    }
+%>
+
 <!DOCTYPE html>
 <html lang="en">
     <head>

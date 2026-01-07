@@ -26,6 +26,8 @@ const menus = {
 
 // Function untuk initialize sidebar - akan dipanggil selepas HTML loaded
 function initSidebar() {
+    console.log('Initializing sidebar...');
+
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
     const menuContainer = document.getElementById('sidebar-menu');
@@ -56,31 +58,82 @@ function initSidebar() {
         document.body.style.overflow = '';
     }
 
-    // Render menu untuk role tertentu
-    function renderMenu(role) {
+    // Function untuk detect user role dari multiple sources
+    function getUserRole() {
+        // Method 1: dari data attribute pada body
+        const bodyRole = document.body.getAttribute('data-user-role');
+        if (bodyRole) {
+            console.log('Got user role from body data attribute:', bodyRole);
+            return bodyRole;
+        }
+
+        // Method 2: dari hidden input
+        const hiddenInput = document.getElementById('user-role-data');
+        if (hiddenInput && hiddenInput.value) {
+            console.log('Got user role from hidden input:', hiddenInput.value);
+            return hiddenInput.value;
+        }
+
+        // Method 3: dari current URL (fallback)
+        const currentPath = window.location.pathname;
+        if (currentPath.includes('dashboard_admin')) {
+            console.log('Detected admin from URL');
+            return 'admin';
+        } else if (currentPath.includes('dashboard_shelter')) {
+            console.log('Detected shelter from URL');
+            return 'shelter';
+        } else if (currentPath.includes('dashboard_adopter')) {
+            console.log('Detected adopter from URL');
+            return 'adopter';
+        }
+
+        // Default fallback
+        console.log('Using default role: admin');
+        return 'admin';
+    }
+
+    // Render menu berdasarkan user role
+    function renderMenu() {
+        const userRole = getUserRole();
+        console.log('Rendering menu for role:', userRole);
+
         menuContainer.innerHTML = '';
-        const items = menus[role] || [];
+        const items = menus[userRole] || [];
+
+        if (items.length === 0) {
+            console.warn('No menu items found for role:', userRole);
+            const noItems = document.createElement('div');
+            noItems.className = 'text-center text-gray-400 py-4';
+            noItems.textContent = 'No menu items available';
+            menuContainer.appendChild(noItems);
+            return;
+        }
 
         items.forEach((item, idx) => {
             let el;
             if (item.href) {
-                // Anchor navigation untuk adopter pages
+                // Anchor navigation untuk pages
                 el = document.createElement('a');
                 el.href = item.href;
                 el.setAttribute('role', 'menuitem');
-                el.className = 'w-full block text-left px-3 py-2 rounded hover:bg-[#24483E] transition-colors';
+                el.className = 'w-full block text-left px-3 py-2 rounded hover:bg-[#24483E] transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white';
                 el.textContent = item.label;
+
+                // Highlight current page
+                if (window.location.pathname.includes(item.href.replace('.jsp', ''))) {
+                    el.className += ' bg-[#24483E]';
+                }
             } else {
                 // Fallback button yang call action
                 el = document.createElement('button');
                 el.type = 'button';
-                el.className = 'w-full text-left px-3 py-2 rounded hover:bg-[#24483E] transition-colors';
+                el.className = 'w-full text-left px-3 py-2 rounded hover:bg-[#24483E] transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white';
                 el.textContent = item.label;
                 el.addEventListener('click', () => {
                     try {
                         item.action();
                     } catch (e) {
-                        console.log(e);
+                        console.log('Menu action error:', e);
                     }
                     closeSidebar();
                 });
@@ -88,13 +141,15 @@ function initSidebar() {
 
             menuContainer.appendChild(el);
 
-            // Divider line
+            // Divider line (kecuali untuk item terakhir)
             if (idx < items.length - 1) {
                 const hr = document.createElement('div');
                 hr.className = 'border-t border-slate-500/30 my-1';
                 menuContainer.appendChild(hr);
             }
         });
+
+        console.log('Menu rendered with', items.length, 'items for role:', userRole);
     }
 
     // Open sidebar
@@ -103,6 +158,7 @@ function initSidebar() {
         overlay.classList.remove('hidden');
         sidebar.setAttribute('aria-hidden', 'false');
         overlay.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden'; // Prevent body scrolling
     }
 
     // Close sidebar
@@ -111,46 +167,46 @@ function initSidebar() {
         overlay.classList.add('hidden');
         sidebar.setAttribute('aria-hidden', 'true');
         overlay.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = ''; // Restore body scrolling
     }
 
     // Event delegation untuk header toggle button
     document.addEventListener('click', function (e) {
         const target = e.target;
+        const sidebarBtn = document.getElementById('sidebarBtn');
 
         // Toggle sidebar bila click header button
-        if (target.closest && target.closest('#sidebarBtn')) {
-            if (sidebar.classList.contains('-translate-x-full'))
+        if (target === sidebarBtn || (sidebarBtn && sidebarBtn.contains(target))) {
+            if (sidebar.classList.contains('-translate-x-full')) {
                 openSidebar();
-            else
+            } else {
                 closeSidebar();
+            }
+            e.preventDefault();
         }
 
         // Close bila click overlay
-        if (target.closest && target.closest('#sidebar-overlay')) {
+        if (target === overlay || (overlay && overlay.contains(target))) {
             closeSidebar();
         }
     });
 
     // Close button dalam sidebar
-    if (closeBtn)
-        closeBtn.addEventListener('click', closeSidebar);
+    if (closeBtn) {
+        closeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeSidebar();
+        });
+    }
 
     // Escape key tutup sidebar
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             if (!logoutModal.classList.contains('hidden')) {
                 hideLogoutModal();
-            } else {
+            } else if (!sidebar.classList.contains('-translate-x-full')) {
                 closeSidebar();
             }
-        }
-    });
-
-    // Radio change untuk tukar menu content
-    document.addEventListener('change', (e) => {
-        const r = e.target;
-        if (r.name === 'sidebar_role') {
-            renderMenu(r.value);
         }
     });
 
@@ -170,11 +226,15 @@ function initSidebar() {
         });
     }
 
-    // Logout modal confirm button - ensure sidebar closes
+    // Logout modal confirm button
     if (logoutConfirm) {
-        logoutConfirm.addEventListener('click', () => {
+        logoutConfirm.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Logging out...');
             closeSidebar();
             hideLogoutModal();
+            // Redirect to logout servlet
+            window.location.href = 'logout';
         });
     }
 
@@ -187,16 +247,37 @@ function initSidebar() {
         });
     }
 
-    // Initial render (default checked radio)
-    const initial = document.querySelector('input[name="sidebar_role"]:checked');
-    renderMenu(initial ? initial.value : 'admin');
+    // Initial render berdasarkan user role
+    renderMenu();
 
-    // Overlay click juga tutup sidebar (tapi bukan modal)
-    overlay.addEventListener('click', closeSidebar);
+    // Re-render menu jika ada perubahan pada role (optional)
+    const observer = new MutationObserver(function (mutations) {
+        mutations.forEach(function (mutation) {
+            if (mutation.type === 'attributes' &&
+                    (mutation.attributeName === 'data-user-role' ||
+                            mutation.target.id === 'user-role-data')) {
+                console.log('Role changed, re-rendering menu');
+                renderMenu();
+            }
+        });
+    });
+
+    // Observe body for role changes
+    observer.observe(document.body, {attributes: true});
+
+    // Observe hidden input for role changes
+    const roleInput = document.getElementById('user-role-data');
+    if (roleInput) {
+        observer.observe(roleInput, {attributes: true});
+    }
+
+    console.log('Sidebar initialized successfully');
 }
 
 // ✅ PANGGIL initSidebar bila DOM ready
-// Sekarang tak perlu fetch header/footer/sidebar sebab dah guna JSP include
-document.addEventListener('DOMContentLoaded', function () {
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSidebar);
+} else {
+    // DOM sudah ready
     initSidebar();
-});
+}

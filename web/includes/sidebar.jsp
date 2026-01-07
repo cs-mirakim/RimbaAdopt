@@ -1,3 +1,18 @@
+<%@ page import="com.rimba.adopt.util.SessionUtil" %>
+<%
+    String userRole = SessionUtil.getUserRole(request);
+    String userName = SessionUtil.getUserName(request);
+    String displayRole = "";
+
+    if ("admin".equals(userRole)) {
+        displayRole = "Admin";
+    } else if ("shelter".equals(userRole)) {
+        displayRole = "Shelter";
+    } else if ("adopter".equals(userRole)) {
+        displayRole = "Adopter";
+    }
+%>
+
 <!-- includes/sidebar.html -->
 <!-- Sidebar + overlay - HTML sahaja, TIADA script -->
 <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm hidden z-40" aria-hidden="true"></div>
@@ -16,30 +31,11 @@
                 </svg>
             </button>
         </div>
-
-        <!-- Account Type radio (storyboard switcher) -->
-        <fieldset class="mb-2">
-            <legend class="block mb-2 text-sm font-medium text-white/90">Account Type</legend>
-            <div class="flex gap-2">
-                <label class="inline-flex items-center gap-2 cursor-pointer text-sm">
-                    <input type="radio" name="sidebar_role" value="admin" checked class="cursor-pointer accent-[#6DBF89]"/>
-                    <span>Admin</span>
-                </label>
-                <label class="inline-flex items-center gap-2 cursor-pointer text-sm">
-                    <input type="radio" name="sidebar_role" value="shelter" class="cursor-pointer accent-[#6DBF89]"/>
-                    <span>Shelter</span>
-                </label>
-                <label class="inline-flex items-center gap-2 cursor-pointer text-sm">
-                    <input type="radio" name="sidebar_role" value="adopter" class="cursor-pointer accent-[#6DBF89]"/>
-                    <span>Adopter</span>
-                </label>
-            </div>
-        </fieldset>
     </div>
 
     <!-- Menu container (akan di-populate oleh sidebar.js) -->
     <nav id="sidebar-menu" class="flex flex-col p-4 gap-2" aria-label="Sidebar navigation">
-        <!-- JS akan inject menu items sini -->
+        <!-- JS akan inject menu items sini berdasarkan role session -->
     </nav>
 
     <!-- Logout at bottom -->
@@ -77,7 +73,7 @@
                         class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors">
                     Cancel
                 </button>
-                <a href="login.html"
+                <a href="logout"
                    id="logout-confirm"
                    class="px-4 py-2 text-sm font-medium text-white bg-[#B84A4A] hover:bg-red-700 rounded-md transition-colors">
                     Logout
