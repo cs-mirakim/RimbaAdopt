@@ -57,7 +57,11 @@
                     </div>
                 </fieldset>
 
-                <form id="loginForm" onsubmit="onLogin(event)" class="space-y-4">
+                <!-- GANTI FORM YANG LAMA -->
+                <form id="loginForm" action="login" method="POST" class="space-y-4">
+
+                    <!-- Hidden input untuk role -->
+                    <input type="hidden" name="role" id="roleInput" value="admin" />
 
                     <div>
                         <label for="login_email" class="block text-sm font-medium mb-1">
@@ -65,6 +69,7 @@
                         </label>
                         <input
                             id="login_email"
+                            name="login_email"
                             type="email"
                             required
                             class="w-full p-2 border border-[#E5E5E5] rounded-md"
@@ -78,6 +83,7 @@
                         </label>
                         <input
                             id="login_password"
+                            name="login_password"
                             type="password"
                             required
                             class="w-full p-2 border border-[#E5E5E5] rounded-md"
@@ -98,11 +104,19 @@
                         Login
                     </button>
 
-                    <div class="flex items-center justify-between mt-2 text-sm">
-                        <p>
-                            Don't have an account?
-                            <a href="register.jsp" class="text-[#2F5D50] font-semibold">
-                                Register
+                    <%-- Display error message if exists --%>
+                    <% if (request.getAttribute("errorMessage") != null) {%>
+                    <div class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                        <%= request.getAttribute("errorMessage")%>
+                    </div>
+                    <% }%>
+
+                    <!-- Register link -->
+                    <div class="mt-6 text-center">
+                        <p class="text-gray-600">
+                            Not registered yet?
+                            <a href="register.jsp" class="text-[#2F5D50] font-semibold hover:underline ml-1">
+                                Create an account
                             </a>
                         </p>
                     </div>
@@ -168,34 +182,51 @@
 
 
         <script>
-            function getSelectedRole() {
-                return document.querySelector('input[name="role"]:checked').value;
-            }
+            // Update radio buttons to update hidden input
+            document.addEventListener('DOMContentLoaded', function () {
+                const roleRadios = document.querySelectorAll('input[name="role"]');
+                const roleInput = document.getElementById('roleInput');
 
-            function onLogin(e) {
-                e.preventDefault();
-                const role = getSelectedRole();
-                if (role === "admin")
-                    window.location.href = "dashboard_admin.jsp";
-                else if (role === "shelter")
-                    window.location.href = "dashboard_shelter.jsp";
-                else
-                    window.location.href = "dashboard_adopter.jsp";
-            }
+                roleRadios.forEach(radio => {
+                    radio.addEventListener('change', function () {
+                        roleInput.value = this.value;
+                    });
+                });
 
+                // Update reset popup role selection
+                const resetRoleRadios = document.querySelectorAll('#popup input[name="role"]');
+                const resetRoleInput = document.createElement('input');
+                resetRoleInput.type = 'hidden';
+                resetRoleInput.name = 'reset_role';
+                resetRoleInput.id = 'resetRoleInput';
+                resetRoleInput.value = 'admin';
+                document.querySelector('#popup form').appendChild(resetRoleInput);
+
+                resetRoleRadios.forEach(radio => {
+                    radio.addEventListener('change', function () {
+                        resetRoleInput.value = this.value;
+                    });
+                });
+            });
+
+            // Remove the old onLogin function since we're using form submission
             function openPopup() {
                 document.getElementById("popup").classList.remove("hidden");
             }
+
             function closePopup() {
                 document.getElementById("popup").classList.add("hidden");
             }
+
             function submitReset() {
                 const email = document.getElementById("reset_email").value;
                 if (!email) {
                     alert("Please enter your email");
                     return;
                 }
-                window.location.href = "reset_password.jsp";
+                // You can implement forgot password functionality later
+                alert("Password reset functionality will be implemented soon.");
+                closePopup();
             }
         </script>
 

@@ -17,7 +17,21 @@
                 </p>
             </div>
 
-            <form id="registerForm" onsubmit="submitReg(event)" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- TAMBAH: Display error/success messages -->
+            <% if (request.getAttribute("errorMessage") != null) {%>
+            <div class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                <%= request.getAttribute("errorMessage")%>
+            </div>
+            <% } %>
+
+            <% if (request.getAttribute("successMessage") != null) {%>
+            <div class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+                <%= request.getAttribute("successMessage")%>
+            </div>
+            <% }%>
+
+            <!-- UBAH: Form dengan enctype untuk file upload -->
+            <form id="registerForm" action="register" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- LEFT COLUMN -->
                 <div class="flex flex-col gap-3">
                     <!-- Role radio -->
@@ -35,27 +49,35 @@
                         </div>
                     </fieldset>
 
+                    <!-- Profile Photo Upload -->
+                    <div>
+                        <label for="profile_photo" class="block text-sm font-medium mb-1">Profile Photo</label>
+                        <input id="profile_photo" name="profile_photo" type="file" accept="image/*"
+                               class="w-full px-3 py-2 border border-[#E5E5E5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#2F5D50]"/>
+                        <p class="text-xs text-gray-500 mt-1">Max 2MB. JPG, PNG formats only.</p>
+                    </div>
+
                     <!-- Common fields -->
                     <div>
-                        <label for="full_name" class="block text-sm font-medium mb-1">Full Name</label>
+                        <label for="full_name" class="block text-sm font-medium mb-1">Full Name *</label>
                         <input id="full_name" name="full_name" type="text" required
                                class="w-full px-3 py-2 border border-[#E5E5E5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#2F5D50]" placeholder="Full Name"/>
                     </div>
 
                     <div>
-                        <label for="email" class="block text-sm font-medium mb-1">Email</label>
+                        <label for="email" class="block text-sm font-medium mb-1">Email *</label>
                         <input id="email" name="email" type="email" required
                                class="w-full px-3 py-2 border border-[#E5E5E5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#2F5D50]" placeholder="you@example.com"/>
                     </div>
 
                     <div>
-                        <label for="password" class="block text-sm font-medium mb-1">Password</label>
+                        <label for="password" class="block text-sm font-medium mb-1">Password *</label>
                         <input id="password" name="password" type="password" required minlength="6"
                                class="w-full px-3 py-2 border border-[#E5E5E5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#2F5D50]" placeholder="Password (min 6 chars)"/>
                     </div>
 
                     <div>
-                        <label for="confirm_password" class="block text-sm font-medium mb-1">Confirm Password</label>
+                        <label for="confirm_password" class="block text-sm font-medium mb-1">Confirm Password *</label>
                         <input id="confirm_password" name="confirm_password" type="password" required
                                class="w-full px-3 py-2 border border-[#E5E5E5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#2F5D50]" placeholder="Re-type your password"/>
                     </div>
@@ -76,13 +98,13 @@
                     <!-- ADOPTER BLOCK -->
                     <div id="adopter_fields" class="flex flex-col gap-3">
                         <input id="address" name="address" type="text" required
-                               class="w-full px-3 py-2 border border-[#E5E5E5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#2F5D50]" placeholder="Address"/>
+                               class="w-full px-3 py-2 border border-[#E5E5E5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#2F5D50]" placeholder="Address *"/>
                         <input id="occupation" name="occupation" type="text" required
-                               class="w-full px-3 py-2 border border-[#E5E5E5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#2F5D50]" placeholder="Occupation"/>
+                               class="w-full px-3 py-2 border border-[#E5E5E5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#2F5D50]" placeholder="Occupation *"/>
                         <input id="household" name="household" type="text" required
-                               class="w-full px-3 py-2 border border-[#E5E5E5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#2F5D50]" placeholder="Household Type"/>
+                               class="w-full px-3 py-2 border border-[#E5E5E5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#2F5D50]" placeholder="Household Type *"/>
                         <label class="flex items-center gap-2 text-sm cursor-pointer">
-                            <input id="has_pets" name="has_pets" type="checkbox" required class="h-4 w-4 cursor-pointer"/>
+                            <input id="has_pets" name="has_pets" type="checkbox" class="h-4 w-4 cursor-pointer"/>
                             <span>Has other pets?</span>
                         </label>
                         <textarea id="adopter_notes" name="adopter_notes"
@@ -93,22 +115,22 @@
                     <!-- SHELTER BLOCK -->
                     <div id="shelter_fields" class="flex flex-col gap-3 hidden">
                         <input id="shelter_name" name="shelter_name" type="text" required
-                               class="w-full px-3 py-2 border border-[#E5E5E5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#2F5D50]" placeholder="Shelter Name"/>
+                               class="w-full px-3 py-2 border border-[#E5E5E5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#2F5D50]" placeholder="Shelter Name *"/>
                         <input id="shelter_address" name="shelter_address" type="text" required
-                               class="w-full px-3 py-2 border border-[#E5E5E5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#2F5D50]" placeholder="Shelter Address"/>
+                               class="w-full px-3 py-2 border border-[#E5E5E5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#2F5D50]" placeholder="Shelter Address *"/>
                         <textarea id="shelter_desc" name="shelter_desc" required rows="3"
                                   class="w-full px-3 py-2 border border-[#E5E5E5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#2F5D50] resize-none overflow-y-auto"
-                                  placeholder="Shelter Description" style="min-height:120px; max-height:150px;"></textarea>
+                                  placeholder="Shelter Description *" style="min-height:120px; max-height:150px;"></textarea>
                         <input id="website" name="website" type="url"
                                class="w-full px-3 py-2 border border-[#E5E5E5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#2F5D50]" placeholder="Website (optional)"/>
                         <div class="flex gap-2">
                             <div class="flex-1">
-                                <label for="hours_from" class="block text-sm font-medium mb-1">Operating From</label>
+                                <label for="hours_from" class="block text-sm font-medium mb-1">Operating From *</label>
                                 <input id="hours_from" name="hours_from" type="time" required
                                        class="w-full px-3 py-2 border border-[#E5E5E5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#2F5D50]"/>
                             </div>
                             <div class="flex-1">
-                                <label for="hours_to" class="block text-sm font-medium mb-1">Operating To</label>
+                                <label for="hours_to" class="block text-sm font-medium mb-1">Operating To *</label>
                                 <input id="hours_to" name="hours_to" type="time" required
                                        class="w-full px-3 py-2 border border-[#E5E5E5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#2F5D50]"/>
                             </div>
@@ -132,37 +154,72 @@
 
         <script>
             function toggleForms() {
-                const role = document.querySelector(
-                        'input[name="reg_role"]:checked'
-                        ).value;
-                document
-                        .getElementById("adopter_fields")
-                        .classList.toggle("hidden", role !== "adopter");
-                document
-                        .getElementById("shelter_fields")
-                        .classList.toggle("hidden", role !== "shelter");
-            }
+                const role = document.querySelector('input[name="reg_role"]:checked').value;
 
-            document.addEventListener("DOMContentLoaded", () => {
-                toggleForms();
-            });
+                const adopterFields = document.getElementById("adopter_fields");
+                const shelterFields = document.getElementById("shelter_fields");
 
-            function submitReg(e) {
-                e.preventDefault();
-                        const pwd = document.getElementById("password")?.value;
-                        const cpwd = document.getElementById("confirm_password")?.value;
-                if (pwd !== undefined && cpwd !== undefined && pwd !== cpwd) {
-                    alert("Password and Confirm Password do not match.");
-                    return;
+                if (role === "adopter") {
+                    // Show adopter, hide shelter
+                    adopterFields.classList.remove("hidden");
+                    shelterFields.classList.add("hidden");
+
+                    // Enable adopter fields
+                    adopterFields.querySelectorAll('input, textarea').forEach(function (field) {
+                        field.disabled = false;
+                        if (field.id === 'address' || field.id === 'occupation' || field.id === 'household') {
+                            field.required = true;
+                        }
+                    });
+
+                    // Disable shelter fields
+                    shelterFields.querySelectorAll('input, textarea').forEach(function (field) {
+                        field.disabled = true;
+                        field.required = false;
+                    });
+
+                } else if (role === "shelter") {
+                    // Show shelter, hide adopter
+                    shelterFields.classList.remove("hidden");
+                    adopterFields.classList.add("hidden");
+
+                    // Enable shelter fields
+                    shelterFields.querySelectorAll('input, textarea').forEach(function (field) {
+                        field.disabled = false;
+                        if (field.id !== 'website') { // website is optional
+                            field.required = true;
+                        }
+                    });
+
+                    // Disable adopter fields
+                    adopterFields.querySelectorAll('input, textarea, select').forEach(function (field) {
+                        field.disabled = true;
+                        field.required = false;
+                    });
                 }
-                const role = document.querySelector(
-                        'input[name="reg_role"]:checked'
-                        ).value;
-                if (role === "adopter")
-                    alert("Adopter account successfully created!");
-                else
-                    alert("Shelter registered! Please wait for admin approval.");
             }
+
+            document.addEventListener("DOMContentLoaded", function () {
+                toggleForms();
+
+                // Client-side password validation
+                document.getElementById('registerForm').addEventListener('submit', function (e) {
+                    const pwd = document.getElementById("password").value;
+                    const cpwd = document.getElementById("confirm_password").value;
+
+                    if (pwd !== cpwd) {
+                        alert("Password dan Confirm Password tidak sama.");
+                        e.preventDefault();
+                        return false;
+                    }
+
+                    if (pwd.length < 6) {
+                        alert("Password mesti sekurang-kurangnya 6 aksara.");
+                        e.preventDefault();
+                        return false;
+                    }
+                });
+            });
         </script>
     </body>
 </html>
