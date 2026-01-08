@@ -8,8 +8,8 @@ public class AdoptionRequest implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private Integer requestId;
-    private Integer adopterId;           // ID adopter sahaja
-    private Integer petId;               // ID pet sahaja
+    private Integer adopterId;
+    private Integer petId;
     private Timestamp requestDate;
     private String status;
     private String adopterMessage;
@@ -19,7 +19,6 @@ public class AdoptionRequest implements Serializable {
     public AdoptionRequest() {
     }
 
-    // Getters and Setters
     public Integer getRequestId() {
         return requestId;
     }

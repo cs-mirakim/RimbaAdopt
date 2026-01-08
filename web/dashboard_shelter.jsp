@@ -1,4 +1,19 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="com.rimba.adopt.util.SessionUtil" %>
+
+<%
+    // Check if user is logged in and is admin
+    if (!SessionUtil.isLoggedIn(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+
+    if (!SessionUtil.isShelter(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+%>
+
 <!DOCTYPE html>
 <html lang="en">
     <head>
