@@ -1,6 +1,7 @@
 package com.rimba.adopt.controller;
 
 import com.rimba.adopt.dao.UsersDao;
+import com.rimba.adopt.model.Admin;
 import com.rimba.adopt.model.Users;
 import com.rimba.adopt.model.Shelter;
 import com.rimba.adopt.model.Adopter;
@@ -172,7 +173,7 @@ public class ProfileServlet extends HttpServlet {
         }
     }
 
-    // Delete old profile photo
+    // File: ProfileServlet.java - dalam method deleteOldProfilePhoto()
     private void deleteOldProfilePhoto(String profilePhotoPath, HttpServletRequest request) {
         if (profilePhotoPath == null || profilePhotoPath.isEmpty()) {
             return;
@@ -211,14 +212,19 @@ public class ProfileServlet extends HttpServlet {
             File webappFile = new File(webappFullPath);
             File projectFile = new File(projectPath);
 
-            if (webappFile.exists()) {
-                boolean deleted = webappFile.delete();
-                logger.info("Deleted webapp file: " + webappFullPath + ", Success: " + deleted);
-            }
+            // HANYA hapus jika bukan default avatar
+            if (!profilePhotoPath.contains("default-avatar.png")) {
+                if (webappFile.exists()) {
+                    boolean deleted = webappFile.delete();
+                    logger.info("Deleted webapp file: " + webappFullPath + ", Success: " + deleted);
+                }
 
-            if (projectFile.exists()) {
-                boolean deleted = projectFile.delete();
-                logger.info("Deleted project file: " + projectPath + ", Success: " + deleted);
+                if (projectFile.exists()) {
+                    boolean deleted = projectFile.delete();
+                    logger.info("Deleted project file: " + projectPath + ", Success: " + deleted);
+                }
+            } else {
+                logger.info("Skipping deletion of default avatar: " + profilePhotoPath);
             }
 
         } catch (Exception e) {
@@ -336,15 +342,16 @@ public class ProfileServlet extends HttpServlet {
             // Handle profile photo upload
             Part filePart = request.getPart("profile_photo");
             String newProfilePhotoPath = null;
+            String tempOldProfilePhotoPath = null; // Simpan path lama sementara
 
             if (filePart != null && filePart.getSize() > 0 && filePart.getSubmittedFileName() != null) {
-                // Delete old photo jika ada
-                if (oldProfilePhotoPath != null && !oldProfilePhotoPath.isEmpty()) {
-                    deleteOldProfilePhoto(oldProfilePhotoPath, request);
-                }
-
-                // Save new photo
+                // 1. Simpan foto baru dulu
                 newProfilePhotoPath = saveProfilePhoto(filePart, request, currentUser.getEmail(), userRole);
+
+                if (newProfilePhotoPath != null && !newProfilePhotoPath.isEmpty()) {
+                    // 2. Simpan path lama untuk dihapus nanti JIKA update sukses
+                    tempOldProfilePhotoPath = oldProfilePhotoPath;
+                }
             }
 
             // Get form parameters
@@ -354,6 +361,12 @@ public class ProfileServlet extends HttpServlet {
             String changePassword = request.getParameter("change_password");
             String newPassword = request.getParameter("new_password");
             String confirmPassword = request.getParameter("confirm_password");
+
+            // ========== LOGGING DEBUG ==========
+            logger.info("=== UPDATE PROFILE DEBUG ===");
+            logger.info("change_password checkbox: " + changePassword);
+            logger.info("new_password: " + (newPassword != null ? "[PROVIDED - length: " + newPassword.length() + "]" : "[NULL]"));
+            logger.info("confirm_password: " + (confirmPassword != null ? "[PROVIDED]" : "[NULL]"));
 
             // Validate email uniqueness (if changed)
             if (!email.equals(currentUser.getEmail())) {
@@ -365,20 +378,43 @@ public class ProfileServlet extends HttpServlet {
             }
 
             // Validate password if changing
-            if ("on".equals(changePassword) && newPassword != null && !newPassword.isEmpty()) {
+            boolean shouldUpdatePassword = false;
+            String hashedNewPassword = null;
+
+            if ("on".equals(changePassword)) {
+                if (newPassword == null || newPassword.trim().isEmpty()) {
+                    request.setAttribute("errorMessage", "Please enter a new password.");
+                    request.getRequestDispatcher("profile.jsp").forward(request, response);
+                    return;
+                }
+
                 if (!newPassword.equals(confirmPassword)) {
                     request.setAttribute("errorMessage", "New password and confirm password do not match.");
                     request.getRequestDispatcher("profile.jsp").forward(request, response);
                     return;
                 }
+
                 if (newPassword.length() < 6) {
                     request.setAttribute("errorMessage", "Password must be at least 6 characters.");
                     request.getRequestDispatcher("profile.jsp").forward(request, response);
                     return;
                 }
+
+                // Hash password
+                hashedNewPassword = hashPassword(newPassword);
+                if (hashedNewPassword == null) {
+                    request.setAttribute("errorMessage", "Failed to process password. Please try again.");
+                    request.getRequestDispatcher("profile.jsp").forward(request, response);
+                    return;
+                }
+
+                shouldUpdatePassword = true;
+                logger.info("Password will be updated. Hash: " + hashedNewPassword);
+            } else {
+                logger.info("Password will NOT be updated.");
             }
 
-            // Update user object
+            // Update user object (TANPA PASSWORD)
             Users updatedUser = new Users();
             updatedUser.setUserId(userId);
             updatedUser.setName(name);
@@ -386,24 +422,22 @@ public class ProfileServlet extends HttpServlet {
             updatedUser.setPhone(phone);
             updatedUser.setRole(userRole);
 
-            // Set profile photo path (new or keep old)
             if (newProfilePhotoPath != null) {
                 updatedUser.setProfilePhotoPath(newProfilePhotoPath);
             } else {
                 updatedUser.setProfilePhotoPath(oldProfilePhotoPath);
             }
 
-            // Update password if changed
-            if ("on".equals(changePassword) && newPassword != null && !newPassword.isEmpty()) {
-                String hashedPassword = hashPassword(newPassword);
-                if (hashedPassword != null) {
-                    updatedUser.setPassword(hashedPassword);
-                    usersDao.updatePassword(userId, hashedPassword);
-                }
-            }
-
-            // Update users table
+            // Update users table (WITHOUT password)
             boolean userUpdated = usersDao.updateUser(updatedUser);
+            logger.info("User basic info updated: " + userUpdated);
+
+            // Update password BERASINGAN jika perlu
+            boolean passwordUpdated = true; // default true jika tak perlu update
+            if (shouldUpdatePassword) {
+                passwordUpdated = usersDao.updatePassword(userId, hashedNewPassword);
+                logger.info("Password updated: " + passwordUpdated);
+            }
 
             // Update role-specific data
             boolean roleUpdated = false;
@@ -415,7 +449,6 @@ public class ProfileServlet extends HttpServlet {
                 shelter.setShelterDescription(request.getParameter("shelter_description"));
                 shelter.setWebsite(request.getParameter("website"));
 
-                // Combine operating hours
                 String hoursFrom = request.getParameter("hours_from");
                 String hoursTo = request.getParameter("hours_to");
                 if (hoursFrom != null && hoursTo != null
@@ -434,38 +467,51 @@ public class ProfileServlet extends HttpServlet {
                 adopter.setHouseholdType(request.getParameter("household_type"));
 
                 String hasPets = request.getParameter("has_other_pets");
-                if ("on".equals(hasPets)) {
-                    adopter.setHasOtherPets(1);
-                } else {
-                    adopter.setHasOtherPets(0);
-                }
+                adopter.setHasOtherPets("on".equals(hasPets) ? 1 : 0);
 
                 adopter.setNotes(request.getParameter("notes"));
                 roleUpdated = usersDao.updateAdopter(adopter, userId);
 
             } else if ("admin".equals(userRole)) {
-                String position = request.getParameter("position");
-                roleUpdated = usersDao.updateAdmin(position, userId);
+                Admin admin = new Admin();
+                admin.setAdminId(userId);
+                admin.setPosition(request.getParameter("position"));
+
+                roleUpdated = usersDao.updateAdmin(admin);
             } else {
-                roleUpdated = true; // No role-specific data to update
+                roleUpdated = true;
             }
 
-            if (userUpdated && roleUpdated) {
+            if (userUpdated && passwordUpdated && roleUpdated) {
                 conn.commit();
                 logger.info("Profile updated successfully for user ID: " + userId);
 
-                // Update session dengan data baru
+                // 3. Hapus foto lama JIKA update berhasil DAN ada foto baru
+                if (tempOldProfilePhotoPath != null && !tempOldProfilePhotoPath.isEmpty()) {
+                    deleteOldProfilePhoto(tempOldProfilePhotoPath, request);
+                }
+
+                // Update session
                 HttpSession session = request.getSession();
                 session.setAttribute("userName", updatedUser.getName());
                 session.setAttribute("userEmail", updatedUser.getEmail());
                 session.setAttribute("userProfilePhoto", updatedUser.getProfilePhotoPath());
 
-                // Set success message
-                request.setAttribute("successMessage", "Profile updated successfully!");
+                if (shouldUpdatePassword) {
+                    request.setAttribute("successMessage", "Profile and password updated successfully!");
+                } else {
+                    request.setAttribute("successMessage", "Profile updated successfully!");
+                }
 
             } else {
                 conn.rollback();
                 logger.warning("Profile update failed for user ID: " + userId);
+
+                // 4. Jika rollback, hapus foto baru yang sudah disimpan (jika ada)
+                if (newProfilePhotoPath != null && !newProfilePhotoPath.isEmpty()) {
+                    deleteOldProfilePhoto(newProfilePhotoPath, request);
+                }
+
                 request.setAttribute("errorMessage", "Failed to update profile. Please try again.");
             }
 
@@ -474,7 +520,6 @@ public class ProfileServlet extends HttpServlet {
             request.setAttribute("profileData", updatedProfileData);
             request.setAttribute("userRole", userRole);
 
-            // Forward back to profile page
             request.getRequestDispatcher("profile.jsp").forward(request, response);
 
         } catch (SQLException e) {

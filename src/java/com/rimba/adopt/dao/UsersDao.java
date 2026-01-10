@@ -3,6 +3,7 @@ package com.rimba.adopt.dao;
 import com.rimba.adopt.model.Users;
 import com.rimba.adopt.model.Shelter;
 import com.rimba.adopt.model.Adopter;
+import com.rimba.adopt.model.Admin;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -248,9 +249,11 @@ public class UsersDao {
                 stmt.setInt(1, userId);
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
-                        Map<String, String> adminInfo = new HashMap<>();
-                        adminInfo.put("position", rs.getString("position"));
-                        profileData.put("admin", adminInfo);
+                        // GANTI Map dengan Admin Object
+                        Admin admin = new Admin();
+                        admin.setAdminId(rs.getInt("admin_id"));
+                        admin.setPosition(rs.getString("position"));
+                        profileData.put("admin", admin);  // ← OBJECT, bukan Map!
                     }
                 }
             }
@@ -259,7 +262,7 @@ public class UsersDao {
         return profileData;
     }
 
-// ========== UPDATE USER ==========
+// ========== UPDATE USER (TANPA PASSWORD) ==========
     public boolean updateUser(Users user) throws SQLException {
         String sql = "UPDATE users SET name = ?, email = ?, phone = ?, profile_photo_path = ? WHERE user_id = ?";
 
@@ -268,6 +271,7 @@ public class UsersDao {
             stmt.setString(2, user.getEmail());
             stmt.setString(3, user.getPhone());
 
+            // Handle profile photo path
             if (user.getProfilePhotoPath() != null && !user.getProfilePhotoPath().isEmpty()) {
                 stmt.setString(4, user.getProfilePhotoPath());
             } else {
@@ -277,12 +281,26 @@ public class UsersDao {
             stmt.setInt(5, user.getUserId());
 
             int rowsUpdated = stmt.executeUpdate();
-            logger.info("Updated user ID " + user.getUserId() + ", Rows: " + rowsUpdated);
+            logger.info("Updated user ID " + user.getUserId() + " (without password), Rows: " + rowsUpdated);
             return rowsUpdated > 0;
         }
     }
 
+// ========== UPDATE PASSWORD SAHAJA ==========
+    public boolean updatePassword(int userId, String hashedPassword) throws SQLException {
+        String sql = "UPDATE users SET password = ? WHERE user_id = ?";
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, hashedPassword);
+            stmt.setInt(2, userId);
+
+            int rowsUpdated = stmt.executeUpdate();
+            logger.info("Updated password for user ID " + userId + ", Rows: " + rowsUpdated);
+            return rowsUpdated > 0;
+        }
+    }
 // ========== UPDATE SHELTER ==========
+
     public boolean updateShelter(Shelter shelter, int userId) throws SQLException {
         String sql = "UPDATE shelter SET shelter_name = ?, shelter_address = ?, "
                 + "shelter_description = ?, website = ?, operating_hours = ? "
@@ -339,33 +357,31 @@ public class UsersDao {
     }
 
 // ========== UPDATE ADMIN ==========
-    public boolean updateAdmin(String position, int userId) throws SQLException {
+    public boolean updateAdmin(Admin admin) throws SQLException {  // ← Terima Admin object
         String sql = "UPDATE admin SET position = ? WHERE admin_id = ?";
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            if (position != null && !position.isEmpty()) {
-                stmt.setString(1, position);
+            if (admin.getPosition() != null && !admin.getPosition().isEmpty()) {
+                stmt.setString(1, admin.getPosition());
             } else {
                 stmt.setNull(1, Types.VARCHAR);
             }
 
-            stmt.setInt(2, userId);
+            stmt.setInt(2, admin.getAdminId());
 
             int rowsUpdated = stmt.executeUpdate();
-            logger.info("Updated admin for user ID " + userId + ", Rows: " + rowsUpdated);
+            logger.info("Updated admin ID " + admin.getAdminId() + ", Rows: " + rowsUpdated);
             return rowsUpdated > 0;
         }
     }
 
-// ========== DELETE USER (HARD DELETE CASCADE) ==========
+// ========== DELETE USER (MANUAL CASCADE) ==========
     public boolean deleteUser(int userId) throws SQLException {
-        // Note: shelter table ada ON DELETE CASCADE, so shelter akan delete automatik
-        // Need manual delete untuk admin table
-
-        // 1. Dapatkan role user untuk tahu file path
+        // Apache Derby TIDAK support ON DELETE CASCADE, jadi perlu delete manual
         String role = null;
         String profilePhotoPath = null;
 
+        // 1. Dapatkan role user
         String getInfoSql = "SELECT role, profile_photo_path FROM users WHERE user_id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(getInfoSql)) {
             stmt.setInt(1, userId);
@@ -377,35 +393,114 @@ public class UsersDao {
             }
         }
 
-        // 2. Delete dari users table (akan cascade ke shelter table)
-        String deleteSql = "DELETE FROM users WHERE user_id = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(deleteSql)) {
-            stmt.setInt(1, userId);
-            int rowsDeleted = stmt.executeUpdate();
-            logger.info("Deleted user ID " + userId + ", Rows: " + rowsDeleted);
+        // 2. Hapus dari tabel dependen berdasarkan role
+        try {
+            // Hapus dari tabel dependen terlebih dahulu
+            if ("shelter".equals(role)) {
+                // Hapus data yang terkait dengan shelter (dalam urutan yang benar)
 
-            // Return info untuk delete file
-            Map<String, String> result = new HashMap<>();
-            result.put("role", role);
-            result.put("profilePhotoPath", profilePhotoPath);
-            result.put("success", rowsDeleted > 0 ? "true" : "false");
+                // Pertama, hapus pets yang dimiliki shelter ini
+                String deletePetsSql = "DELETE FROM pets WHERE shelter_id = ?";
+                try (PreparedStatement stmt = connection.prepareStatement(deletePetsSql)) {
+                    stmt.setInt(1, userId);
+                    stmt.executeUpdate();
+                }
 
-            return rowsDeleted > 0;
+                // Hapus feedback untuk shelter ini
+                String deleteFeedbackSql = "DELETE FROM feedback WHERE shelter_id = ?";
+                try (PreparedStatement stmt = connection.prepareStatement(deleteFeedbackSql)) {
+                    stmt.setInt(1, userId);
+                    stmt.executeUpdate();
+                }
+
+                // Hapus dari shelter table
+                String deleteShelterSql = "DELETE FROM shelter WHERE shelter_id = ?";
+                try (PreparedStatement stmt = connection.prepareStatement(deleteShelterSql)) {
+                    stmt.setInt(1, userId);
+                    stmt.executeUpdate();
+                }
+
+            } else if ("adopter".equals(role)) {
+                // Hapus data yang terkait dengan adopter
+
+                // Hapus adoption records terlebih dahulu
+                String deleteAdoptionRecordsSql = "DELETE FROM adoption_record WHERE adopter_id = ?";
+                try (PreparedStatement stmt = connection.prepareStatement(deleteAdoptionRecordsSql)) {
+                    stmt.setInt(1, userId);
+                    stmt.executeUpdate();
+                }
+
+                // Hapus adoption requests
+                String deleteAdoptionRequestsSql = "DELETE FROM adoption_request WHERE adopter_id = ?";
+                try (PreparedStatement stmt = connection.prepareStatement(deleteAdoptionRequestsSql)) {
+                    stmt.setInt(1, userId);
+                    stmt.executeUpdate();
+                }
+
+                // Hapus lost reports
+                String deleteLostReportsSql = "DELETE FROM lost_report WHERE adopter_id = ?";
+                try (PreparedStatement stmt = connection.prepareStatement(deleteLostReportsSql)) {
+                    stmt.setInt(1, userId);
+                    stmt.executeUpdate();
+                }
+
+                // Hapus feedback dari adopter
+                String deleteFeedbackSql = "DELETE FROM feedback WHERE adopter_id = ?";
+                try (PreparedStatement stmt = connection.prepareStatement(deleteFeedbackSql)) {
+                    stmt.setInt(1, userId);
+                    stmt.executeUpdate();
+                }
+
+                // Hapus dari adopter table
+                String deleteAdopterSql = "DELETE FROM adopter WHERE adopter_id = ?";
+                try (PreparedStatement stmt = connection.prepareStatement(deleteAdopterSql)) {
+                    stmt.setInt(1, userId);
+                    stmt.executeUpdate();
+                }
+
+            } else if ("admin".equals(role)) {
+                // Hapus dari admin table
+                String deleteAdminSql = "DELETE FROM admin WHERE admin_id = ?";
+                try (PreparedStatement stmt = connection.prepareStatement(deleteAdminSql)) {
+                    stmt.setInt(1, userId);
+                    stmt.executeUpdate();
+                }
+
+                // Hapus data banner yang dibuat admin (optional, jika mau cascade)
+                String updateBannerSql = "UPDATE awareness_banner SET created_by = NULL WHERE created_by = ?";
+                try (PreparedStatement stmt = connection.prepareStatement(updateBannerSql)) {
+                    stmt.setInt(1, userId);
+                    stmt.executeUpdate();
+                }
+
+                // Update shelter reviewed_by menjadi NULL
+                String updateShelterReviewSql = "UPDATE shelter SET reviewed_by = NULL WHERE reviewed_by = ?";
+                try (PreparedStatement stmt = connection.prepareStatement(updateShelterReviewSql)) {
+                    stmt.setInt(1, userId);
+                    stmt.executeUpdate();
+                }
+            }
+
+            // 3. Hapus password reset tokens
+            String deleteTokensSql = "DELETE FROM password_reset_tokens WHERE user_id = ?";
+            try (PreparedStatement stmt = connection.prepareStatement(deleteTokensSql)) {
+                stmt.setInt(1, userId);
+                stmt.executeUpdate();
+            }
+
+            // 4. Akhirnya, hapus dari users table
+            String deleteUserSql = "DELETE FROM users WHERE user_id = ?";
+            try (PreparedStatement stmt = connection.prepareStatement(deleteUserSql)) {
+                stmt.setInt(1, userId);
+                int rowsDeleted = stmt.executeUpdate();
+
+                logger.info("Deleted user ID " + userId + " (role: " + role + "), Rows: " + rowsDeleted);
+                return rowsDeleted > 0;
+            }
+
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Error deleting user with ID: " + userId, e);
+            throw e;
         }
     }
-
-// ========== UPDATE PASSWORD ==========
-    public boolean updatePassword(int userId, String hashedPassword) throws SQLException {
-        String sql = "UPDATE users SET password = ? WHERE user_id = ?";
-
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, hashedPassword);
-            stmt.setInt(2, userId);
-
-            int rowsUpdated = stmt.executeUpdate();
-            logger.info("Updated password for user ID " + userId + ", Rows: " + rowsUpdated);
-            return rowsUpdated > 0;
-        }
-    }
-
 }
