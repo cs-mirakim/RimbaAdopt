@@ -1,4 +1,18 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="com.rimba.adopt.util.SessionUtil" %>
+
+<%
+// Check if user is logged in and is admin
+    if (!SessionUtil.isLoggedIn(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+
+    if (!SessionUtil.isAdopter(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+%>
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -53,7 +67,7 @@
     <body class="flex flex-col min-h-screen relative bg-[#F6F3E7]">
 
         <!-- Header container -->
-<jsp:include page="includes/header.jsp" />
+        <jsp:include page="includes/header.jsp" />
 
         <!-- Main Dashboard Content -->
         <main class="flex-1 p-4 pt-6 relative z-10 flex justify-center items-start mb-2">
@@ -194,7 +208,7 @@
 
         <!-- Sidebar container -->
         <jsp:include page="includes/sidebar.jsp" />
-        
+
         <!-- Load sidebar.js -->
         <script src="includes/sidebar.js"></script>
 
@@ -674,7 +688,7 @@
 
                 // Get species icon
                 const speciesIcon = getSpeciesIcon(pet.species);
-                
+
                 // Pre-calculate gender values to avoid template literal issues
                 const genderClass = pet.gender === 'male' ? 'gender-male' : 'gender-female';
                 const genderIcon = pet.gender === 'male' ? 'fa-mars' : 'fa-venus';
@@ -682,51 +696,51 @@
 
                 // Use string concatenation to avoid JSP EL conflicts
                 card.innerHTML = ''
-                    + '<div class="relative">'
-                    + '<img src="' + pet.image + '" alt="' + pet.name + '" class="w-full h-48 object-cover">'
-                    + '<div class="absolute top-3 right-3">'
-                    + '<span class="px-3 py-1 rounded-full text-sm font-medium ' + genderClass + '">'
-                    + '<i class="fas ' + genderIcon + ' mr-1"></i> ' + genderText
-                    + '</span>'
-                    + '</div>'
-                    + '<div class="absolute top-3 left-3 bg-[#6DBF89] text-[#06321F] px-3 py-1 rounded-full text-sm font-medium">'
-                    + 'Available'
-                    + '</div>'
-                    + '</div>'
-                    + '<div class="p-5">'
-                    + '<h3 class="text-xl font-bold text-[#2B2B2B] mb-2">' + pet.name + '</h3>'
-                    + '<div class="flex items-center mb-3">'
-                    + '<div class="bg-[#F0F7F4] p-2 rounded-lg mr-3">'
-                    + '<i class="fas ' + speciesIcon + ' text-[#2F5D50]"></i>'
-                    + '</div>'
-                    + '<div>'
-                    + '<p class="text-[#2B2B2B] font-medium">' + capitalizeFirstLetter(pet.species) + '</p>'
-                    + '<p class="text-[#666] text-sm">' + pet.breed + '</p>'
-                    + '</div>'
-                    + '</div>'
-                    + '<div class="grid grid-cols-2 gap-3 mb-4">'
-                    + '<div>'
-                    + '<p class="text-xs text-[#888]">Age</p>'
-                    + '<p class="font-medium">' + pet.age + ' years</p>'
-                    + '</div>'
-                    + '<div>'
-                    + '<p class="text-xs text-[#888]">Size</p>'
-                    + '<p class="font-medium">' + capitalizeFirstLetter(pet.size) + '</p>'
-                    + '</div>'
-                    + '<div>'
-                    + '<p class="text-xs text-[#888]">Color</p>'
-                    + '<p class="font-medium">' + pet.color + '</p>'
-                    + '</div>'
-                    + '<div>'
-                    + '<p class="text-xs text-[#888]">Location</p>'
-                    + '<p class="font-medium">' + formatLocation(pet.location) + '</p>'
-                    + '</div>'
-                    + '</div>'
-                    + '<p class="text-[#666] text-sm mb-4 line-clamp-2">' + pet.description + '</p>'
-                    + '<a href="pet_info.jsp" class="block w-full text-center py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">'
-                    + 'View Details'
-                    + '</a>'
-                    + '</div>';
+                        + '<div class="relative">'
+                        + '<img src="' + pet.image + '" alt="' + pet.name + '" class="w-full h-48 object-cover">'
+                        + '<div class="absolute top-3 right-3">'
+                        + '<span class="px-3 py-1 rounded-full text-sm font-medium ' + genderClass + '">'
+                        + '<i class="fas ' + genderIcon + ' mr-1"></i> ' + genderText
+                        + '</span>'
+                        + '</div>'
+                        + '<div class="absolute top-3 left-3 bg-[#6DBF89] text-[#06321F] px-3 py-1 rounded-full text-sm font-medium">'
+                        + 'Available'
+                        + '</div>'
+                        + '</div>'
+                        + '<div class="p-5">'
+                        + '<h3 class="text-xl font-bold text-[#2B2B2B] mb-2">' + pet.name + '</h3>'
+                        + '<div class="flex items-center mb-3">'
+                        + '<div class="bg-[#F0F7F4] p-2 rounded-lg mr-3">'
+                        + '<i class="fas ' + speciesIcon + ' text-[#2F5D50]"></i>'
+                        + '</div>'
+                        + '<div>'
+                        + '<p class="text-[#2B2B2B] font-medium">' + capitalizeFirstLetter(pet.species) + '</p>'
+                        + '<p class="text-[#666] text-sm">' + pet.breed + '</p>'
+                        + '</div>'
+                        + '</div>'
+                        + '<div class="grid grid-cols-2 gap-3 mb-4">'
+                        + '<div>'
+                        + '<p class="text-xs text-[#888]">Age</p>'
+                        + '<p class="font-medium">' + pet.age + ' years</p>'
+                        + '</div>'
+                        + '<div>'
+                        + '<p class="text-xs text-[#888]">Size</p>'
+                        + '<p class="font-medium">' + capitalizeFirstLetter(pet.size) + '</p>'
+                        + '</div>'
+                        + '<div>'
+                        + '<p class="text-xs text-[#888]">Color</p>'
+                        + '<p class="font-medium">' + pet.color + '</p>'
+                        + '</div>'
+                        + '<div>'
+                        + '<p class="text-xs text-[#888]">Location</p>'
+                        + '<p class="font-medium">' + formatLocation(pet.location) + '</p>'
+                        + '</div>'
+                        + '</div>'
+                        + '<p class="text-[#666] text-sm mb-4 line-clamp-2">' + pet.description + '</p>'
+                        + '<a href="pet_info.jsp" class="block w-full text-center py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">'
+                        + 'View Details'
+                        + '</a>'
+                        + '</div>';
 
                 return card;
             }

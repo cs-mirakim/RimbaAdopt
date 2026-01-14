@@ -33,38 +33,66 @@
                     Login
                 </h1>
 
-                <p class="text-sm text-gray-500 mb-4">
-                    *For storyboard/testing purposes, you may enter any random email and password.*
-                </p>
+                <!-- ========== TAMBAH CODE INI ========== -->
+                <%
+                    String error = request.getParameter("error");
+                    String message = request.getParameter("message");
 
+                    if (error != null && !error.isEmpty()) {
+                %>
+                <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p class="text-red-600 text-sm">
+                        <%= error.replace("_", " ")%>
+                    </p>
+                </div>
+                <%
+                    }
 
-                <!-- roles -->
-                <fieldset class="mb-4">
-                    <legend class="block mb-2 font-medium">Login As</legend>
-                    <div class="flex gap-4">
-                        <label class="inline-flex items-center gap-2">
-                            <input type="radio" name="role" value="admin" checked />
-                            <span>Admin</span>
-                        </label>
-                        <label class="inline-flex items-center gap-2">
-                            <input type="radio" name="role" value="shelter" />
-                            <span>Shelter</span>
-                        </label>
-                        <label class="inline-flex items-center gap-2">
-                            <input type="radio" name="role" value="adopter" />
-                            <span>Adopter</span>
-                        </label>
-                    </div>
-                </fieldset>
+                    if (message != null && !message.isEmpty()) {
+                %>
+                <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                    <p class="text-green-600 text-sm">
+                        <%= message.replace("_", " ")%>
+                    </p>
+                </div>
+                <%
+                    }
+                %>
+                <!-- ========== END TAMBAH CODE ========== -->
 
-                <form id="loginForm" onsubmit="onLogin(event)" class="space-y-4">
+                <!-- ... kod sebelumnya ... -->
+
+                <!-- GANTI FORM YANG LAMA DENGAN INI: -->
+                <form action="AuthServlet" method="POST" class="space-y-4">
+                    <!-- Hidden input untuk action -->
+                    <input type="hidden" name="action" value="login">
+
+                    <!-- roles -->
+                    <fieldset class="mb-4">
+                        <legend class="block mb-2 font-medium">Login As</legend>
+                        <div class="flex gap-4">
+                            <label class="inline-flex items-center gap-2">
+                                <input type="radio" name="role" value="admin" required />
+                                <span>Admin</span>
+                            </label>
+                            <label class="inline-flex items-center gap-2">
+                                <input type="radio" name="role" value="shelter" required />
+                                <span>Shelter</span>
+                            </label>
+                            <label class="inline-flex items-center gap-2">
+                                <input type="radio" name="role" value="adopter" required />
+                                <span>Adopter</span>
+                            </label>
+                        </div>
+                    </fieldset>
 
                     <div>
-                        <label for="login_email" class="block text-sm font-medium mb-1">
+                        <label for="email" class="block text-sm font-medium mb-1">
                             Email
                         </label>
                         <input
-                            id="login_email"
+                            id="email"
+                            name="email"
                             type="email"
                             required
                             class="w-full p-2 border border-[#E5E5E5] rounded-md"
@@ -73,11 +101,12 @@
                     </div>
 
                     <div>
-                        <label for="login_password" class="block text-sm font-medium mb-1">
+                        <label for="password" class="block text-sm font-medium mb-1">
                             Password
                         </label>
                         <input
-                            id="login_password"
+                            id="password"
+                            name="password"
                             type="password"
                             required
                             class="w-full p-2 border border-[#E5E5E5] rounded-md"
@@ -86,7 +115,7 @@
 
                         <div class="mt-1 text-right">
                             <a href="#" onclick="openPopup(); return false;"
-                               class="text-[#2F5D50] text-sm font-medium">
+                               class="text-[#2F5D50] text-sm font-medium hover:underline underline-offset-4">
                                 Forgot Password?
                             </a>
                         </div>
@@ -101,13 +130,14 @@
                     <div class="flex items-center justify-between mt-2 text-sm">
                         <p>
                             Don't have an account?
-                            <a href="register.jsp" class="text-[#2F5D50] font-semibold">
-                                Register
+                            <a href="register.jsp" class="text-[#2F5D50] font-semibold hover:underline underline-offset-4">
+                                Register here
                             </a>
                         </p>
                     </div>
-
                 </form>
+
+                <!-- ... kod seterusnya ... -->
             </div>
         </div>
 
@@ -186,17 +216,59 @@
             function openPopup() {
                 document.getElementById("popup").classList.remove("hidden");
             }
+
             function closePopup() {
                 document.getElementById("popup").classList.add("hidden");
             }
+
+            // ========== UPDATE INI SAHAJA ==========
             function submitReset() {
                 const email = document.getElementById("reset_email").value;
+                const role = document.querySelector('#popup input[name="role"]:checked').value;
+
                 if (!email) {
                     alert("Please enter your email");
                     return;
                 }
-                window.location.href = "reset_password.jsp";
+
+                // Create hidden form to submit to AuthServlet
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'AuthServlet';
+
+                // Action parameter
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'requestReset';
+                form.appendChild(actionInput);
+
+                // Email parameter
+                const emailInput = document.createElement('input');
+                emailInput.type = 'hidden';
+                emailInput.name = 'email';
+                emailInput.value = email;
+                form.appendChild(emailInput);
+
+                // Role parameter
+                const roleInput = document.createElement('input');
+                roleInput.type = 'hidden';
+                roleInput.name = 'role';
+                roleInput.value = role;
+                form.appendChild(roleInput);
+
+                // Add form to page and submit
+                document.body.appendChild(form);
+                form.submit();
+
+                // Show loading in popup
+                const submitBtn = document.querySelector('#popup button[onclick="submitReset()"]');
+                if (submitBtn) {
+                    submitBtn.innerHTML = 'Sending...';
+                    submitBtn.disabled = true;
+                }
             }
+            // ========== END UPDATE ==========
         </script>
 
     </body>

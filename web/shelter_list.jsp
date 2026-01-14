@@ -1,4 +1,18 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" isELIgnored="true"%>
+<%@ page import="com.rimba.adopt.util.SessionUtil" %>
+
+<%
+    // Check if user is logged in and is admin
+    if (!SessionUtil.isLoggedIn(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+
+    if (!SessionUtil.isAdopter(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+%>
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -184,7 +198,7 @@
 
         <!-- Sidebar container -->
         <jsp:include page="includes/sidebar.jsp" />
-        
+
         <!-- Load sidebar.js -->
         <script src="includes/sidebar.js"></script>
 
@@ -509,38 +523,38 @@
                 // Generate pet tags HTML
                 const petTagsHTML = shelter.pets.map(pet =>
                     '<span class="inline-block bg-[#A8E6CF] text-[#2B2B2B] px-3 py-1 rounded-full text-sm mr-2 mb-2">' +
-                    '<i class="fas ' + getPetIcon(pet) + ' mr-1"></i> ' + pet +
-                    '</span>'
+                            '<i class="fas ' + getPetIcon(pet) + ' mr-1"></i> ' + pet +
+                            '</span>'
                 ).join('');
 
-                card.innerHTML = 
-                    '<div class="relative">' +
+                card.innerHTML =
+                        '<div class="relative">' +
                         '<img src="' + shelter.image + '" alt="' + shelter.name + '" class="w-full h-48 object-cover">' +
                         '<div class="absolute top-3 right-3 bg-[#6DBF89] text-[#06321F] px-3 py-1 rounded-full text-sm font-medium">' +
-                            '<i class="fas fa-check-circle mr-1"></i> Approved' +
+                        '<i class="fas fa-check-circle mr-1"></i> Approved' +
                         '</div>' +
-                    '</div>' +
-                    '<div class="p-5">' +
+                        '</div>' +
+                        '<div class="p-5">' +
                         '<h3 class="text-xl font-bold text-[#2B2B2B] mb-2">' + shelter.name + '</h3>' +
                         '<div class="flex items-center mb-3">' +
-                            '<i class="fas fa-map-marker-alt text-[#2F5D50] mr-2"></i>' +
-                            '<span class="text-[#2B2B2B]">' + shelter.location + '</span>' +
+                        '<i class="fas fa-map-marker-alt text-[#2F5D50] mr-2"></i>' +
+                        '<span class="text-[#2B2B2B]">' + shelter.location + '</span>' +
                         '</div>' +
                         '<div class="flex items-center mb-4">' +
-                            '<div class="star-rating mr-2">' +
-                                starsHTML +
-                            '</div>' +
-                            '<span class="text-[#2B2B2B] font-medium">' + shelter.rating + '</span>' +
-                            '<span class="text-[#888] ml-1">(' + shelter.reviewCount + ' reviews)</span>' +
+                        '<div class="star-rating mr-2">' +
+                        starsHTML +
+                        '</div>' +
+                        '<span class="text-[#2B2B2B] font-medium">' + shelter.rating + '</span>' +
+                        '<span class="text-[#888] ml-1">(' + shelter.reviewCount + ' reviews)</span>' +
                         '</div>' +
                         '<div class="mb-4">' +
-                            petTagsHTML +
+                        petTagsHTML +
                         '</div>' +
                         '<p class="text-[#666] text-sm mb-4 line-clamp-2">' + shelter.description + '</p>' +
                         '<a href="shelter_info.jsp" class="block w-full text-center py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">' +
-                            'View Details' +
+                        'View Details' +
                         '</a>' +
-                    '</div>';
+                        '</div>';
 
                 return card;
             }
@@ -613,8 +627,8 @@
 
                 for (let i = startPage; i <= endPage; i++) {
                     const pageBtn = document.createElement('button');
-                    pageBtn.className = 'page-btn w-10 h-10 rounded-lg border ' + 
-                        (i === currentPage ? 'border-[#2F5D50] bg-[#2F5D50] text-white' : 'border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]');
+                    pageBtn.className = 'page-btn w-10 h-10 rounded-lg border ' +
+                            (i === currentPage ? 'border-[#2F5D50] bg-[#2F5D50] text-white' : 'border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]');
                     pageBtn.textContent = i;
                     pageBtn.addEventListener('click', () => {
                         currentPage = i;

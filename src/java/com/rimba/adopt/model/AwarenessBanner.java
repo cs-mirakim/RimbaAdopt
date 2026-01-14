@@ -13,12 +13,11 @@ public class AwarenessBanner implements Serializable {
     private String imagePath;
     private String status;
     private Timestamp createdAt;
-    private Integer createdBy;           // ID admin sahaja
+    private Integer createdBy;
 
     public AwarenessBanner() {
     }
 
-    // Getters and Setters
     public Integer getBannerId() {
         return bannerId;
     }

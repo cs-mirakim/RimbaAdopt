@@ -1,4 +1,3 @@
-// 1. USERS MODEL
 package com.rimba.adopt.model;
 
 import java.io.Serializable;
