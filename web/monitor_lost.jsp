@@ -1,4 +1,18 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="com.rimba.adopt.util.SessionUtil" %>
+
+<%
+    // Check if user is logged in and is admin
+    if (!SessionUtil.isLoggedIn(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+
+    if (!SessionUtil.isAdopter(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+%>
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -234,408 +248,408 @@
         </div>
 
         <jsp:include page="includes/footer.jsp" />
-        
+
         <!-- Sidebar container -->
-<jsp:include page="includes/sidebar.jsp" />
+        <jsp:include page="includes/sidebar.jsp" />
         <script src="includes/sidebar.js"></script>
         <script>
-            // =======================================================
-            // 1. Dummy Data Setup (ES5 compatible)
-            // =======================================================
-            var DUMMY_DATA = [
-                {id: 1, petName: "Max", species: "Dog", lastSeenLocation: "Taman Jaya Park, Petaling Jaya", lastSeenDate: "2025-12-01", description: "Golden Retriever, friendly, wearing blue collar", photoPath: "animal_picture/animal1.png", status: "lost", createdAt: "2025-12-01 10:30:00"},
-                {id: 2, petName: "Whiskers", species: "Cat", lastSeenLocation: "SS2 Area, Petaling Jaya", lastSeenDate: "2025-11-28", description: "Orange tabby cat, very shy, has white paws", photoPath: "animal_picture/animal2.jpg", status: "lost", createdAt: "2025-11-28 14:20:00"},
-                {id: 3, petName: "Luna", species: "Cat", lastSeenLocation: "Near Sunway Pyramid", lastSeenDate: "2025-11-25", description: "Black and white cat, very vocal", photoPath: "animal_picture/animal3.jpg", status: "found", createdAt: "2025-11-25 09:15:00"},
-                {id: 4, petName: "Buddy", species: "Dog", lastSeenLocation: "Damansara Utama", lastSeenDate: "2025-11-20", description: "Small brown terrier, limps on right front leg", photoPath: "animal_picture/animal1.png", status: "lost", createdAt: "2025-11-20 16:45:00"},
-                {id: 5, petName: "Charlie", species: "Rabbit", lastSeenLocation: "Kota Damansara", lastSeenDate: "2025-11-15", description: "White rabbit with brown spots", photoPath: "animal_picture/animal2.jpg", status: "found", createdAt: "2025-11-15 11:00:00"},
-                {id: 6, petName: "Bella", species: "Dog", lastSeenLocation: "Subang Jaya SS15", lastSeenDate: "2025-12-05", description: "Husky mix, blue eyes, very energetic", photoPath: "animal_picture/animal3.jpg", status: "lost", createdAt: "2025-12-05 08:30:00"},
-                {id: 7, petName: "Milo", species: "Cat", lastSeenLocation: "USJ 1", lastSeenDate: "2025-11-10", description: "Grey Persian cat, fluffy, likes to hide", photoPath: "animal_picture/animal1.png", status: "found", createdAt: "2025-11-10 13:20:00"},
-                {id: 8, petName: "Rocky", species: "Dog", lastSeenLocation: "Ara Damansara", lastSeenDate: "2025-12-03", description: "German Shepherd, well-trained, responds to commands", photoPath: "animal_picture/animal2.jpg", status: "lost", createdAt: "2025-12-03 15:10:00"}
-            ];
+                        // =======================================================
+                        // 1. Dummy Data Setup (ES5 compatible)
+                        // =======================================================
+                        var DUMMY_DATA = [
+                            {id: 1, petName: "Max", species: "Dog", lastSeenLocation: "Taman Jaya Park, Petaling Jaya", lastSeenDate: "2025-12-01", description: "Golden Retriever, friendly, wearing blue collar", photoPath: "animal_picture/animal1.png", status: "lost", createdAt: "2025-12-01 10:30:00"},
+                            {id: 2, petName: "Whiskers", species: "Cat", lastSeenLocation: "SS2 Area, Petaling Jaya", lastSeenDate: "2025-11-28", description: "Orange tabby cat, very shy, has white paws", photoPath: "animal_picture/animal2.jpg", status: "lost", createdAt: "2025-11-28 14:20:00"},
+                            {id: 3, petName: "Luna", species: "Cat", lastSeenLocation: "Near Sunway Pyramid", lastSeenDate: "2025-11-25", description: "Black and white cat, very vocal", photoPath: "animal_picture/animal3.jpg", status: "found", createdAt: "2025-11-25 09:15:00"},
+                            {id: 4, petName: "Buddy", species: "Dog", lastSeenLocation: "Damansara Utama", lastSeenDate: "2025-11-20", description: "Small brown terrier, limps on right front leg", photoPath: "animal_picture/animal1.png", status: "lost", createdAt: "2025-11-20 16:45:00"},
+                            {id: 5, petName: "Charlie", species: "Rabbit", lastSeenLocation: "Kota Damansara", lastSeenDate: "2025-11-15", description: "White rabbit with brown spots", photoPath: "animal_picture/animal2.jpg", status: "found", createdAt: "2025-11-15 11:00:00"},
+                            {id: 6, petName: "Bella", species: "Dog", lastSeenLocation: "Subang Jaya SS15", lastSeenDate: "2025-12-05", description: "Husky mix, blue eyes, very energetic", photoPath: "animal_picture/animal3.jpg", status: "lost", createdAt: "2025-12-05 08:30:00"},
+                            {id: 7, petName: "Milo", species: "Cat", lastSeenLocation: "USJ 1", lastSeenDate: "2025-11-10", description: "Grey Persian cat, fluffy, likes to hide", photoPath: "animal_picture/animal1.png", status: "found", createdAt: "2025-11-10 13:20:00"},
+                            {id: 8, petName: "Rocky", species: "Dog", lastSeenLocation: "Ara Damansara", lastSeenDate: "2025-12-03", description: "German Shepherd, well-trained, responds to commands", photoPath: "animal_picture/animal2.jpg", status: "lost", createdAt: "2025-12-03 15:10:00"}
+                        ];
 
-            var ITEMS_PER_PAGE = 10;
-            var currentPage = 1;
-            var filteredData = DUMMY_DATA;
-            var currentStatusFilter = 'all';
-            var currentReportId = null;
-            var isEditMode = false;
+                        var ITEMS_PER_PAGE = 10;
+                        var currentPage = 1;
+                        var filteredData = DUMMY_DATA;
+                        var currentStatusFilter = 'all';
+                        var currentReportId = null;
+                        var isEditMode = false;
 
-            // =======================================================
-            // 2. MODAL FUNCTIONS (ES5 compatible)
-            // =======================================================
-            function openModal(modalId, reportId) {
-                var modal = document.getElementById(modalId);
-                currentReportId = reportId || null;
+                        // =======================================================
+                        // 2. MODAL FUNCTIONS (ES5 compatible)
+                        // =======================================================
+                        function openModal(modalId, reportId) {
+                            var modal = document.getElementById(modalId);
+                            currentReportId = reportId || null;
 
-                if (modalId === 'createModal') {
-                    if (reportId) {
-                        // Edit mode
-                        isEditMode = true;
-                        var report = null;
-                        for (var i = 0; i < DUMMY_DATA.length; i++) {
-                            if (DUMMY_DATA[i].id === reportId) {
-                                report = DUMMY_DATA[i];
-                                break;
+                            if (modalId === 'createModal') {
+                                if (reportId) {
+                                    // Edit mode
+                                    isEditMode = true;
+                                    var report = null;
+                                    for (var i = 0; i < DUMMY_DATA.length; i++) {
+                                        if (DUMMY_DATA[i].id === reportId) {
+                                            report = DUMMY_DATA[i];
+                                            break;
+                                        }
+                                    }
+
+                                    if (report) {
+                                        document.getElementById('modalTitle').textContent = 'Edit Lost Pet Report';
+                                        document.getElementById('petName').value = report.petName;
+                                        document.getElementById('species').value = report.species;
+                                        document.getElementById('lastSeenLocation').value = report.lastSeenLocation;
+                                        document.getElementById('lastSeenDate').value = report.lastSeenDate;
+                                        document.getElementById('description').value = report.description;
+                                        document.getElementById('photoPath').value = report.photoPath;
+                                    }
+                                } else {
+                                    // Create mode
+                                    isEditMode = false;
+                                    document.getElementById('modalTitle').textContent = 'Report Lost Pet';
+                                    document.getElementById('reportForm').reset();
+                                }
+                            } else if (modalId === 'foundModal' && reportId) {
+                                var report = null;
+                                for (var i = 0; i < DUMMY_DATA.length; i++) {
+                                    if (DUMMY_DATA[i].id === reportId) {
+                                        report = DUMMY_DATA[i];
+                                        break;
+                                    }
+                                }
+
+                                if (report) {
+                                    document.getElementById('foundPetName').textContent = report.petName;
+                                    document.getElementById('confirmFoundBtn').onclick = function () {
+                                        confirmMarkAsFound(reportId);
+                                    };
+                                }
+                            } else if (modalId === 'viewModal' && reportId) {
+                                var report = null;
+                                for (var i = 0; i < DUMMY_DATA.length; i++) {
+                                    if (DUMMY_DATA[i].id === reportId) {
+                                        report = DUMMY_DATA[i];
+                                        break;
+                                    }
+                                }
+
+                                if (report) {
+                                    document.getElementById('viewPetName').textContent = report.petName;
+                                    document.getElementById('viewSpecies').textContent = report.species;
+                                    document.getElementById('viewLocation').textContent = report.lastSeenLocation;
+                                    document.getElementById('viewDate').textContent = report.lastSeenDate;
+                                    document.getElementById('viewDescription').textContent = report.description || 'No description provided.';
+                                    document.getElementById('viewCreatedAt').textContent = report.createdAt;
+                                }
+                            }
+
+                            modal.classList.remove('hidden');
+                            setTimeout(function () {
+                                modal.classList.remove('opacity-0');
+                                modal.querySelector('div:nth-child(1)').classList.remove('scale-95');
+                            }, 10);
+                        }
+
+                        function closeModal(modalId) {
+                            var modal = document.getElementById(modalId);
+                            modal.classList.add('opacity-0');
+                            modal.querySelector('div:nth-child(1)').classList.add('scale-95');
+                            setTimeout(function () {
+                                modal.classList.add('hidden');
+                                if (modalId === 'createModal') {
+                                    document.getElementById('reportForm').reset();
+                                } else if (modalId === 'foundModal') {
+                                    document.getElementById('foundNotes').value = '';
+                                }
+                            }, 300);
+                        }
+
+                        function saveReport() {
+                            var petName = document.getElementById('petName').value;
+                            var species = document.getElementById('species').value;
+                            var lastSeenLocation = document.getElementById('lastSeenLocation').value;
+                            var lastSeenDate = document.getElementById('lastSeenDate').value;
+                            var description = document.getElementById('description').value;
+                            var photoPath = document.getElementById('photoPath').value;
+
+                            if (!petName || !species || !lastSeenLocation || !lastSeenDate) {
+                                alert('Please fill in all required fields!');
+                                return;
+                            }
+
+                            if (isEditMode && currentReportId) {
+                                // Update existing report
+                                var report = null;
+                                for (var i = 0; i < DUMMY_DATA.length; i++) {
+                                    if (DUMMY_DATA[i].id === currentReportId) {
+                                        report = DUMMY_DATA[i];
+                                        break;
+                                    }
+                                }
+
+                                if (report) {
+                                    report.petName = petName;
+                                    report.species = species;
+                                    report.lastSeenLocation = lastSeenLocation;
+                                    report.lastSeenDate = lastSeenDate;
+                                    report.description = description;
+                                    report.photoPath = photoPath || report.photoPath;
+                                    alert('Report updated successfully!');
+                                }
+                            } else {
+                                // Create new report
+                                var today = new Date();
+                                var formattedDate = today.getFullYear() + '-' +
+                                        ('0' + (today.getMonth() + 1)).slice(-2) + '-' +
+                                        ('0' + today.getDate()).slice(-2) + ' ' +
+                                        ('0' + today.getHours()).slice(-2) + ':' +
+                                        ('0' + today.getMinutes()).slice(-2) + ':' +
+                                        ('0' + today.getSeconds()).slice(-2);
+
+                                var newReport = {
+                                    id: DUMMY_DATA.length + 1,
+                                    petName: petName,
+                                    species: species,
+                                    lastSeenLocation: lastSeenLocation,
+                                    lastSeenDate: lastSeenDate,
+                                    description: description,
+                                    photoPath: photoPath || 'animal_picture/animal1.png',
+                                    status: 'lost',
+                                    createdAt: formattedDate
+                                };
+
+                                // Add to beginning of array
+                                DUMMY_DATA.unshift(newReport);
+                                alert('Lost pet report submitted successfully!');
+                            }
+
+                            closeModal('createModal');
+                            filterAndRender();
+                        }
+
+                        function confirmMarkAsFound(reportId) {
+                            var report = null;
+                            for (var i = 0; i < DUMMY_DATA.length; i++) {
+                                if (DUMMY_DATA[i].id === reportId) {
+                                    report = DUMMY_DATA[i];
+                                    break;
+                                }
+                            }
+
+                            if (report) {
+                                report.status = 'found';
+                                alert(report.petName + ' has been marked as found!');
+                                closeModal('foundModal');
+                                filterAndRender();
                             }
                         }
-                        
-                        if (report) {
-                            document.getElementById('modalTitle').textContent = 'Edit Lost Pet Report';
-                            document.getElementById('petName').value = report.petName;
-                            document.getElementById('species').value = report.species;
-                            document.getElementById('lastSeenLocation').value = report.lastSeenLocation;
-                            document.getElementById('lastSeenDate').value = report.lastSeenDate;
-                            document.getElementById('description').value = report.description;
-                            document.getElementById('photoPath').value = report.photoPath;
+
+                        // =======================================================
+                        // 3. Rendering Logic (ES5 compatible)
+                        // =======================================================
+                        function getStatusChipClass(status) {
+                            return status === 'lost' ? 'chip-lost' : 'chip-found';
                         }
-                    } else {
-                        // Create mode
-                        isEditMode = false;
-                        document.getElementById('modalTitle').textContent = 'Report Lost Pet';
-                        document.getElementById('reportForm').reset();
-                    }
-                } else if (modalId === 'foundModal' && reportId) {
-                    var report = null;
-                    for (var i = 0; i < DUMMY_DATA.length; i++) {
-                        if (DUMMY_DATA[i].id === reportId) {
-                            report = DUMMY_DATA[i];
-                            break;
-                        }
-                    }
-                    
-                    if (report) {
-                        document.getElementById('foundPetName').textContent = report.petName;
-                        document.getElementById('confirmFoundBtn').onclick = function() { 
-                            confirmMarkAsFound(reportId); 
-                        };
-                    }
-                } else if (modalId === 'viewModal' && reportId) {
-                    var report = null;
-                    for (var i = 0; i < DUMMY_DATA.length; i++) {
-                        if (DUMMY_DATA[i].id === reportId) {
-                            report = DUMMY_DATA[i];
-                            break;
-                        }
-                    }
-                    
-                    if (report) {
-                        document.getElementById('viewPetName').textContent = report.petName;
-                        document.getElementById('viewSpecies').textContent = report.species;
-                        document.getElementById('viewLocation').textContent = report.lastSeenLocation;
-                        document.getElementById('viewDate').textContent = report.lastSeenDate;
-                        document.getElementById('viewDescription').textContent = report.description || 'No description provided.';
-                        document.getElementById('viewCreatedAt').textContent = report.createdAt;
-                    }
-                }
 
-                modal.classList.remove('hidden');
-                setTimeout(function() {
-                    modal.classList.remove('opacity-0');
-                    modal.querySelector('div:nth-child(1)').classList.remove('scale-95');
-                }, 10);
-            }
+                        function renderTable(data, page) {
+                            var tableBody = document.getElementById('lost-animal-list');
+                            tableBody.innerHTML = '';
 
-            function closeModal(modalId) {
-                var modal = document.getElementById(modalId);
-                modal.classList.add('opacity-0');
-                modal.querySelector('div:nth-child(1)').classList.add('scale-95');
-                setTimeout(function() {
-                    modal.classList.add('hidden');
-                    if (modalId === 'createModal') {
-                        document.getElementById('reportForm').reset();
-                    } else if (modalId === 'foundModal') {
-                        document.getElementById('foundNotes').value = '';
-                    }
-                }, 300);
-            }
+                            var start = (page - 1) * ITEMS_PER_PAGE;
+                            var end = start + ITEMS_PER_PAGE;
+                            var paginatedItems = data.slice(start, end);
 
-            function saveReport() {
-                var petName = document.getElementById('petName').value;
-                var species = document.getElementById('species').value;
-                var lastSeenLocation = document.getElementById('lastSeenLocation').value;
-                var lastSeenDate = document.getElementById('lastSeenDate').value;
-                var description = document.getElementById('description').value;
-                var photoPath = document.getElementById('photoPath').value;
+                            for (var i = 0; i < paginatedItems.length; i++) {
+                                var item = paginatedItems[i];
+                                var statusChipClass = getStatusChipClass(item.status);
+                                var itemNumber = start + i + 1;
 
-                if (!petName || !species || !lastSeenLocation || !lastSeenDate) {
-                    alert('Please fill in all required fields!');
-                    return;
-                }
+                                var actionButtons;
+                                if (item.status === 'lost') {
+                                    actionButtons = '<div class="flex flex-col items-center space-y-2">' +
+                                            '<button onclick="openModal(\'createModal\', ' + item.id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View/Edit</button>' +
+                                            '<button onclick="openModal(\'foundModal\', ' + item.id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-green-700" style="background-color: #57A677;">Mark as Found</button>' +
+                                            '</div>';
+                                } else {
+                                    actionButtons = '<button onclick="openModal(\'viewModal\', ' + item.id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View Details</button>';
+                                }
 
-                if (isEditMode && currentReportId) {
-                    // Update existing report
-                    var report = null;
-                    for (var i = 0; i < DUMMY_DATA.length; i++) {
-                        if (DUMMY_DATA[i].id === currentReportId) {
-                            report = DUMMY_DATA[i];
-                            break;
-                        }
-                    }
-                    
-                    if (report) {
-                        report.petName = petName;
-                        report.species = species;
-                        report.lastSeenLocation = lastSeenLocation;
-                        report.lastSeenDate = lastSeenDate;
-                        report.description = description;
-                        report.photoPath = photoPath || report.photoPath;
-                        alert('Report updated successfully!');
-                    }
-                } else {
-                    // Create new report
-                    var today = new Date();
-                    var formattedDate = today.getFullYear() + '-' + 
-                                        ('0' + (today.getMonth() + 1)).slice(-2) + '-' + 
-                                        ('0' + today.getDate()).slice(-2) + ' ' + 
-                                        ('0' + today.getHours()).slice(-2) + ':' + 
-                                        ('0' + today.getMinutes()).slice(-2) + ':' + 
-                                        ('0' + today.getSeconds()).slice(-2);
-                    
-                    var newReport = {
-                        id: DUMMY_DATA.length + 1,
-                        petName: petName,
-                        species: species,
-                        lastSeenLocation: lastSeenLocation,
-                        lastSeenDate: lastSeenDate,
-                        description: description,
-                        photoPath: photoPath || 'animal_picture/animal1.png',
-                        status: 'lost',
-                        createdAt: formattedDate
-                    };
-                    
-                    // Add to beginning of array
-                    DUMMY_DATA.unshift(newReport);
-                    alert('Lost pet report submitted successfully!');
-                }
-
-                closeModal('createModal');
-                filterAndRender();
-            }
-
-            function confirmMarkAsFound(reportId) {
-                var report = null;
-                for (var i = 0; i < DUMMY_DATA.length; i++) {
-                    if (DUMMY_DATA[i].id === reportId) {
-                        report = DUMMY_DATA[i];
-                        break;
-                    }
-                }
-                
-                if (report) {
-                    report.status = 'found';
-                    alert(report.petName + ' has been marked as found!');
-                    closeModal('foundModal');
-                    filterAndRender();
-                }
-            }
-
-            // =======================================================
-            // 3. Rendering Logic (ES5 compatible)
-            // =======================================================
-            function getStatusChipClass(status) {
-                return status === 'lost' ? 'chip-lost' : 'chip-found';
-            }
-
-            function renderTable(data, page) {
-                var tableBody = document.getElementById('lost-animal-list');
-                tableBody.innerHTML = '';
-                
-                var start = (page - 1) * ITEMS_PER_PAGE;
-                var end = start + ITEMS_PER_PAGE;
-                var paginatedItems = data.slice(start, end);
-
-                for (var i = 0; i < paginatedItems.length; i++) {
-                    var item = paginatedItems[i];
-                    var statusChipClass = getStatusChipClass(item.status);
-                    var itemNumber = start + i + 1;
-
-                    var actionButtons;
-                    if (item.status === 'lost') {
-                        actionButtons = '<div class="flex flex-col items-center space-y-2">' +
-                                        '<button onclick="openModal(\'createModal\', ' + item.id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View/Edit</button>' +
-                                        '<button onclick="openModal(\'foundModal\', ' + item.id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-green-700" style="background-color: #57A677;">Mark as Found</button>' +
-                                    '</div>';
-                    } else {
-                        actionButtons = '<button onclick="openModal(\'viewModal\', ' + item.id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View Details</button>';
-                    }
-
-                    var row = '<tr class="hover:bg-gray-50 transition duration-100">' +
-                                '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color: #2B2B2B;">' + itemNumber + '</td>' +
-                                '<td class="px-6 py-4 whitespace-nowrap">' +
-                                    '<div class="flex items-center">' +
+                                var row = '<tr class="hover:bg-gray-50 transition duration-100">' +
+                                        '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color: #2B2B2B;">' + itemNumber + '</td>' +
+                                        '<td class="px-6 py-4 whitespace-nowrap">' +
+                                        '<div class="flex items-center">' +
                                         '<div class="flex-shrink-0 h-10 w-10">' +
-                                            '<img class="h-10 w-10 rounded-full object-cover" src="' + item.photoPath + '" alt="' + item.petName + '" onerror="this.src=\'https://via.placeholder.com/40x40?text=Pet\'">' +
+                                        '<img class="h-10 w-10 rounded-full object-cover" src="' + item.photoPath + '" alt="' + item.petName + '" onerror="this.src=\'https://via.placeholder.com/40x40?text=Pet\'">' +
                                         '</div>' +
                                         '<div class="ml-4">' +
-                                            '<div class="text-sm font-medium" style="color: #2B2B2B;">' + item.petName + '</div>' +
+                                        '<div class="text-sm font-medium" style="color: #2B2B2B;">' + item.petName + '</div>' +
                                         '</div>' +
-                                    '</div>' +
-                                '</td>' +
-                                '<td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">' + item.species + '</td>' +
-                                '<td class="px-6 py-4 text-sm" style="color: #2B2B2B;">' + item.lastSeenLocation + '</td>' +
-                                '<td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">' + item.lastSeenDate + '</td>' +
-                                '<td class="px-6 py-4 whitespace-nowrap">' +
-                                    '<span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ' + statusChipClass + '">' +
+                                        '</div>' +
+                                        '</td>' +
+                                        '<td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">' + item.species + '</td>' +
+                                        '<td class="px-6 py-4 text-sm" style="color: #2B2B2B;">' + item.lastSeenLocation + '</td>' +
+                                        '<td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">' + item.lastSeenDate + '</td>' +
+                                        '<td class="px-6 py-4 whitespace-nowrap">' +
+                                        '<span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ' + statusChipClass + '">' +
                                         (item.status === 'lost' ? '🔴 Lost' : '✅ Found') +
-                                    '</span>' +
-                                '</td>' +
-                                '<td class="px-6 py-4 whitespace-nowrap text-center">' +
-                                    actionButtons +
-                                '</td>' +
-                            '</tr>';
-                    
-                    tableBody.innerHTML += row;
-                }
+                                        '</span>' +
+                                        '</td>' +
+                                        '<td class="px-6 py-4 whitespace-nowrap text-center">' +
+                                        actionButtons +
+                                        '</td>' +
+                                        '</tr>';
 
-                renderPaginationControls(data.length);
-            }
+                                tableBody.innerHTML += row;
+                            }
 
-            // =======================================================
-            // 4. Pagination & Filtering Logic (ES5 compatible)
-            // =======================================================
-            function renderPaginationControls(totalItems) {
-                var totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-                document.getElementById('total-items').textContent = totalItems;
-                document.getElementById('start-index').textContent = Math.min(totalItems, (currentPage - 1) * ITEMS_PER_PAGE + 1);
-                document.getElementById('end-index').textContent = Math.min(totalItems, currentPage * ITEMS_PER_PAGE);
-                document.getElementById('prev-btn').disabled = currentPage === 1;
-                document.getElementById('next-btn').disabled = currentPage === totalPages || totalItems === 0;
-            }
-
-            document.getElementById('prev-btn').addEventListener('click', function() {
-                if (currentPage > 1) {
-                    currentPage--;
-                    renderTable(filteredData, currentPage);
-                }
-            });
-
-            document.getElementById('next-btn').addEventListener('click', function() {
-                var totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    renderTable(filteredData, currentPage);
-                }
-            });
-
-            function filterAndRender() {
-                if (currentStatusFilter === 'all') {
-                    filteredData = DUMMY_DATA;
-                } else {
-                    filteredData = [];
-                    for (var i = 0; i < DUMMY_DATA.length; i++) {
-                        if (DUMMY_DATA[i].status === currentStatusFilter) {
-                            filteredData.push(DUMMY_DATA[i]);
+                            renderPaginationControls(data.length);
                         }
-                    }
-                }
-                
-                currentPage = 1;
-                renderTable(filteredData, currentPage);
-                updateFilterButtonCounts();
-            }
 
-            function updateFilterButtonCounts() {
-                var counts = {
-                    'all': DUMMY_DATA.length,
-                    'lost': 0,
-                    'found': 0
-                };
-                
-                // Count each status
-                for (var i = 0; i < DUMMY_DATA.length; i++) {
-                    var status = DUMMY_DATA[i].status;
-                    if (status === 'lost') {
-                        counts.lost++;
-                    } else if (status === 'found') {
-                        counts.found++;
-                    }
-                }
-
-                var filterButtons = document.querySelectorAll('.filter-btn');
-                for (var j = 0; j < filterButtons.length; j++) {
-                    var btn = filterButtons[j];
-                    var status = btn.getAttribute('data-status');
-                    var count = counts[status];
-                    var btnText = btn.textContent;
-                    
-                    // Remove existing count in parentheses and add new one
-                    var newText = btnText.replace(/\(\d+\)/, '') + '(' + count + ')';
-                    btn.textContent = newText;
-                }
-            }
-
-            function updateFilterButtonStyles() {
-                var filterButtons = document.querySelectorAll('.filter-btn');
-                
-                for (var i = 0; i < filterButtons.length; i++) {
-                    var btn = filterButtons[i];
-                    var btnStatus = btn.getAttribute('data-status');
-
-                    // Reset semua classes
-                    btn.className = 'px-5 py-2 rounded-full text-sm font-medium transition duration-150 filter-btn';
-
-                    // Set active button
-                    if (btnStatus === currentStatusFilter) {
-                        if (btnStatus === 'all') {
-                            btn.classList.add('bg-primary', 'text-white', 'shadow-md');
-                        } else if (btnStatus === 'lost') {
-                            btn.classList.add('chip-lost', 'shadow-md');
-                        } else if (btnStatus === 'found') {
-                            btn.classList.add('chip-found', 'shadow-md');
+                        // =======================================================
+                        // 4. Pagination & Filtering Logic (ES5 compatible)
+                        // =======================================================
+                        function renderPaginationControls(totalItems) {
+                            var totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+                            document.getElementById('total-items').textContent = totalItems;
+                            document.getElementById('start-index').textContent = Math.min(totalItems, (currentPage - 1) * ITEMS_PER_PAGE + 1);
+                            document.getElementById('end-index').textContent = Math.min(totalItems, currentPage * ITEMS_PER_PAGE);
+                            document.getElementById('prev-btn').disabled = currentPage === 1;
+                            document.getElementById('next-btn').disabled = currentPage === totalPages || totalItems === 0;
                         }
-                    } else {
-                        btn.classList.add('border', 'hover:bg-[#F6F3E7]');
-                        if (btnStatus === 'all') {
-                            btn.classList.add('border-[#2F5D50]', 'text-[#2F5D50]');
-                        } else if (btnStatus === 'lost') {
-                            btn.classList.add('border-[#B84A4A]', 'text-[#B84A4A]');
-                        } else if (btnStatus === 'found') {
-                            btn.classList.add('border-[#6DBF89]', 'text-[#57A677]');
+
+                        document.getElementById('prev-btn').addEventListener('click', function () {
+                            if (currentPage > 1) {
+                                currentPage--;
+                                renderTable(filteredData, currentPage);
+                            }
+                        });
+
+                        document.getElementById('next-btn').addEventListener('click', function () {
+                            var totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+                            if (currentPage < totalPages) {
+                                currentPage++;
+                                renderTable(filteredData, currentPage);
+                            }
+                        });
+
+                        function filterAndRender() {
+                            if (currentStatusFilter === 'all') {
+                                filteredData = DUMMY_DATA;
+                            } else {
+                                filteredData = [];
+                                for (var i = 0; i < DUMMY_DATA.length; i++) {
+                                    if (DUMMY_DATA[i].status === currentStatusFilter) {
+                                        filteredData.push(DUMMY_DATA[i]);
+                                    }
+                                }
+                            }
+
+                            currentPage = 1;
+                            renderTable(filteredData, currentPage);
+                            updateFilterButtonCounts();
                         }
-                    }
-                }
-            }
 
-            // Add event listeners to filter buttons
-            var filterButtons = document.querySelectorAll('.filter-btn');
-            for (var i = 0; i < filterButtons.length; i++) {
-                filterButtons[i].addEventListener('click', function(e) {
-                    var newStatus = e.target.getAttribute('data-status');
-                    currentStatusFilter = newStatus;
+                        function updateFilterButtonCounts() {
+                            var counts = {
+                                'all': DUMMY_DATA.length,
+                                'lost': 0,
+                                'found': 0
+                            };
 
-                    updateFilterButtonStyles();
-                    filterAndRender();
-                });
-            }
+                            // Count each status
+                            for (var i = 0; i < DUMMY_DATA.length; i++) {
+                                var status = DUMMY_DATA[i].status;
+                                if (status === 'lost') {
+                                    counts.lost++;
+                                } else if (status === 'found') {
+                                    counts.found++;
+                                }
+                            }
 
-            // Search functionality
-            document.getElementById('searchInput').addEventListener('input', function (e) {
-                var searchTerm = e.target.value.toLowerCase();
-                
-                if (searchTerm.trim() === '') {
-                    filterAndRender();
-                    return;
-                }
-                
-                var filtered = [];
-                for (var i = 0; i < DUMMY_DATA.length; i++) {
-                    var item = DUMMY_DATA[i];
-                    if (item.petName.toLowerCase().indexOf(searchTerm) !== -1) {
-                        filtered.push(item);
-                    }
-                }
+                            var filterButtons = document.querySelectorAll('.filter-btn');
+                            for (var j = 0; j < filterButtons.length; j++) {
+                                var btn = filterButtons[j];
+                                var status = btn.getAttribute('data-status');
+                                var count = counts[status];
+                                var btnText = btn.textContent;
 
-                filteredData = filtered;
-                currentPage = 1;
-                renderTable(filteredData, currentPage);
-            });
+                                // Remove existing count in parentheses and add new one
+                                var newText = btnText.replace(/\(\d+\)/, '') + '(' + count + ')';
+                                btn.textContent = newText;
+                            }
+                        }
 
-            // Initial load
-            window.onload = function() {
-                updateFilterButtonStyles();
-                updateFilterButtonCounts();
-                renderTable(filteredData, currentPage);
-            };
+                        function updateFilterButtonStyles() {
+                            var filterButtons = document.querySelectorAll('.filter-btn');
+
+                            for (var i = 0; i < filterButtons.length; i++) {
+                                var btn = filterButtons[i];
+                                var btnStatus = btn.getAttribute('data-status');
+
+                                // Reset semua classes
+                                btn.className = 'px-5 py-2 rounded-full text-sm font-medium transition duration-150 filter-btn';
+
+                                // Set active button
+                                if (btnStatus === currentStatusFilter) {
+                                    if (btnStatus === 'all') {
+                                        btn.classList.add('bg-primary', 'text-white', 'shadow-md');
+                                    } else if (btnStatus === 'lost') {
+                                        btn.classList.add('chip-lost', 'shadow-md');
+                                    } else if (btnStatus === 'found') {
+                                        btn.classList.add('chip-found', 'shadow-md');
+                                    }
+                                } else {
+                                    btn.classList.add('border', 'hover:bg-[#F6F3E7]');
+                                    if (btnStatus === 'all') {
+                                        btn.classList.add('border-[#2F5D50]', 'text-[#2F5D50]');
+                                    } else if (btnStatus === 'lost') {
+                                        btn.classList.add('border-[#B84A4A]', 'text-[#B84A4A]');
+                                    } else if (btnStatus === 'found') {
+                                        btn.classList.add('border-[#6DBF89]', 'text-[#57A677]');
+                                    }
+                                }
+                            }
+                        }
+
+                        // Add event listeners to filter buttons
+                        var filterButtons = document.querySelectorAll('.filter-btn');
+                        for (var i = 0; i < filterButtons.length; i++) {
+                            filterButtons[i].addEventListener('click', function (e) {
+                                var newStatus = e.target.getAttribute('data-status');
+                                currentStatusFilter = newStatus;
+
+                                updateFilterButtonStyles();
+                                filterAndRender();
+                            });
+                        }
+
+                        // Search functionality
+                        document.getElementById('searchInput').addEventListener('input', function (e) {
+                            var searchTerm = e.target.value.toLowerCase();
+
+                            if (searchTerm.trim() === '') {
+                                filterAndRender();
+                                return;
+                            }
+
+                            var filtered = [];
+                            for (var i = 0; i < DUMMY_DATA.length; i++) {
+                                var item = DUMMY_DATA[i];
+                                if (item.petName.toLowerCase().indexOf(searchTerm) !== -1) {
+                                    filtered.push(item);
+                                }
+                            }
+
+                            filteredData = filtered;
+                            currentPage = 1;
+                            renderTable(filteredData, currentPage);
+                        });
+
+                        // Initial load
+                        window.onload = function () {
+                            updateFilterButtonStyles();
+                            updateFilterButtonCounts();
+                            renderTable(filteredData, currentPage);
+                        };
         </script>
     </body>
 </html>

@@ -26,8 +26,6 @@ const menus = {
 
 // Function untuk initialize sidebar - akan dipanggil selepas HTML loaded
 function initSidebar() {
-    console.log('Initializing sidebar...');
-
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
     const menuContainer = document.getElementById('sidebar-menu');
@@ -44,9 +42,24 @@ function initSidebar() {
         return;
     }
 
+    // Get user role from data attribute
+    const userRole = menuContainer.getAttribute('data-user-role') || 'adopter';
+
+    console.log('Current user role:', userRole);
+
     // Function untuk show logout modal
     function showLogoutModal() {
         logoutModal.classList.remove('hidden');
+
+        // Check if page actually has scrollbar
+        const hasScrollbar = document.body.scrollHeight > window.innerHeight;
+
+        if (hasScrollbar) {
+            // Only add padding if page has scrollbar
+            const scrollbarWidth = getScrollbarWidth();
+            document.body.style.paddingRight = scrollbarWidth + 'px';
+        }
+
         // Prevent body scrolling when modal is open
         document.body.style.overflow = 'hidden';
     }
@@ -56,54 +69,30 @@ function initSidebar() {
         logoutModal.classList.add('hidden');
         // Restore body scrolling
         document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
     }
 
-    // Function untuk detect user role dari multiple sources
-    function getUserRole() {
-        // Method 1: dari data attribute pada body
-        const bodyRole = document.body.getAttribute('data-user-role');
-        if (bodyRole) {
-            console.log('Got user role from body data attribute:', bodyRole);
-            return bodyRole;
-        }
-
-        // Method 2: dari hidden input
-        const hiddenInput = document.getElementById('user-role-data');
-        if (hiddenInput && hiddenInput.value) {
-            console.log('Got user role from hidden input:', hiddenInput.value);
-            return hiddenInput.value;
-        }
-
-        // Method 3: dari current URL (fallback)
-        const currentPath = window.location.pathname;
-        if (currentPath.includes('dashboard_admin')) {
-            console.log('Detected admin from URL');
-            return 'admin';
-        } else if (currentPath.includes('dashboard_shelter')) {
-            console.log('Detected shelter from URL');
-            return 'shelter';
-        } else if (currentPath.includes('dashboard_adopter')) {
-            console.log('Detected adopter from URL');
-            return 'adopter';
-        }
-
-        // Default fallback
-        console.log('Using default role: admin');
-        return 'admin';
+    // Get scrollbar width to prevent layout shift
+    function getScrollbarWidth() {
+        const outer = document.createElement('div');
+        outer.style.visibility = 'hidden';
+        outer.style.overflow = 'scroll';
+        document.body.appendChild(outer);
+        const inner = document.createElement('div');
+        outer.appendChild(inner);
+        const scrollbarWidth = outer.offsetWidth - inner.offsetWidth;
+        outer.parentNode.removeChild(outer);
+        return scrollbarWidth;
     }
 
-    // Render menu berdasarkan user role
-    function renderMenu() {
-        const userRole = getUserRole();
-        console.log('Rendering menu for role:', userRole);
-
+    // Render menu untuk role tertentu
+    function renderMenu(role) {
         menuContainer.innerHTML = '';
-        const items = menus[userRole] || [];
+        const items = menus[role] || [];
 
         if (items.length === 0) {
-            console.warn('No menu items found for role:', userRole);
-            const noItems = document.createElement('div');
-            noItems.className = 'text-center text-gray-400 py-4';
+            const noItems = document.createElement('p');
+            noItems.className = 'text-white/50 text-sm text-center py-4';
             noItems.textContent = 'No menu items available';
             menuContainer.appendChild(noItems);
             return;
@@ -112,44 +101,81 @@ function initSidebar() {
         items.forEach((item, idx) => {
             let el;
             if (item.href) {
-                // Anchor navigation untuk pages
+                // Anchor navigation
                 el = document.createElement('a');
                 el.href = item.href;
                 el.setAttribute('role', 'menuitem');
-                el.className = 'w-full block text-left px-3 py-2 rounded hover:bg-[#24483E] transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white';
-                el.textContent = item.label;
+                el.className = 'w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-[#24483E] transition-all duration-200 group';
+
+                // Text container
+                const textSpan = document.createElement('span');
+                textSpan.textContent = item.label;
+                textSpan.className = 'text-sm font-medium';
+                el.appendChild(textSpan);
+
+                // Arrow icon
+                const arrowSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                arrowSvg.setAttribute('class', 'w-4 h-4 text-white/60 group-hover:text-white group-hover:translate-x-1 transition-all duration-200');
+                arrowSvg.setAttribute('fill', 'none');
+                arrowSvg.setAttribute('stroke', 'currentColor');
+                arrowSvg.setAttribute('stroke-width', '2');
+                arrowSvg.setAttribute('viewBox', '0 0 24 24');
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('stroke-linecap', 'round');
+                path.setAttribute('stroke-linejoin', 'round');
+                path.setAttribute('d', 'M9 5l7 7-7 7');
+                arrowSvg.appendChild(path);
+                el.appendChild(arrowSvg);
 
                 // Highlight current page
-                if (window.location.pathname.includes(item.href.replace('.jsp', ''))) {
-                    el.className += ' bg-[#24483E]';
+                const currentPath = window.location.pathname.split('/').pop() || '';
+                if (item.href.includes(currentPath)) {
+                    el.className += ' bg-[#24483E] border-l-4 border-[#6DBF89]';
                 }
             } else {
                 // Fallback button yang call action
                 el = document.createElement('button');
                 el.type = 'button';
-                el.className = 'w-full text-left px-3 py-2 rounded hover:bg-[#24483E] transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white';
-                el.textContent = item.label;
-                el.addEventListener('click', () => {
-                    try {
-                        item.action();
-                    } catch (e) {
-                        console.log('Menu action error:', e);
-                    }
-                    closeSidebar();
-                });
+                el.className = 'w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-[#24483E] transition-all duration-200 group';
+
+                const textSpan = document.createElement('span');
+                textSpan.textContent = item.label;
+                textSpan.className = 'text-sm font-medium';
+                el.appendChild(textSpan);
+
+                // Arrow icon
+                const arrowSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                arrowSvg.setAttribute('class', 'w-4 h-4 text-white/60 group-hover:text-white group-hover:translate-x-1 transition-all duration-200');
+                arrowSvg.setAttribute('fill', 'none');
+                arrowSvg.setAttribute('stroke', 'currentColor');
+                arrowSvg.setAttribute('stroke-width', '2');
+                arrowSvg.setAttribute('viewBox', '0 0 24 24');
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('stroke-linecap', 'round');
+                path.setAttribute('stroke-linejoin', 'round');
+                path.setAttribute('d', 'M9 5l7 7-7 7');
+                arrowSvg.appendChild(path);
+                el.appendChild(arrowSvg);
+
+                if (item.action) {
+                    el.addEventListener('click', () => {
+                        try {
+                            item.action();
+                        } catch (e) {
+                            console.log(e);
+                        }
+                        closeSidebar();
+                    });
+                }
             }
 
             menuContainer.appendChild(el);
 
-            // Divider line (kecuali untuk item terakhir)
-            if (idx < items.length - 1) {
-                const hr = document.createElement('div');
-                hr.className = 'border-t border-slate-500/30 my-1';
-                menuContainer.appendChild(hr);
-            }
+            // Divider line - IMPROVED (lebih jelas dan terang)
+            const hr = document.createElement('div');
+            hr.className = 'border-t border-[#6DBF89]/40 my-2';
+            menuContainer.appendChild(hr);
         });
-
-        console.log('Menu rendered with', items.length, 'items for role:', userRole);
     }
 
     // Open sidebar
@@ -158,7 +184,6 @@ function initSidebar() {
         overlay.classList.remove('hidden');
         sidebar.setAttribute('aria-hidden', 'false');
         overlay.setAttribute('aria-hidden', 'false');
-        document.body.style.overflow = 'hidden'; // Prevent body scrolling
     }
 
     // Close sidebar
@@ -167,44 +192,36 @@ function initSidebar() {
         overlay.classList.add('hidden');
         sidebar.setAttribute('aria-hidden', 'true');
         overlay.setAttribute('aria-hidden', 'true');
-        document.body.style.overflow = ''; // Restore body scrolling
     }
 
     // Event delegation untuk header toggle button
     document.addEventListener('click', function (e) {
         const target = e.target;
-        const sidebarBtn = document.getElementById('sidebarBtn');
 
         // Toggle sidebar bila click header button
-        if (target === sidebarBtn || (sidebarBtn && sidebarBtn.contains(target))) {
-            if (sidebar.classList.contains('-translate-x-full')) {
+        if (target.closest && target.closest('#sidebarBtn')) {
+            if (sidebar.classList.contains('-translate-x-full'))
                 openSidebar();
-            } else {
+            else
                 closeSidebar();
-            }
-            e.preventDefault();
         }
 
         // Close bila click overlay
-        if (target === overlay || (overlay && overlay.contains(target))) {
+        if (target.closest && target.closest('#sidebar-overlay')) {
             closeSidebar();
         }
     });
 
     // Close button dalam sidebar
-    if (closeBtn) {
-        closeBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            closeSidebar();
-        });
-    }
+    if (closeBtn)
+        closeBtn.addEventListener('click', closeSidebar);
 
     // Escape key tutup sidebar
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            if (!logoutModal.classList.contains('hidden')) {
+            if (logoutModal && !logoutModal.classList.contains('hidden')) {
                 hideLogoutModal();
-            } else if (!sidebar.classList.contains('-translate-x-full')) {
+            } else {
                 closeSidebar();
             }
         }
@@ -228,13 +245,10 @@ function initSidebar() {
 
     // Logout modal confirm button
     if (logoutConfirm) {
-        logoutConfirm.addEventListener('click', (e) => {
-            e.preventDefault();
-            console.log('Logging out...');
+        logoutConfirm.addEventListener('click', () => {
             closeSidebar();
             hideLogoutModal();
-            // Redirect to logout servlet
-            window.location.href = 'logout';
+            // Redirect handled by href
         });
     }
 
@@ -247,37 +261,14 @@ function initSidebar() {
         });
     }
 
-    // Initial render berdasarkan user role
-    renderMenu();
+    // Initial render berdasarkan role user
+    renderMenu(userRole);
 
-    // Re-render menu jika ada perubahan pada role (optional)
-    const observer = new MutationObserver(function (mutations) {
-        mutations.forEach(function (mutation) {
-            if (mutation.type === 'attributes' &&
-                    (mutation.attributeName === 'data-user-role' ||
-                            mutation.target.id === 'user-role-data')) {
-                console.log('Role changed, re-rendering menu');
-                renderMenu();
-            }
-        });
-    });
-
-    // Observe body for role changes
-    observer.observe(document.body, {attributes: true});
-
-    // Observe hidden input for role changes
-    const roleInput = document.getElementById('user-role-data');
-    if (roleInput) {
-        observer.observe(roleInput, {attributes: true});
-    }
-
-    console.log('Sidebar initialized successfully');
+    // Overlay click tutup sidebar
+    overlay.addEventListener('click', closeSidebar);
 }
 
 // ✅ PANGGIL initSidebar bila DOM ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initSidebar);
-} else {
-    // DOM sudah ready
+document.addEventListener('DOMContentLoaded', function () {
     initSidebar();
-}
+});

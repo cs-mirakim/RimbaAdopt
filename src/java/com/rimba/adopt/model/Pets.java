@@ -8,7 +8,7 @@ public class Pets implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private Integer petId;
-    private Integer shelterId;           // ID shelter sahaja
+    private Integer shelterId;
     private String name;
     private String species;
     private String breed;

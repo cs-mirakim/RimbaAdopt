@@ -1,4 +1,19 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="com.rimba.adopt.util.SessionUtil" %>
+
+<%
+    // Check if user is logged in and is admin
+    if (!SessionUtil.isLoggedIn(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+
+    if (!SessionUtil.isShelter(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+%>
+
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -454,42 +469,42 @@
                                 const itemNumber = start + index + 1;
 
                                 var row = '' +
-    '<tr class="hover:bg-gray-50 transition duration-100">' +
-        '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color: #2B2B2B;">' + item.pet_id + '</td>' +
-        '<td class="px-6 py-4 whitespace-nowrap">' +
-            '<div class="flex-shrink-0 h-12 w-12">' +
-                '<img class="h-12 w-12 rounded-full object-cover border" src="' + item.photo_path + '" alt="' + item.name + '" onerror="this.src=\'https://via.placeholder.com/48x48?text=Pet\'" style="border-color: #E5E5E5;">' +
-            '</div>' +
-        '</td>' +
-        '<td class="px-6 py-4 whitespace-nowrap">' +
-            '<div class="text-sm font-bold" style="color: #2B2B2B;">' + item.name + '</div>' +
-        '</td>' +
-        '<td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">' + item.species + '</td>' +
-        '<td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">' + (item.breed || '-') + '</td>' +
-        '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color: #2B2B2B;">' + (item.age !== null ? item.age + ' yrs' : '-') + '</td>' +
-        '<td class="px-6 py-4 whitespace-nowrap">' +
-            '<span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ' + genderChipClass + '">' +
-                (item.gender === 'male' ? '♂ Male' : '♀ Female') +
-            '</span>' +
-        '</td>' +
-        '<td class="px-6 py-4 whitespace-nowrap">' +
-            '<span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ' + sizeChipClass + '">' +
-                (item.size ? item.size.charAt(0).toUpperCase() + item.size.slice(1) : '') +
-            '</span>' +
-        '</td>' +
-        '<td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">' + (item.color || '-') + '</td>' +
-        '<td class="px-6 py-4 text-sm" style="color: #2B2B2B;">' + (item.health_status || '-') + '</td>' +
-        '<td class="px-6 py-4 whitespace-nowrap text-center">' +
-            '<div class="flex justify-center space-x-2">' +
-                '<button onclick="openModal(\'createModal\', ' + item.pet_id + ')" class="action-button px-3 py-2 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;" title="Edit">' +
-                    '<i class="fas fa-edit"></i>' +
-                '</button>' +
-                '<button onclick="openModal(\'deleteModal\', ' + item.pet_id + ')" class="action-button px-3 py-2 rounded-lg font-semibold text-white hover:bg-red-700" style="background-color: #B84A4A;" title="Delete">' +
-                    '<i class="fas fa-trash"></i>' +
-                '</button>' +
-            '</div>' +
-        '</td>' +
-    '</tr>';
+                                        '<tr class="hover:bg-gray-50 transition duration-100">' +
+                                        '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color: #2B2B2B;">' + item.pet_id + '</td>' +
+                                        '<td class="px-6 py-4 whitespace-nowrap">' +
+                                        '<div class="flex-shrink-0 h-12 w-12">' +
+                                        '<img class="h-12 w-12 rounded-full object-cover border" src="' + item.photo_path + '" alt="' + item.name + '" onerror="this.src=\'https://via.placeholder.com/48x48?text=Pet\'" style="border-color: #E5E5E5;">' +
+                                        '</div>' +
+                                        '</td>' +
+                                        '<td class="px-6 py-4 whitespace-nowrap">' +
+                                        '<div class="text-sm font-bold" style="color: #2B2B2B;">' + item.name + '</div>' +
+                                        '</td>' +
+                                        '<td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">' + item.species + '</td>' +
+                                        '<td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">' + (item.breed || '-') + '</td>' +
+                                        '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color: #2B2B2B;">' + (item.age !== null ? item.age + ' yrs' : '-') + '</td>' +
+                                        '<td class="px-6 py-4 whitespace-nowrap">' +
+                                        '<span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ' + genderChipClass + '">' +
+                                        (item.gender === 'male' ? '♂ Male' : '♀ Female') +
+                                        '</span>' +
+                                        '</td>' +
+                                        '<td class="px-6 py-4 whitespace-nowrap">' +
+                                        '<span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ' + sizeChipClass + '">' +
+                                        (item.size ? item.size.charAt(0).toUpperCase() + item.size.slice(1) : '') +
+                                        '</span>' +
+                                        '</td>' +
+                                        '<td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">' + (item.color || '-') + '</td>' +
+                                        '<td class="px-6 py-4 text-sm" style="color: #2B2B2B;">' + (item.health_status || '-') + '</td>' +
+                                        '<td class="px-6 py-4 whitespace-nowrap text-center">' +
+                                        '<div class="flex justify-center space-x-2">' +
+                                        '<button onclick="openModal(\'createModal\', ' + item.pet_id + ')" class="action-button px-3 py-2 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;" title="Edit">' +
+                                        '<i class="fas fa-edit"></i>' +
+                                        '</button>' +
+                                        '<button onclick="openModal(\'deleteModal\', ' + item.pet_id + ')" class="action-button px-3 py-2 rounded-lg font-semibold text-white hover:bg-red-700" style="background-color: #B84A4A;" title="Delete">' +
+                                        '<i class="fas fa-trash"></i>' +
+                                        '</button>' +
+                                        '</div>' +
+                                        '</td>' +
+                                        '</tr>';
                                 tableBody.innerHTML += row;
                             });
 

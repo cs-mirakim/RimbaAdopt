@@ -1,4 +1,18 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="com.rimba.adopt.util.SessionUtil" %>
+
+<%
+    // Check if user is logged in and is admin
+    if (!SessionUtil.isLoggedIn(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+
+    if (!SessionUtil.isAdopter(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+%>
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -379,7 +393,7 @@
 
         <!-- Sidebar container -->
         <jsp:include page="includes/sidebar.jsp" />
-        
+
         <!-- Load sidebar.js -->
         <script src="includes/sidebar.js"></script>
 
@@ -676,8 +690,8 @@
                 petPageNumbers.innerHTML = '';
                 for (let i = 1; i <= totalPetPages; i++) {
                     const pageBtn = document.createElement('button');
-                    pageBtn.className = 'w-10 h-10 rounded-lg border ' + 
-                        (i === currentPetPage ? 'border-[#2F5D50] bg-[#2F5D50] text-white' : 'border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]');
+                    pageBtn.className = 'w-10 h-10 rounded-lg border ' +
+                            (i === currentPetPage ? 'border-[#2F5D50] bg-[#2F5D50] text-white' : 'border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]');
                     pageBtn.textContent = i;
                     pageBtn.addEventListener('click', () => {
                         currentPetPage = i;
@@ -687,64 +701,64 @@
                     petPageNumbers.appendChild(pageBtn);
                 }
 
-            // Next pet page
-            function nextPetPage() {
-                const totalPetPages = Math.ceil(pets.length / petsPerPage);
-                if (currentPetPage < totalPetPages) {
-                    currentPetPage++;
-                    renderPets();
-                    updatePetPagination();
+                // Next pet page
+                function nextPetPage() {
+                    const totalPetPages = Math.ceil(pets.length / petsPerPage);
+                    if (currentPetPage < totalPetPages) {
+                        currentPetPage++;
+                        renderPets();
+                        updatePetPagination();
+                    }
                 }
-            }
 
-            // Previous pet page
-            function prevPetPage() {
-                if (currentPetPage > 1) {
-                    currentPetPage--;
-                    renderPets();
-                    updatePetPagination();
+                // Previous pet page
+                function prevPetPage() {
+                    if (currentPetPage > 1) {
+                        currentPetPage--;
+                        renderPets();
+                        updatePetPagination();
+                    }
                 }
-            }
 
-            // Render reviews for current page
-            function renderReviews() {
-                reviewsContainer.innerHTML = '';
+                // Render reviews for current page
+                function renderReviews() {
+                    reviewsContainer.innerHTML = '';
 
-                const startIndex = (currentReviewPage - 1) * reviewsPerPage;
-                const endIndex = startIndex + reviewsPerPage;
-                const reviewsToShow = allReviews.slice(startIndex, endIndex);
+                    const startIndex = (currentReviewPage - 1) * reviewsPerPage;
+                    const endIndex = startIndex + reviewsPerPage;
+                    const reviewsToShow = allReviews.slice(startIndex, endIndex);
 
-                if (reviewsToShow.length === 0) {
-                    reviewsContainer.innerHTML = `
+                    if (reviewsToShow.length === 0) {
+                        reviewsContainer.innerHTML = `
                 <div class="text-center py-8">
                     <i class="fas fa-comment-slash text-4xl text-[#E5E5E5] mb-4"></i>
                     <p class="text-[#888]">No reviews yet. Be the first to review this shelter!</p>
                 </div>
             `;
-                    return;
-                }
-
-                reviewsToShow.forEach(review => {
-                    const reviewCard = document.createElement('div');
-                    reviewCard.className = 'feedback-card bg-[#F9F9F9] p-6 rounded-xl';
-
-                    // Generate star HTML
-                    let starsHTML = '';
-                    for (let i = 1; i <= 5; i++) {
-                        if (i <= review.rating) {
-                            starsHTML += '<i class="fas fa-star"></i>';
-                        } else {
-                            starsHTML += '<i class="far fa-star"></i>';
-                        }
+                        return;
                     }
 
-                    reviewCard.innerHTML = `
+                    reviewsToShow.forEach(review => {
+                        const reviewCard = document.createElement('div');
+                        reviewCard.className = 'feedback-card bg-[#F9F9F9] p-6 rounded-xl';
+
+                        // Generate star HTML
+                        let starsHTML = '';
+                        for (let i = 1; i <= 5; i++) {
+                            if (i <= review.rating) {
+                                starsHTML += '<i class="fas fa-star"></i>';
+                            } else {
+                                starsHTML += '<i class="far fa-star"></i>';
+                            }
+                        }
+
+                        reviewCard.innerHTML = `
                 <div class="flex justify-between items-start mb-4">
                     <div>
                         <h4 class="font-bold text-[#2B2B2B] text-lg">${review.title}</h4>
                         <div class="flex items-center mt-1">
                             <div class="star-rating mr-3">
-                                ${starsHTML}
+            ${starsHTML}
                             </div>
                             <span class="text-[#888] text-sm">by ${review.user}</span>
                         </div>
@@ -762,171 +776,171 @@
                 </div>
             `;
 
-                    reviewsContainer.appendChild(reviewCard);
-                });
-            }
-
-            // Update review pagination
-            function updateReviewPagination() {
-                const totalReviewPages = Math.ceil(allReviews.length / reviewsPerPage);
-
-                // Update button states
-                prevReviewPageBtn.disabled = currentReviewPage === 1;
-                nextReviewPageBtn.disabled = currentReviewPage === totalReviewPages || totalReviewPages === 0;
-
-                // Generate page number buttons
-                reviewPageNumbers.innerHTML = '';
-                const maxVisiblePages = 5;
-                let startPage = Math.max(1, currentReviewPage - Math.floor(maxVisiblePages / 2));
-                let endPage = Math.min(totalReviewPages, startPage + maxVisiblePages - 1);
-
-                if (endPage - startPage + 1 < maxVisiblePages) {
-                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
-                }
-
-                for (let i = startPage; i <= endPage; i++) {
-                    const pageBtn = document.createElement('button');
-                    pageBtn.className = 'review-page-btn w-10 h-10 rounded-lg border ' + 
-                        (i === currentReviewPage ? 'border-[#2F5D50] bg-[#2F5D50] text-white' : 'border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]');
-                    pageBtn.textContent = i;
-                    pageBtn.addEventListener('click', () => {
-                        currentReviewPage = i;
-                        renderReviews();
-                        updateReviewPagination();
+                        reviewsContainer.appendChild(reviewCard);
                     });
-                    reviewPageNumbers.appendChild(pageBtn);
                 }
 
-            // Next review page
-            function nextReviewPage() {
-                const totalReviewPages = Math.ceil(allReviews.length / reviewsPerPage);
-                if (currentReviewPage < totalReviewPages) {
-                    currentReviewPage++;
-                    renderReviews();
-                    updateReviewPagination();
-                }
-            }
+                // Update review pagination
+                function updateReviewPagination() {
+                    const totalReviewPages = Math.ceil(allReviews.length / reviewsPerPage);
 
-            // Previous review page
-            function prevReviewPage() {
-                if (currentReviewPage > 1) {
-                    currentReviewPage--;
-                    renderReviews();
-                    updateReviewPagination();
-                }
-            }
+                    // Update button states
+                    prevReviewPageBtn.disabled = currentReviewPage === 1;
+                    nextReviewPageBtn.disabled = currentReviewPage === totalReviewPages || totalReviewPages === 0;
 
-            // Open feedback modal
-            function openFeedbackModal() {
-                feedbackModal.classList.add('show');
-                setTimeout(() => {
-                    const modalContent = feedbackModal.querySelector('.modal-content');
-                    modalContent.classList.add('show');
-                }, 10);
-            }
+                    // Generate page number buttons
+                    reviewPageNumbers.innerHTML = '';
+                    const maxVisiblePages = 5;
+                    let startPage = Math.max(1, currentReviewPage - Math.floor(maxVisiblePages / 2));
+                    let endPage = Math.min(totalReviewPages, startPage + maxVisiblePages - 1);
 
-            // Close feedback modal
-            function closeFeedbackModal() {
-                const modalContent = feedbackModal.querySelector('.modal-content');
-                modalContent.classList.remove('show');
-
-                setTimeout(() => {
-                    feedbackModal.classList.remove('show');
-                    resetReviewForm();
-                }, 300);
-            }
-
-            // Reset review form
-            function resetReviewForm() {
-                selectedRating = 0;
-                selectedRatingInput.value = "0";
-
-                // Reset stars
-                starRatingElements.forEach(star => {
-                    star.classList.remove('fas');
-                    star.classList.add('far');
-                });
-
-                // Reset form fields
-                document.getElementById('reviewTitle').value = '';
-                document.getElementById('reviewComment').value = '';
-            }
-
-            // Handle star rating selection
-            function handleStarClick(e) {
-                const rating = parseInt(e.target.getAttribute('data-value'));
-                selectedRating = rating;
-                selectedRatingInput.value = rating.toString();
-
-                // Update star display
-                starRatingElements.forEach((star, index) => {
-                    if (index < rating) {
-                        star.classList.remove('far');
-                        star.classList.add('fas');
-                    } else {
-                        star.classList.remove('fas');
-                        star.classList.add('far');
+                    if (endPage - startPage + 1 < maxVisiblePages) {
+                        startPage = Math.max(1, endPage - maxVisiblePages + 1);
                     }
-                });
-            }
 
-            // Handle review form submission
-            function handleReviewSubmit(e) {
-                e.preventDefault();
+                    for (let i = startPage; i <= endPage; i++) {
+                        const pageBtn = document.createElement('button');
+                        pageBtn.className = 'review-page-btn w-10 h-10 rounded-lg border ' +
+                                (i === currentReviewPage ? 'border-[#2F5D50] bg-[#2F5D50] text-white' : 'border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]');
+                        pageBtn.textContent = i;
+                        pageBtn.addEventListener('click', () => {
+                            currentReviewPage = i;
+                            renderReviews();
+                            updateReviewPagination();
+                        });
+                        reviewPageNumbers.appendChild(pageBtn);
+                    }
 
-                const title = document.getElementById('reviewTitle').value.trim();
-                const comment = document.getElementById('reviewComment').value.trim();
+                    // Next review page
+                    function nextReviewPage() {
+                        const totalReviewPages = Math.ceil(allReviews.length / reviewsPerPage);
+                        if (currentReviewPage < totalReviewPages) {
+                            currentReviewPage++;
+                            renderReviews();
+                            updateReviewPagination();
+                        }
+                    }
 
-                if (selectedRating === 0) {
-                    alert('Please select a rating');
-                    return;
-                }
+                    // Previous review page
+                    function prevReviewPage() {
+                        if (currentReviewPage > 1) {
+                            currentReviewPage--;
+                            renderReviews();
+                            updateReviewPagination();
+                        }
+                    }
 
-                if (!title) {
-                    alert('Please enter a review title');
-                    return;
-                }
+                    // Open feedback modal
+                    function openFeedbackModal() {
+                        feedbackModal.classList.add('show');
+                        setTimeout(() => {
+                            const modalContent = feedbackModal.querySelector('.modal-content');
+                            modalContent.classList.add('show');
+                        }, 10);
+                    }
 
-                if (!comment) {
-                    alert('Please enter your review');
-                    return;
-                }
+                    // Close feedback modal
+                    function closeFeedbackModal() {
+                        const modalContent = feedbackModal.querySelector('.modal-content');
+                        modalContent.classList.remove('show');
 
-                // In a real app, this would be sent to a server
-                alert('Thank you for your review! It will be visible after approval.');
+                        setTimeout(() => {
+                            feedbackModal.classList.remove('show');
+                            resetReviewForm();
+                        }, 300);
+                    }
 
-                // Close modal and reset form
-                closeFeedbackModal();
-            }
+                    // Reset review form
+                    function resetReviewForm() {
+                        selectedRating = 0;
+                        selectedRatingInput.value = "0";
 
-            // Attach event listeners
-            function attachEventListeners() {
-                prevPetPageBtn.addEventListener('click', prevPetPage);
-                nextPetPageBtn.addEventListener('click', nextPetPage);
+                        // Reset stars
+                        starRatingElements.forEach(star => {
+                            star.classList.remove('fas');
+                            star.classList.add('far');
+                        });
 
-                prevReviewPageBtn.addEventListener('click', prevReviewPage);
-                nextReviewPageBtn.addEventListener('click', nextReviewPage);
+                        // Reset form fields
+                        document.getElementById('reviewTitle').value = '';
+                        document.getElementById('reviewComment').value = '';
+                    }
 
-                openFeedbackModalBtn.addEventListener('click', openFeedbackModal);
-                writeReviewBtn.addEventListener('click', openFeedbackModal);
-                closeModalBtn.addEventListener('click', closeFeedbackModal);
-                cancelReviewBtn.addEventListener('click', closeFeedbackModal);
+                    // Handle star rating selection
+                    function handleStarClick(e) {
+                        const rating = parseInt(e.target.getAttribute('data-value'));
+                        selectedRating = rating;
+                        selectedRatingInput.value = rating.toString();
 
-                // Close modal when clicking outside
-                feedbackModal.addEventListener('click', (e) => {
-                    if (e.target === feedbackModal) {
+                        // Update star display
+                        starRatingElements.forEach((star, index) => {
+                            if (index < rating) {
+                                star.classList.remove('far');
+                                star.classList.add('fas');
+                            } else {
+                                star.classList.remove('fas');
+                                star.classList.add('far');
+                            }
+                        });
+                    }
+
+                    // Handle review form submission
+                    function handleReviewSubmit(e) {
+                        e.preventDefault();
+
+                        const title = document.getElementById('reviewTitle').value.trim();
+                        const comment = document.getElementById('reviewComment').value.trim();
+
+                        if (selectedRating === 0) {
+                            alert('Please select a rating');
+                            return;
+                        }
+
+                        if (!title) {
+                            alert('Please enter a review title');
+                            return;
+                        }
+
+                        if (!comment) {
+                            alert('Please enter your review');
+                            return;
+                        }
+
+                        // In a real app, this would be sent to a server
+                        alert('Thank you for your review! It will be visible after approval.');
+
+                        // Close modal and reset form
                         closeFeedbackModal();
                     }
-                });
 
-                // Star rating click events
-                starRatingElements.forEach(star => {
-                    star.addEventListener('click', handleStarClick);
-                });
+                    // Attach event listeners
+                    function attachEventListeners() {
+                        prevPetPageBtn.addEventListener('click', prevPetPage);
+                        nextPetPageBtn.addEventListener('click', nextPetPage);
 
-                // Review form submission
-                reviewForm.addEventListener('submit', handleReviewSubmit);
-            }
+                        prevReviewPageBtn.addEventListener('click', prevReviewPage);
+                        nextReviewPageBtn.addEventListener('click', nextReviewPage);
+
+                        openFeedbackModalBtn.addEventListener('click', openFeedbackModal);
+                        writeReviewBtn.addEventListener('click', openFeedbackModal);
+                        closeModalBtn.addEventListener('click', closeFeedbackModal);
+                        cancelReviewBtn.addEventListener('click', closeFeedbackModal);
+
+                        // Close modal when clicking outside
+                        feedbackModal.addEventListener('click', (e) => {
+                            if (e.target === feedbackModal) {
+                                closeFeedbackModal();
+                            }
+                        });
+
+                        // Star rating click events
+                        starRatingElements.forEach(star => {
+                            star.addEventListener('click', handleStarClick);
+                        });
+
+                        // Review form submission
+                        reviewForm.addEventListener('submit', handleReviewSubmit);
+                    }
         </script>
 
     </body>

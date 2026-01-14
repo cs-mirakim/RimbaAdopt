@@ -1,14 +1,15 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="com.rimba.adopt.util.SessionUtil" %>
+
 <%
-    if (!SessionUtil.isLoggedIn(request)) {
-        response.sendRedirect("login.jsp");
+    // Check if user is logged in and is admin
+    if (!SessionUtil.isLoggedIn(session)) {
+        response.sendRedirect("index.jsp");
         return;
     }
 
-    String userRole = SessionUtil.getUserRole(request);
-    if (!"shelter".equals(userRole)) {
-        response.sendRedirect("login.jsp?error=Access denied");
+    if (!SessionUtil.isShelter(session)) {
+        response.sendRedirect("index.jsp");
         return;
     }
 %>

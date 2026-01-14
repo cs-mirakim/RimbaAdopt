@@ -1,4 +1,3 @@
-// 4. SHELTER MODEL
 package com.rimba.adopt.model;
 
 import java.io.Serializable;
@@ -15,17 +14,16 @@ public class Shelter implements Serializable {
     private String website;
     private String operatingHours;
     private String approvalStatus;
-    private Integer reviewedBy;           // ID admin sahaja
+    private Integer reviewedBy;
     private Timestamp reviewedAt;
     private String approvalMessage;
     private String rejectionReason;
-    private Integer notificationSent;     // Derby pakai SMALLINT/INTEGER
+    private Integer notificationSent;
     private Timestamp notificationSentAt;
 
     public Shelter() {
     }
 
-    // Getters and Setters
     public Integer getShelterId() {
         return shelterId;
     }
