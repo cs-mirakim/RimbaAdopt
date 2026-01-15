@@ -1,8 +1,8 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="com.rimba.adopt.util.SessionUtil" %>
-
+<%@ page import="java.util.*" %>
 <%
-    // Check if user is logged in and is admin
+    // Check if user is logged in and is shelter
     if (!SessionUtil.isLoggedIn(session)) {
         response.sendRedirect("index.jsp");
         return;
@@ -10,6 +10,17 @@
 
     if (!SessionUtil.isShelter(session)) {
         response.sendRedirect("index.jsp");
+        return;
+    }
+
+    // Get data from servlet
+    List<Map<String, Object>> requestsData = (List<Map<String, Object>>) request.getAttribute("requestsData");
+    Integer pendingCount = (Integer) request.getAttribute("pendingCount");
+    String shelterName = (String) request.getAttribute("shelterName");
+
+    if (requestsData == null) {
+        // If data is null, redirect to servlet to load data
+        response.sendRedirect("manageAdoptionServlet");
         return;
     }
 %>
@@ -72,15 +83,15 @@
                     <div class="mt-6 p-5 rounded-2xl border border-divider bg-bg-page flex flex-col md:flex-row justify-between items-center gap-4">
                         <div class="flex items-center gap-4">
                             <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-primary bg-white">
-                                <img src="profile_picture/shelter/pic1.png" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Happy+Paws&background=2F5D50&color=fff'">
+                                <img src="profile_picture/shelter/pic1.png" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=<%= shelterName != null ? shelterName.replace(" ", "+") : "Shelter"%>&background=2F5D50&color=fff'">
                             </div>
                             <div>
-                                <h3 class="text-xl font-bold text-primary">Happy Paws Shelter</h3>
+                                <h3 class="text-xl font-bold text-primary"><%= shelterName != null ? shelterName : "Shelter"%></h3>
                                 <div class="text-sm text-gray-600"><i class="fas fa-map-marker-alt mr-1"></i> Kuala Lumpur, MY</div>
                             </div>
                         </div>
                         <div class="text-right">
-                            <div class="text-2xl font-bold text-primary" id="pending-count">0</div>
+                            <div class="text-2xl font-bold text-primary" id="pending-count"><%= pendingCount != null ? pendingCount : 0%></div>
                             <div class="text-xs text-gray-500 uppercase font-bold">Pending Requests</div>
                         </div>
                     </div>
@@ -138,6 +149,7 @@
         <!-- Sidebar container -->
         <jsp:include page="includes/sidebar.jsp" />
 
+        <!-- Modals (same as before) -->
         <div id="reviewModal" class="modal fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4 backdrop-blur-sm">
             <div class="modal-content bg-white rounded-2xl w-full max-w-5xl max-h-[95vh] overflow-y-auto shadow-2xl flex flex-col">
 
@@ -299,32 +311,43 @@
 
         <script>
             // --- DATA & STATE ---
-            // Data simulate a JOIN between adoption_request, pets, and adopter tables
+            // Convert server data to JavaScript format
             var RAW_DATA = [
-                {id: 101, pet: "Kiko", breed: "Domestic Shorthair", species: "Cat", age: "2 yrs", gender: "Male", health: "Vaccinated", pet_img: "animal_picture/animal1.png",
-                    adopter: "Ali bin Ahmad", job: "Software Engineer", house: "apartment", pets: false, notes: "Fully grilled balcony, safe environment.", msg: "Perfect for our family, we love cats.",
-                    date: "2025-11-20 14:30:00", status: "pending", response: "", cancellation_reason: null},
-
-                {id: 102, pet: "Barkley", breed: "German Shepherd Mix", species: "Dog", age: "3 yrs", gender: "Male", health: "Neutered", pet_img: "animal_picture/animal2.jpg",
-                    adopter: "Siti Nurhaliza", job: "Teacher", house: "landed_house", pets: true, notes: "Large fenced yard (6ft high fence).", msg: "We need an active dog for hiking.",
-                    date: "2025-11-25 09:15:00", status: "pending", response: "", cancellation_reason: null},
-
-                {id: 106, pet: "Gigi", breed: "Persian", species: "Cat", age: "2 yrs", gender: "Female", health: "Groomed", pet_img: "animal_picture/animal3.jpg",
-                    adopter: "Lisa Lim", job: "Accountant", house: "apartment", pets: false, notes: "Quiet home, no kids.", msg: "She looks so cute!",
-                    date: "2025-11-01 10:00:00", status: "approved", response: "Approved. Pickup scheduled for Saturday.", cancellation_reason: null},
-
-                {id: 107, pet: "Bella", breed: "Maine Coon", species: "Cat", age: "3 yrs", gender: "Female", health: "Vaccinated", pet_img: "animal_picture/animal3.jpg",
-                    adopter: "John Tan", job: "Student", house: "apartment", pets: false, notes: "Shared house with 3 roommates.", msg: "I want a big cat.",
-                    date: "2025-10-01 16:45:00", status: "rejected", response: "Space constraint and student housing policy concerns.", cancellation_reason: null},
-
-                {id: 108, pet: "Ziggy", breed: "Lionhead", species: "Rabbit", age: "6 mos", gender: "Male", health: "Vaccinated", pet_img: "animal_picture/animal3.jpg",
-                    adopter: "Michael Wong", job: "Engineer", house: "apartment", pets: false, notes: "Indoor free roam setup.", msg: "Excited to adopt.",
-                    date: "2025-09-01 11:20:00", status: "cancelled", response: "", cancellation_reason: "Found another pet closer to home."}
+            <%
+                if (requestsData != null && !requestsData.isEmpty()) {
+                    for (int i = 0; i < requestsData.size(); i++) {
+                        Map<String, Object> item = requestsData.get(i);
+            %>
+            {
+            id: <%= item.get("id")%>,
+                    pet: "<%= escapeJavaScript((String) item.get("pet"))%>",
+                    breed: "<%= escapeJavaScript((String) item.get("breed"))%>",
+                    species: "<%= escapeJavaScript((String) item.get("species"))%>",
+                    age: "<%= item.get("age")%>",
+                    gender: "<%= escapeJavaScript((String) item.get("gender"))%>",
+                    health: "<%= escapeJavaScript((String) item.get("health"))%>",
+                    pet_img: "<%= escapeJavaScript((String) item.get("pet_img"))%>",
+                    adopter: "<%= escapeJavaScript((String) item.get("adopter"))%>",
+                    job: "<%= escapeJavaScript((String) item.get("job"))%>",
+                    house: "<%= escapeJavaScript((String) item.get("house"))%>",
+                    pets: <%= item.get("pets")%>,
+                    notes: "<%= escapeJavaScript((String) item.get("notes"))%>",
+                    msg: "<%= escapeJavaScript((String) item.get("adopter_message"))%>",
+                    date: "<%= item.get("date")%>",
+                    status: "<%= item.get("status")%>",
+                    response: "<%= escapeJavaScript((String) item.get("shelter_response"))%>",
+                    cancellation_reason: "<%= item.get("cancellation_reason") != null ? escapeJavaScript((String) item.get("cancellation_reason")) : ""%>",
+                    adopter_img: "<%= escapeJavaScript((String) item.get("adopter_img"))%>",
+                    adopter_email: "<%= escapeJavaScript((String) item.get("adopter_email"))%>",
+                    adopter_address: "<%= escapeJavaScript((String) item.get("adopter_address"))%>"
+            }<%= i < requestsData.size() - 1 ? "," : ""%>
+            <%
+                    }
+                }
+            %>
             ];
 
-            // ES5 compatible code - no arrow functions, no template literals
             var REQUESTS = RAW_DATA.map(function (item, index) {
-                var imgNum = (index % 3) + 1;
                 var newItem = {};
                 // Copy semua property
                 for (var key in item) {
@@ -332,7 +355,13 @@
                         newItem[key] = item[key];
                     }
                 }
-                newItem.adopter_img = 'profile_picture/adopter/user' + imgNum + '.jpg';
+                // Handle empty images
+                if (!newItem.pet_img || newItem.pet_img.trim() === "") {
+                    newItem.pet_img = 'default_pet.jpg';
+                }
+                if (!newItem.adopter_img || newItem.adopter_img.trim() === "") {
+                    newItem.adopter_img = 'default_user.jpg';
+                }
                 return newItem;
             });
 
@@ -359,7 +388,29 @@
             function init() {
                 applyFilter();
                 setupEvents();
+                setupPagination(); // Tambah ini
             }
+
+            function setupPagination() {
+                var prevBtn = document.getElementById('prev-btn');
+                var nextBtn = document.getElementById('next-btn');
+
+                prevBtn.addEventListener('click', function () {
+                    if (state.page > 1) {
+                        state.page--;
+                        renderTable();
+                    }
+                });
+
+                nextBtn.addEventListener('click', function () {
+                    var totalPages = Math.ceil(state.filtered.length / state.perPage);
+                    if (state.page < totalPages) {
+                        state.page++;
+                        renderTable();
+                    }
+                });
+            }
+
 
             function setupEvents() {
                 // Filter Tabs
@@ -419,11 +470,24 @@
             function applyFilter() {
                 state.filtered = state.data.filter(function (item) {
                     var matchStatus = state.filter === 'all' || item.status === state.filter;
-                    var matchSearch = !state.search || item.pet.toLowerCase().indexOf(state.search) !== -1 || item.adopter.toLowerCase().indexOf(state.search) !== -1;
+                    var matchSearch = !state.search ||
+                            item.pet.toLowerCase().indexOf(state.search) !== -1 ||
+                            item.adopter.toLowerCase().indexOf(state.search) !== -1 ||
+                            item.breed.toLowerCase().indexOf(state.search) !== -1;
                     return matchStatus && matchSearch;
                 });
                 updateCounts();
-                render();
+                renderTable(); // Ganti ini
+                updatePaginationButtons(); // Tambah function baru
+            }
+
+            function updatePaginationButtons() {
+                var totalPages = Math.ceil(state.filtered.length / state.perPage);
+                var prevBtn = document.getElementById('prev-btn');
+                var nextBtn = document.getElementById('next-btn');
+
+                prevBtn.disabled = state.page <= 1;
+                nextBtn.disabled = state.page >= totalPages;
             }
 
             function updateCounts() {
@@ -434,43 +498,40 @@
                 document.getElementById('total-items').innerText = state.filtered.length;
             }
 
-            function render() {
-                // Simplified rendering
+            function renderTable() {
                 var displayData = state.filtered;
+                var start = (state.page - 1) * state.perPage;
+                var end = Math.min(start + state.perPage, displayData.length);
+                var pageData = displayData.slice(start, end);
 
-                if (displayData.length === 0) {
+                // Update pagination info
+                document.getElementById('start-index').innerText = displayData.length > 0 ? start + 1 : 0;
+                document.getElementById('end-index').innerText = end;
+                document.getElementById('total-items').innerText = displayData.length;
+
+                // Enable/disable pagination buttons
+                document.getElementById('prev-btn').disabled = state.page <= 1;
+                document.getElementById('next-btn').disabled = end >= displayData.length;
+
+                if (pageData.length === 0) {
                     els.table.innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center text-gray-500">No requests found.</td></tr>';
                     return;
                 }
 
                 var tableHTML = '';
-                for (var i = 0; i < displayData.length; i++) {
-                    var item = displayData[i];
-                    var statusBadge = '';
+                for (var i = 0; i < pageData.length; i++) {
+                    var item = pageData[i];
+                    var statusBadge = getStatusBadge(item.status);
 
-                    if (item.status === 'pending')
-                        statusBadge = '<span class="px-3 py-1 rounded-full text-xs font-bold bg-chip-pending text-white capitalize">' + item.status + '</span>';
-                    else if (item.status === 'approved')
-                        statusBadge = '<span class="px-3 py-1 rounded-full text-xs font-bold bg-chip-approved text-primary-dark capitalize">' + item.status + '</span>';
-                    else if (item.status === 'rejected')
-                        statusBadge = '<span class="px-3 py-1 rounded-full text-xs font-bold bg-chip-rejected text-white capitalize">' + item.status + '</span>';
-                    else
-                        statusBadge = '<span class="px-3 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-600 capitalize">' + item.status + '</span>';
-
-                    // Button style restored to "Green for Review"
-                    var btnHtml = '';
-                    if (item.status === 'pending') {
-                        btnHtml = '<button onclick="openReviewModal(' + item.id + ')" class="px-4 py-2 rounded-lg bg-primary text-white text-xs font-bold uppercase tracking-wide hover:bg-primary-dark transition shadow-md hover:shadow-lg transform hover:-translate-y-0.5">Review</button>';
-                    } else {
-                        btnHtml = '<button onclick="openReviewModal(' + item.id + ')" class="px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-600 text-xs font-bold uppercase tracking-wide hover:bg-gray-50 transition shadow-sm">View</button>';
-                    }
+                    // Button style
+                    var btnHtml = getActionButton(item);
 
                     tableHTML +=
                             '<tr class="hover:bg-gray-50 transition">' +
                             '<td class="px-6 py-4 text-sm font-medium text-gray-400">#' + item.id + '</td>' +
                             '<td class="px-6 py-4">' +
                             '<div class="flex items-center gap-3">' +
-                            '<img class="h-10 w-10 rounded-lg object-cover bg-gray-100" src="' + item.pet_img + '">' +
+                            '<img class="h-10 w-10 rounded-lg object-cover bg-gray-100" src="' + item.pet_img + '" onerror="this.src=\'default_pet.jpg\'">' +
                             '<div>' +
                             '<div class="text-sm font-bold text-text-main">' + item.pet + '</div>' +
                             '<div class="text-xs text-gray-500">' + item.breed + '</div>' +
@@ -479,11 +540,11 @@
                             '</td>' +
                             '<td class="px-6 py-4">' +
                             '<div class="flex items-center gap-3">' +
-                            '<img class="h-8 w-8 rounded-full object-cover border border-divider" src="' + item.adopter_img + '">' +
+                            '<img class="h-8 w-8 rounded-full object-cover border border-divider" src="' + item.adopter_img + '" onerror="this.src=\'default_user.jpg\'">' +
                             '<div class="text-sm font-medium">' + item.adopter + '</div>' +
                             '</div>' +
                             '</td>' +
-                            '<td class="px-6 py-4 text-sm text-gray-500">' + item.date.split(' ')[0] + '</td>' +
+                            '<td class="px-6 py-4 text-sm text-gray-500">' + formatDate(item.date) + '</td>' +
                             '<td class="px-6 py-4">' + statusBadge + '</td>' +
                             '<td class="px-6 py-4 text-center">' + btnHtml + '</td>' +
                             '</tr>';
@@ -492,20 +553,73 @@
                 els.table.innerHTML = tableHTML;
             }
 
+            function getStatusBadge(status) {
+                var badgeClass = '';
+                var text = status.charAt(0).toUpperCase() + status.slice(1);
+
+                switch (status) {
+                    case 'pending':
+                        badgeClass = 'bg-chip-pending text-white';
+                        break;
+                    case 'approved':
+                        badgeClass = 'bg-chip-approved text-primary-dark';
+                        break;
+                    case 'rejected':
+                        badgeClass = 'bg-chip-rejected text-white';
+                        break;
+                    case 'cancelled':
+                        badgeClass = 'bg-gray-200 text-gray-600';
+                        break;
+                    default:
+                        badgeClass = 'bg-gray-100 text-gray-700';
+                }
+
+                return '<span class="px-3 py-1 rounded-full text-xs font-bold ' + badgeClass + '">' + text + '</span>';
+            }
+
+// Helper function untuk action button
+            function getActionButton(item) {
+                if (item.status === 'pending') {
+                    return '<button onclick="openReviewModal(' + item.id + ')" class="px-4 py-2 rounded-lg bg-primary text-white text-xs font-bold uppercase tracking-wide hover:bg-primary-dark transition shadow-md hover:shadow-lg">Review</button>';
+                } else {
+                    return '<button onclick="openReviewModal(' + item.id + ')" class="px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-600 text-xs font-bold uppercase tracking-wide hover:bg-gray-50 transition shadow-sm">View</button>';
+                }
+            }
+
+            function formatDate(dateStr) {
+                if (!dateStr)
+                    return '';
+                var date = new Date(dateStr);
+                if (isNaN(date.getTime()))
+                    return dateStr;
+                return date.toISOString().split('T')[0];
+            }
+
             // --- MODAL LOGIC ---
 
+            // TAMBAH di function openReviewModal():
             function openReviewModal(id) {
+                console.log('Opening modal for request ID:', id); // Debug
+
                 var item = null;
                 for (var i = 0; i < state.data.length; i++) {
                     if (state.data[i].id === id) {
                         item = state.data[i];
+                        console.log('Found item:', item); // Debug
                         break;
                     }
                 }
-                if (!item)
+                if (!item) {
+                    console.error('Item not found for ID:', id);
                     return;
+                }
                 state.currentId = id;
 
+                setModalContent(item);
+                document.getElementById('reviewModal').classList.add('active');
+            }
+
+            function setModalContent(item) {
                 function set(id, val) {
                     document.getElementById(id).innerText = val || '-';
                 }
@@ -513,6 +627,9 @@
                 // Basic Info
                 set('review-request-id', item.id);
                 document.getElementById('review-pet-photo').src = item.pet_img;
+                document.getElementById('review-pet-photo').onerror = function () {
+                    this.src = 'default_pet.jpg';
+                };
                 set('review-pet-name', item.pet);
                 set('review-pet-breed', item.breed + ' (' + item.species + ')');
                 set('review-pet-gender', item.gender);
@@ -521,13 +638,16 @@
 
                 // Adopter Info
                 document.getElementById('review-adopter-photo').src = item.adopter_img;
+                document.getElementById('review-adopter-photo').onerror = function () {
+                    this.src = 'default_user.jpg';
+                };
                 set('review-adopter-name', item.adopter);
                 set('review-adopter-occupation', item.job);
-                set('review-adopter-email', item.adopter.replace(/\s+/g, '.').toLowerCase() + "@email.com");
+                set('review-adopter-email', item.adopter_email || item.adopter.replace(/\s+/g, '.').toLowerCase() + "@email.com");
                 set('review-adopter-message', item.msg);
 
                 // Environment
-                set('review-adopter-house', item.house.replace('_', ' '));
+                set('review-adopter-house', item.house ? item.house.replace('_', ' ') : 'Not specified');
 
                 var petEl = document.getElementById('review-adopter-pets');
                 if (item.pets) {
@@ -545,7 +665,7 @@
                 set('review-request-date', dateObj.toLocaleDateString('en-GB', {day: 'numeric', month: 'long', year: 'numeric'}));
                 set('review-request-time', dateObj.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'}));
 
-                // Status Badge Logic
+                // Status Badge
                 var statusBadge = document.getElementById('review-status-badge');
                 var statusDot = document.getElementById('review-status-dot');
                 statusBadge.innerText = item.status.toUpperCase();
@@ -591,8 +711,6 @@
                     footerSec.classList.remove('hidden');
                     document.getElementById('readonly-response-text').innerText = item.response || "No response recorded.";
                 }
-
-                document.getElementById('reviewModal').classList.add('active');
             }
 
             function closeModal(id) {
@@ -630,49 +748,226 @@
                 document.getElementById('confirmationModal').classList.add('active');
             }
 
+            // GANTI function executeAction() dengan ini:
+            // GANTI function executeAction() dengan versi yang lebih detail:
+            // GANTI function executeAction() dengan versi yang lebih detail:
             function executeAction() {
-                var idx = -1;
-                for (var i = 0; i < state.data.length; i++) {
-                    if (state.data[i].id === state.currentId) {
-                        idx = i;
-                        break;
-                    }
-                }
                 var responseVal = document.getElementById('shelter-response').value.trim();
+                var requestId = state.currentId;
+                var action = state.pendingAction;
 
-                if (idx !== -1 && state.pendingAction) {
-                    state.data[idx].status = state.pendingAction === 'approve' ? 'approved' : 'rejected';
-                    state.data[idx].response = responseVal;
+                console.log('=== AJAX REQUEST DETAILS ===');
+                console.log('Request ID:', requestId);
+                console.log('Action:', action);
+                console.log('Response length:', responseVal.length);
 
-                    closeModal('confirmationModal');
-                    closeModal('reviewModal');
-                    applyFilter();
-                    showToast(state.pendingAction === 'approve' ? 'Approved' : 'Rejected', 'Application #' + state.data[idx].id + ' updated.', state.pendingAction === 'approve' ? 'success' : 'error');
+                // Validasi lebih ketat
+                if (!responseVal) {
+                    showToast('Action Failed', 'Please write a response message first.', 'error');
+                    document.getElementById('shelter-response').focus();
+                    return;
                 }
+
+                if (!requestId || isNaN(requestId)) {
+                    showToast('Error', 'Invalid request ID.', 'error');
+                    return;
+                }
+
+                // Create form data dengan encoding yang betul
+                var formData = new FormData();
+                formData.append('action', action);
+                formData.append('requestId', requestId.toString());
+                formData.append('response', responseVal);
+
+                // Tambah CSRF token jika ada
+                var csrfToken = document.querySelector('meta[name="csrf-token"]');
+                if (csrfToken) {
+                    formData.append('csrfToken', csrfToken.getAttribute('content'));
+                }
+
+                // Debug: Tunjukkan apa yang dihantar
+                console.log('FormData contents:');
+                for (var pair of formData.entries()) {
+                    console.log(pair[0] + ': ' + pair[1]);
+                }
+
+                // Show loading
+                var confirmBtn = document.getElementById('confirm-yes-btn');
+                var originalText = confirmBtn.innerHTML;
+                confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+                confirmBtn.disabled = true;
+
+                // Make AJAX call dengan timeout
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', 'manageAdoptionServlet', true);
+                xhr.timeout = 30000; // 30 seconds timeout
+
+                // Set headers
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+                xhr.onload = function () {
+                    // Reset button
+                    confirmBtn.innerHTML = originalText;
+                    confirmBtn.disabled = false;
+
+                    console.log('=== AJAX RESPONSE ===');
+                    console.log('Status:', xhr.status);
+                    console.log('Response:', xhr.responseText);
+
+                    if (xhr.status === 200) {
+                        var response = xhr.responseText.trim();
+
+                        if (response.startsWith('SUCCESS:')) {
+                            var parts = response.split(':');
+                            var newStatus = parts[1];
+                            var updatedId = parseInt(parts[2]);
+
+                            // Update local state
+                            var updated = false;
+                            for (var i = 0; i < state.data.length; i++) {
+                                if (state.data[i].id == updatedId) {
+                                    state.data[i].status = newStatus;
+                                    state.data[i].response = responseVal;
+                                    updated = true;
+                                    break;
+                                }
+                            }
+
+                            closeModal('confirmationModal');
+                            closeModal('reviewModal');
+
+                            if (updated) {
+                                applyFilter();
+                                showToast(
+                                        newStatus === 'approved' ? 'Request Approved' : 'Request Rejected',
+                                        'Application #' + updatedId + ' has been ' + newStatus + '.',
+                                        newStatus === 'approved' ? 'success' : 'error'
+                                        );
+                            }
+
+                        } else if (response.startsWith('ERROR:')) {
+                            var errorMsg = response.substring(6);
+                            showToast('Action Failed', errorMsg, 'error');
+                            closeModal('confirmationModal');
+                        } else {
+                            // Response format tidak dijangka
+                            console.error('Unexpected response:', response);
+                            showToast('Server Error', 'Unexpected response format. Please try again.', 'error');
+                            closeModal('confirmationModal');
+                        }
+                    } else if (xhr.status === 400) {
+                        showToast('Bad Request', 'Invalid request parameters. Please refresh and try again.', 'error');
+                        closeModal('confirmationModal');
+                    } else if (xhr.status === 403) {
+                        showToast('Access Denied', 'Your session may have expired. Please login again.', 'error');
+                        setTimeout(function () {
+                            window.location.href = 'index.jsp';
+                        }, 2000);
+                    } else if (xhr.status === 500) {
+                        showToast('Server Error', 'Internal server error. Please try again later.', 'error');
+                        closeModal('confirmationModal');
+                    } else {
+                        showToast('Error', 'Unexpected error: ' + xhr.status, 'error');
+                        closeModal('confirmationModal');
+                    }
+                };
+
+                xhr.ontimeout = function () {
+                    confirmBtn.innerHTML = originalText;
+                    confirmBtn.disabled = false;
+                    showToast('Timeout', 'Request took too long. Please try again.', 'error');
+                    closeModal('confirmationModal');
+                };
+
+                xhr.onerror = function () {
+                    confirmBtn.innerHTML = originalText;
+                    confirmBtn.disabled = false;
+                    showToast('Connection Error', 'Failed to connect to server. Check your network.', 'error');
+                    closeModal('confirmationModal');
+                };
+
+                // Debug: Check what's being sent
+                console.log('=== AJAX REQUEST DETAILS ===');
+                console.log('Request ID:', requestId);
+                console.log('Action:', action);
+                console.log('Response length:', responseVal.length);
+
+// Log all form data entries
+                for (var pair of formData.entries()) {
+                    console.log(pair[0] + ': ' + pair[1]);
+                }
+
+                xhr.send(formData);
             }
 
+            // GANTI function showToast():
             function showToast(title, msg, type) {
                 var toast = document.getElementById('toast');
                 var bg = document.getElementById('toast-bg');
                 var icon = document.getElementById('toast-icon');
+
                 document.getElementById('toast-title').innerText = title;
                 document.getElementById('toast-message').innerText = msg;
 
+                // Reset classes
+                bg.className = "flex items-center p-4 rounded-xl shadow-xl min-w-[300px]";
+
                 if (type === 'success') {
-                    bg.className = "flex items-center p-4 rounded-xl shadow-xl min-w-[300px] bg-secondary text-primary-dark border border-secondary-dark";
+                    bg.classList.add('bg-secondary', 'text-primary-dark', 'border', 'border-secondary-dark');
                     icon.innerHTML = '<i class="fas fa-check-circle"></i>';
-                } else {
-                    bg.className = "flex items-center p-4 rounded-xl shadow-xl min-w-[300px] bg-chip-rejected text-white";
+                } else if (type === 'error') {
+                    bg.classList.add('bg-chip-rejected', 'text-white');
                     icon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+                } else if (type === 'warning') {
+                    bg.classList.add('bg-yellow-500', 'text-white');
+                    icon.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
                 }
+
+                // Show toast
                 toast.classList.remove('translate-x-full', 'opacity-0');
+                toast.classList.add('translate-x-0', 'opacity-100');
+
+                // Auto hide after 4 seconds
                 setTimeout(function () {
+                    toast.classList.remove('translate-x-0', 'opacity-100');
                     toast.classList.add('translate-x-full', 'opacity-0');
-                }, 3000);
+                }, 4000);
             }
 
-            document.addEventListener('DOMContentLoaded', init);
+            document.addEventListener('DOMContentLoaded', function () {
+                console.log('Page loaded, initializing...');
+                console.log('Total requests loaded:', REQUESTS.length);
+                init();
+            });
+
+// Tambah error handling untuk data loading
+            if (REQUESTS.length === 0) {
+                console.warn('No request data loaded from server');
+                // Optional: Show message to user
+                setTimeout(function () {
+                    if (document.body && document.querySelector('#requests-table')) {
+                        document.querySelector('#requests-table').innerHTML =
+                                '<tr><td colspan="6" class="px-6 py-12 text-center text-gray-500">No adoption requests found.</td></tr>';
+                    }
+                }, 100);
+            }
         </script>
+
+        <%!
+            // Helper method to escape JavaScript strings
+            private String escapeJavaScript(String input) {
+                if (input == null) {
+                    return "";
+                }
+                return input
+                        .replace("\\", "\\\\")
+                        .replace("\"", "\\\"")
+                        .replace("'", "\\'")
+                        .replace("\n", "\\n")
+                        .replace("\r", "\\r")
+                        .replace("\t", "\\t");
+            }
+        %>
 
         <script src="includes/sidebar.js"></script>
     </body>
