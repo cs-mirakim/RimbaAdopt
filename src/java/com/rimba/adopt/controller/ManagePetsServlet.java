@@ -12,11 +12,14 @@ import javax.servlet.annotation.*;
 
 @WebServlet("/manage-pets")
 @MultipartConfig(
-    fileSizeThreshold = 1024 * 1024,  // 1MB
-    maxFileSize = 1024 * 1024 * 5,    // 5MB
-    maxRequestSize = 1024 * 1024 * 10 // 10MB
+    fileSizeThreshold = 1024 * 1024,      // 1MB
+    maxFileSize = 1024 * 1024 * 5,        // 5MB
+    maxRequestSize = 1024 * 1024 * 10     // 10MB
 )
 public class ManagePetsServlet extends HttpServlet {
+    
+    private static final String UPLOAD_DIR = "animal_picture";
+    private static final String DEFAULT_IMAGE = "animal_picture/default.png";
     
     private PetsDAO petsDAO;
     
@@ -31,9 +34,9 @@ public class ManagePetsServlet extends HttpServlet {
         
         HttpSession session = request.getSession();
         
-        // Check if user is logged in and is a shelter using existing SessionUtil
+        // Check if user is logged in and is a shelter
         if (!SessionUtil.isLoggedIn(session)) {
-            response.sendRedirect("index.jsp");
+            response.sendRedirect("login.jsp");
             return;
         }
         
@@ -43,32 +46,54 @@ public class ManagePetsServlet extends HttpServlet {
         }
         
         try {
-            // Get shelter_id - for shelter users, user_id = shelter_id
-            // Use existing SessionUtil.getUserId() method
             int userId = SessionUtil.getUserId(session);
-            int shelterId = userId; // In your schema, shelter_id = user_id
+            int shelterId = userId;
             
-            // Check for search parameter
+            // Check for filter parameters
+            String filterStatus = request.getParameter("filterStatus");
             String searchTerm = request.getParameter("search");
+            String viewType = request.getParameter("view");
+            
             List<Pets> pets;
             
+            // Apply filters
             if (searchTerm != null && !searchTerm.trim().isEmpty()) {
-                pets = petsDAO.searchPets(shelterId, searchTerm.trim());
+                if (filterStatus != null && !filterStatus.equals("all")) {
+                    pets = petsDAO.searchPetsByStatus(shelterId, searchTerm.trim(), filterStatus);
+                } else {
+                    pets = petsDAO.searchPets(shelterId, searchTerm.trim());
+                }
+            } else if (filterStatus != null && !filterStatus.equals("all")) {
+                pets = petsDAO.getPetsByStatus(shelterId, filterStatus);
+            } else if ("available".equals(viewType)) {
+                pets = petsDAO.getAvailablePetsByShelter(shelterId);
             } else {
                 pets = petsDAO.getPetsByShelter(shelterId);
             }
             
+            // Get counts for statistics
+            int totalPets = petsDAO.getPetCountByShelter(shelterId);
+            int availablePets = petsDAO.getPetCountByStatus(shelterId, "available");
+            int pendingPets = petsDAO.getPetCountByStatus(shelterId, "pending");
+            int adoptedPets = petsDAO.getPetCountByStatus(shelterId, "adopted");
+            
             request.setAttribute("pets", pets);
+            request.setAttribute("totalPets", totalPets);
+            request.setAttribute("availablePets", availablePets);
+            request.setAttribute("pendingPets", pendingPets);
+            request.setAttribute("adoptedPets", adoptedPets);
+            request.setAttribute("filterStatus", filterStatus);
+            request.setAttribute("searchTerm", searchTerm);
+            request.setAttribute("viewType", viewType);
             
             // Forward to JSP
-            RequestDispatcher dispatcher = request.getRequestDispatcher("/manage_pets.jsp");
+            RequestDispatcher dispatcher = request.getRequestDispatcher("manage_pets.jsp");
             dispatcher.forward(request, response);
             
         } catch (SQLException e) {
             e.printStackTrace();
-            request.setAttribute("error", "Database error: " + e.getMessage());
-            RequestDispatcher dispatcher = request.getRequestDispatcher("/error.jsp");
-            dispatcher.forward(request, response);
+            session.setAttribute("error", "Database error: " + e.getMessage());
+            response.sendRedirect("manage_pets.jsp");
         }
     }
     
@@ -78,19 +103,16 @@ public class ManagePetsServlet extends HttpServlet {
         
         HttpSession session = request.getSession();
         
-        // Check if user is logged in and is a shelter using existing SessionUtil
         if (!SessionUtil.isLoggedIn(session) || !SessionUtil.isShelter(session)) {
-            response.sendRedirect("index.jsp");
+            response.sendRedirect("login.jsp");
             return;
         }
         
         String action = request.getParameter("action");
         
         try {
-            // Get shelter_id - for shelter users, user_id = shelter_id
-            // Use existing SessionUtil.getUserId() method
             int userId = SessionUtil.getUserId(session);
-            int shelterId = userId; // In your schema, shelter_id = user_id
+            int shelterId = userId;
             
             if ("create".equals(action)) {
                 createPet(request, response, shelterId, session);
@@ -98,6 +120,8 @@ public class ManagePetsServlet extends HttpServlet {
                 updatePet(request, response, shelterId, session);
             } else if ("delete".equals(action)) {
                 deletePet(request, response, shelterId, session);
+            } else if ("updateStatus".equals(action)) {
+                updatePetStatus(request, response, shelterId, session);
             } else {
                 response.sendRedirect("manage-pets");
             }
@@ -106,9 +130,9 @@ public class ManagePetsServlet extends HttpServlet {
             e.printStackTrace();
             session.setAttribute("error", "Database error: " + e.getMessage());
             response.sendRedirect("manage-pets");
-        } catch (NumberFormatException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-            session.setAttribute("error", "Invalid input format: " + e.getMessage());
+            session.setAttribute("error", "Error: " + e.getMessage());
             response.sendRedirect("manage-pets");
         }
     }
@@ -117,36 +141,56 @@ public class ManagePetsServlet extends HttpServlet {
             throws ServletException, IOException, SQLException {
         
         // Get form parameters
-        String name = request.getParameter("petName");
-        String species = request.getParameter("species");
-        String breed = request.getParameter("breed");
-        String ageStr = request.getParameter("age");
-        String gender = request.getParameter("gender");
-        String size = request.getParameter("size");
-        String color = request.getParameter("color");
-        String healthStatus = request.getParameter("healthStatus");
-        String description = request.getParameter("description");
+        String name = getParameter(request, "petName");
+        String species = getParameter(request, "species");
+        String breed = getParameter(request, "breed");
+        String ageStr = getParameter(request, "age");
+        String gender = getParameter(request, "gender");
+        String size = getParameter(request, "size");
+        String color = getParameter(request, "color");
+        String healthStatus = getParameter(request, "healthStatus");
+        String description = getParameter(request, "description");
+        String adoptionStatus = getParameter(request, "adoptionStatus");
         
         // Validate required fields
         if (name == null || name.trim().isEmpty() || 
             species == null || species.trim().isEmpty() || 
             gender == null || gender.trim().isEmpty() || 
             size == null || size.trim().isEmpty()) {
-            session.setAttribute("error", "Please fill in all required fields.");
+            session.setAttribute("error", "Please fill in all required fields (Name, Species, Gender, Size).");
             response.sendRedirect("manage-pets");
             return;
         }
         
+        // Set default adoption status if not provided
+        if (adoptionStatus == null || adoptionStatus.trim().isEmpty()) {
+            adoptionStatus = "available";
+        }
+        
         // Handle file upload
-        String photoPath = handleFileUpload(request, shelterId);
+        String photoPath = DEFAULT_IMAGE;
+        Part filePart = request.getPart("petPhoto");
+        if (filePart != null && filePart.getSize() > 0) {
+            String uploadedPath = handleFileUpload(request, shelterId);
+            if (uploadedPath != null && !uploadedPath.trim().isEmpty()) {
+                photoPath = uploadedPath;
+            }
+        }
         
         // Convert age
         Integer age = null;
         if (ageStr != null && !ageStr.trim().isEmpty()) {
             try {
                 age = Integer.parseInt(ageStr.trim());
+                if (age < 0 || age > 30) {
+                    session.setAttribute("error", "Age must be between 0 and 30.");
+                    response.sendRedirect("manage-pets");
+                    return;
+                }
             } catch (NumberFormatException e) {
-                // Age will remain null
+                session.setAttribute("error", "Invalid age format.");
+                response.sendRedirect("manage-pets");
+                return;
             }
         }
         
@@ -155,20 +199,21 @@ public class ManagePetsServlet extends HttpServlet {
         pet.setShelterId(shelterId);
         pet.setName(name.trim());
         pet.setSpecies(species.trim());
-        pet.setBreed(breed != null ? breed.trim() : null);
+        pet.setBreed(breed != null && !breed.trim().isEmpty() ? breed.trim() : null);
         pet.setAge(age);
         pet.setGender(gender.trim());
         pet.setSize(size.trim());
-        pet.setColor(color != null ? color.trim() : null);
-        pet.setDescription(description != null ? description.trim() : null);
-        pet.setHealthStatus(healthStatus != null ? healthStatus.trim() : null);
+        pet.setColor(color != null && !color.trim().isEmpty() ? color.trim() : null);
+        pet.setDescription(description != null && !description.trim().isEmpty() ? description.trim() : null);
+        pet.setHealthStatus(healthStatus != null && !healthStatus.trim().isEmpty() ? healthStatus.trim() : null);
         pet.setPhotoPath(photoPath);
+        pet.setAdoptionStatus(adoptionStatus.trim());
         
         // Save to database
         int petId = petsDAO.createPet(pet);
         
         if (petId > 0) {
-            session.setAttribute("success", "Pet added successfully!");
+            session.setAttribute("success", "Pet '" + name + "' added successfully!");
         } else {
             session.setAttribute("error", "Failed to add pet. Please try again.");
         }
@@ -180,17 +225,18 @@ public class ManagePetsServlet extends HttpServlet {
             throws ServletException, IOException, SQLException {
         
         // Get form parameters
-        String petIdStr = request.getParameter("petId");
-        String name = request.getParameter("petName");
-        String species = request.getParameter("species");
-        String breed = request.getParameter("breed");
-        String ageStr = request.getParameter("age");
-        String gender = request.getParameter("gender");
-        String size = request.getParameter("size");
-        String color = request.getParameter("color");
-        String healthStatus = request.getParameter("healthStatus");
-        String description = request.getParameter("description");
-        String existingPhotoPath = request.getParameter("existingPhotoPath");
+        String petIdStr = getParameter(request, "petId");
+        String name = getParameter(request, "petName");
+        String species = getParameter(request, "species");
+        String breed = getParameter(request, "breed");
+        String ageStr = getParameter(request, "age");
+        String gender = getParameter(request, "gender");
+        String size = getParameter(request, "size");
+        String color = getParameter(request, "color");
+        String healthStatus = getParameter(request, "healthStatus");
+        String description = getParameter(request, "description");
+        String adoptionStatus = getParameter(request, "adoptionStatus");
+        String existingPhotoPath = getParameter(request, "existingPhotoPath");
         
         // Validate required fields
         if (petIdStr == null || petIdStr.trim().isEmpty() ||
@@ -213,14 +259,21 @@ public class ManagePetsServlet extends HttpServlet {
             return;
         }
         
-        // Handle file upload - use existing if no new file uploaded
-        String photoPath = existingPhotoPath;
+        // Handle file upload
+        String photoPath = existingPet.getPhotoPath();
         Part filePart = request.getPart("petPhoto");
         if (filePart != null && filePart.getSize() > 0) {
             String newPhotoPath = handleFileUpload(request, shelterId);
-            if (newPhotoPath != null) {
+            if (newPhotoPath != null && !newPhotoPath.trim().isEmpty()) {
                 photoPath = newPhotoPath;
             }
+        } else if (existingPhotoPath != null && !existingPhotoPath.trim().isEmpty()) {
+            photoPath = existingPhotoPath.trim();
+        }
+        
+        // Fix old path format if needed
+        if (photoPath != null && photoPath.startsWith("profile_picture/pet/")) {
+            photoPath = photoPath.replace("profile_picture/pet/", "animal_picture/");
         }
         
         // Convert age
@@ -228,30 +281,76 @@ public class ManagePetsServlet extends HttpServlet {
         if (ageStr != null && !ageStr.trim().isEmpty()) {
             try {
                 age = Integer.parseInt(ageStr.trim());
+                if (age < 0 || age > 30) {
+                    session.setAttribute("error", "Age must be between 0 and 30.");
+                    response.sendRedirect("manage-pets");
+                    return;
+                }
             } catch (NumberFormatException e) {
-                // Age will remain null
+                session.setAttribute("error", "Invalid age format.");
+                response.sendRedirect("manage-pets");
+                return;
             }
         }
         
         // Update Pets object
         existingPet.setName(name.trim());
         existingPet.setSpecies(species.trim());
-        existingPet.setBreed(breed != null ? breed.trim() : null);
+        existingPet.setBreed(breed != null && !breed.trim().isEmpty() ? breed.trim() : null);
         existingPet.setAge(age);
         existingPet.setGender(gender.trim());
         existingPet.setSize(size.trim());
-        existingPet.setColor(color != null ? color.trim() : null);
-        existingPet.setDescription(description != null ? description.trim() : null);
-        existingPet.setHealthStatus(healthStatus != null ? healthStatus.trim() : null);
+        existingPet.setColor(color != null && !color.trim().isEmpty() ? color.trim() : null);
+        existingPet.setDescription(description != null && !description.trim().isEmpty() ? description.trim() : null);
+        existingPet.setHealthStatus(healthStatus != null && !healthStatus.trim().isEmpty() ? healthStatus.trim() : null);
         existingPet.setPhotoPath(photoPath);
+        
+        if (adoptionStatus != null && !adoptionStatus.trim().isEmpty()) {
+            existingPet.setAdoptionStatus(adoptionStatus.trim());
+        }
         
         // Update in database
         boolean success = petsDAO.updatePet(existingPet);
         
         if (success) {
-            session.setAttribute("success", "Pet updated successfully!");
+            session.setAttribute("success", "Pet '" + name + "' updated successfully!");
         } else {
             session.setAttribute("error", "Failed to update pet. Please try again.");
+        }
+        
+        response.sendRedirect("manage-pets");
+    }
+    
+    private void updatePetStatus(HttpServletRequest request, HttpServletResponse response, int shelterId, HttpSession session)
+            throws ServletException, IOException, SQLException {
+        
+        String petIdStr = getParameter(request, "petId");
+        String adoptionStatus = getParameter(request, "adoptionStatus");
+        
+        if (petIdStr == null || petIdStr.trim().isEmpty() ||
+            adoptionStatus == null || adoptionStatus.trim().isEmpty()) {
+            session.setAttribute("error", "Pet ID and status are required.");
+            response.sendRedirect("manage-pets");
+            return;
+        }
+        
+        int petId = Integer.parseInt(petIdStr.trim());
+        
+        // Verify pet belongs to this shelter
+        Pets pet = petsDAO.getPetByIdAndShelter(petId, shelterId);
+        if (pet == null) {
+            session.setAttribute("error", "Pet not found or you don't have permission to update it.");
+            response.sendRedirect("manage-pets");
+            return;
+        }
+        
+        // Update adoption status
+        boolean success = petsDAO.updateAdoptionStatus(petId, shelterId, adoptionStatus.trim());
+        
+        if (success) {
+            session.setAttribute("success", "Pet '" + pet.getName() + "' status updated to '" + adoptionStatus + "'");
+        } else {
+            session.setAttribute("error", "Failed to update pet status.");
         }
         
         response.sendRedirect("manage-pets");
@@ -260,7 +359,7 @@ public class ManagePetsServlet extends HttpServlet {
     private void deletePet(HttpServletRequest request, HttpServletResponse response, int shelterId, HttpSession session)
             throws ServletException, IOException, SQLException {
         
-        String petIdStr = request.getParameter("petId");
+        String petIdStr = getParameter(request, "petId");
         
         if (petIdStr == null || petIdStr.trim().isEmpty()) {
             session.setAttribute("error", "Pet ID is required for deletion.");
@@ -270,7 +369,7 @@ public class ManagePetsServlet extends HttpServlet {
         
         int petId = Integer.parseInt(petIdStr.trim());
         
-        // Verify pet belongs to this shelter before deleting
+        // Verify pet belongs to this shelter
         Pets pet = petsDAO.getPetByIdAndShelter(petId, shelterId);
         if (pet == null) {
             session.setAttribute("error", "Pet not found or you don't have permission to delete it.");
@@ -278,11 +377,11 @@ public class ManagePetsServlet extends HttpServlet {
             return;
         }
         
-        // Delete from database
+        String petName = pet.getName();
         boolean success = petsDAO.deletePet(petId, shelterId);
         
         if (success) {
-            session.setAttribute("success", "Pet deleted successfully!");
+            session.setAttribute("success", "Pet '" + petName + "' deleted successfully!");
         } else {
             session.setAttribute("error", "Failed to delete pet. Please try again.");
         }
@@ -293,147 +392,95 @@ public class ManagePetsServlet extends HttpServlet {
     private String handleFileUpload(HttpServletRequest request, int shelterId) 
         throws ServletException, IOException {
     
-    Part filePart = request.getPart("petPhoto");
-    
-    if (filePart == null || filePart.getSize() == 0) {
-        return "animal_picture/default_pet.jpg"; // Default image path
-    }
-    
-    // Validate file type
-    String fileName = filePart.getSubmittedFileName();
-    if (fileName == null || fileName.isEmpty()) {
-        return "animal_picture/default_pet.jpg";
-    }
-    
-    String fileExtension = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
-    
-    if (!fileExtension.matches("\\.(jpg|jpeg|png|gif|bmp)$")) {
-        throw new ServletException("Invalid file type. Only images are allowed.");
-    }
-    
-    // Validate file size (max 5MB)
-    if (filePart.getSize() > 5 * 1024 * 1024) {
-        throw new ServletException("File size exceeds 5MB limit.");
-    }
-    
-    // Create unique filename
-    String uniqueFileName = "pet_" + shelterId + "_" + System.currentTimeMillis() + fileExtension;
-    
-    try {
-        // Dapatkan application context path
-        ServletContext context = getServletContext();
+        Part filePart = request.getPart("petPhoto");
         
-        // === DEBUG LOGGING ===
-        System.out.println("=== PET FILE UPLOAD DEBUG ===");
-        System.out.println("Shelter ID: " + shelterId);
-        System.out.println("Original filename: " + fileName);
-        System.out.println("File size: " + filePart.getSize() + " bytes");
-        System.out.println("Generated filename: " + uniqueFileName);
-        
-        // Path untuk animal_picture folder dalam webapp
-        String webappPath = context.getRealPath("");
-        if (webappPath == null) {
-            webappPath = "";
+        if (filePart == null || filePart.getSize() == 0) {
+            return null;
         }
         
-        // FIX PATH: Tambah separator yang betul
-        String fullWebappPath = webappPath;
-        if (!fullWebappPath.endsWith(File.separator)) {
-            fullWebappPath += File.separator;
+        String fileName = getFileName(filePart);
+        if (fileName == null || fileName.isEmpty()) {
+            return null;
         }
-        fullWebappPath += "animal_picture" + File.separator;
         
-        // Path untuk animal_picture dalam source project
-        String projectPath = "";
+        String fileExtension = "";
+        if (fileName.contains(".")) {
+            fileExtension = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
+        }
+        
+        // Validate file type
+        if (!fileExtension.matches("\\.(jpg|jpeg|png|gif|bmp|webp)$")) {
+            throw new ServletException("Invalid file type. Only images are allowed.");
+        }
+        
+        // Validate file size (max 5MB)
+        if (filePart.getSize() > 5 * 1024 * 1024) {
+            throw new ServletException("File size exceeds 5MB limit.");
+        }
+        
+        // Create unique filename
+        String uniqueFileName = "pet_" + shelterId + "_" + System.currentTimeMillis() + fileExtension;
+        
         try {
-            // FIX: Build path dengan betul
-            File webappDir = new File(webappPath);
-            File buildDir = webappDir.getParentFile(); // build folder
-            if (buildDir != null) {
-                File projectRoot = buildDir.getParentFile(); // project root
-                if (projectRoot != null) {
-                    projectPath = projectRoot.getAbsolutePath()
-                            + File.separator + "web"
-                            + File.separator + "animal_picture"
-                            + File.separator;
+            // Get application path
+            ServletContext context = getServletContext();
+            String appPath = context.getRealPath("/");
+            
+            if (appPath == null) {
+                appPath = System.getProperty("user.dir");
+            }
+            
+            // Create upload directory
+            String uploadDirPath = appPath + File.separator + UPLOAD_DIR;
+            File uploadDir = new File(uploadDirPath);
+            
+            if (!uploadDir.exists()) {
+                uploadDir.mkdirs();
+            }
+            
+            // Save the file
+            String filePath = uploadDirPath + File.separator + uniqueFileName;
+            
+            try (InputStream fileContent = filePart.getInputStream();
+                 FileOutputStream fos = new FileOutputStream(filePath)) {
+                
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = fileContent.read(buffer)) != -1) {
+                    fos.write(buffer, 0, bytesRead);
                 }
             }
+            
+            // Return relative path
+            return UPLOAD_DIR + "/" + uniqueFileName;
+            
         } catch (Exception e) {
-            System.out.println("Could not build project path: " + e.getMessage());
-            projectPath = fullWebappPath; // fallback
+            throw new ServletException("Failed to save uploaded file: " + e.getMessage(), e);
         }
-        
-        System.out.println("Webapp Path: " + fullWebappPath);
-        System.out.println("Project Path: " + projectPath);
-        
-        // Buat directory
-        File webappDir = new File(fullWebappPath);
-        File projectDir = new File(projectPath);
-        
-        if (!webappDir.exists()) {
-            boolean created = webappDir.mkdirs();
-            System.out.println("Created webapp directory: " + created);
-        }
-        
-        if (!projectDir.exists()) {
-            boolean created = projectDir.mkdirs();
-            System.out.println("Created project directory: " + created);
-        }
-        
-        // === SAVE TO BOTH LOCATIONS ===
-        String webappFilePath = fullWebappPath + uniqueFileName;
-        String projectFilePath = projectPath + uniqueFileName;
-        
-        // Call helper method untuk save multiple locations
-        boolean filesSaved = saveFileToMultipleLocations(filePart, webappFilePath, projectFilePath);
-        
-        System.out.println("Files saved successfully: " + filesSaved);
-        
-        // Debug: Check if files exist
-        File webappFile = new File(webappFilePath);
-        File projectFile = new File(projectFilePath);
-        
-        System.out.println("Webapp file exists: " + webappFile.exists() + ", size: " + webappFile.length() + " bytes");
-        System.out.println("Project file exists: " + projectFile.exists() + ", size: " + projectFile.length() + " bytes");
-        
-        System.out.println("=== FILE UPLOAD DEBUG END ===");
-        
-        // Return relative path untuk database
-        return "animal_picture/" + uniqueFileName;
-        
-    } catch (Exception e) {
-        System.out.println("Error in handleFileUpload method: " + e.getMessage());
-        e.printStackTrace();
-        return "animal_picture/default_pet.jpg"; // Return default if error
     }
-}
-
-// Helper method untuk save ke multiple locations (SAMA seperti RegistrationServlet)
-private boolean saveFileToMultipleLocations(Part filePart, String... filePaths) throws IOException {
-    try (InputStream input = filePart.getInputStream()) {
-        // Read all data first
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byte[] buffer = new byte[1024];
-        int bytesRead;
-        while ((bytesRead = input.read(buffer)) != -1) {
-            baos.write(buffer, 0, bytesRead);
-        }
-        byte[] fileData = baos.toByteArray();
-        
-        System.out.println("File data read: " + fileData.length + " bytes");
-        
-        // Write to each location
-        boolean allSuccess = true;
-        for (String filePath : filePaths) {
-            try (FileOutputStream output = new FileOutputStream(filePath)) {
-                output.write(fileData);
-                System.out.println("Saved to: " + filePath);
-            } catch (IOException e) {
-                System.out.println("Failed to save to: " + filePath + " - " + e.getMessage());
-                allSuccess = false;
+    
+    private String getFileName(Part part) {
+        String contentDisposition = part.getHeader("content-disposition");
+        if (contentDisposition != null) {
+            String[] items = contentDisposition.split(";");
+            for (String item : items) {
+                if (item.trim().startsWith("filename")) {
+                    String fileName = item.substring(item.indexOf("=") + 2, item.length() - 1);
+                    return new File(fileName).getName();
+                }
             }
         }
-        return allSuccess;
+        return null;
     }
-}
+    
+    private String getParameter(HttpServletRequest request, String paramName) {
+        String value = request.getParameter(paramName);
+        if (value != null) {
+            value = value.trim();
+            if (value.isEmpty()) {
+                return null;
+            }
+        }
+        return value;
+    }
 }

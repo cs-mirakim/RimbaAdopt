@@ -45,6 +45,9 @@
     int age1_3 = 0;
     int age3_5 = 0;
     int age5plus = 0;
+    int availableCount = 0;
+    int pendingCount = 0;
+    int adoptedCount = 0;
     
     if (petsList != null) {
         for (Pets pet : petsList) {
@@ -65,6 +68,11 @@
                 if (age > 3 && age <= 5) age3_5++;
                 if (age > 5) age5plus++;
             }
+            
+            // Adoption status counts - NEW
+            if ("available".equalsIgnoreCase(pet.getAdoptionStatus())) availableCount++;
+            if ("pending".equalsIgnoreCase(pet.getAdoptionStatus())) pendingCount++;
+            if ("adopted".equalsIgnoreCase(pet.getAdoptionStatus())) adoptedCount++;
         }
     }
 %>
@@ -91,6 +99,11 @@
             .chip-small { background-color: #BBDEFB; color: #2B2B2B; }
             .chip-medium { background-color: #C8E6C9; color: #2B2B2B; }
             .chip-large { background-color: #FFECB3; color: #2B2B2B; }
+            
+            /* Adoption Status Chip Styles - NEW */
+            .chip-available { background-color: #d1fae5; color: #065f46; border: 1px solid #10b981; }
+            .chip-pending { background-color: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
+            .chip-adopted { background-color: #dbeafe; color: #1e40af; border: 1px solid #3b82f6; }
 
             /* Modal Styles */
             .modal {
@@ -124,6 +137,15 @@
             /* Active filter styles */
             .active-filter {
                 box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            }
+            
+            /* Quick status update dropdown */
+            .status-dropdown {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.75rem;
+                border-radius: 0.375rem;
+                border: 1px solid #e5e7eb;
+                background-color: white;
             }
         </style>
     </head>
@@ -165,6 +187,45 @@
                 </div>
                 <hr style="border-top: 1px solid #E5E5E5; margin-bottom: 1.5rem; margin-top: 1.5rem;" />
 
+                <!-- Stats Cards for Adoption Status - NEW -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-green-50 border border-green-200 rounded-xl p-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="text-lg font-semibold text-green-800">Available</h3>
+                                <p class="text-3xl font-bold text-green-900"><%= availableCount %></p>
+                            </div>
+                            <div class="bg-green-100 p-3 rounded-lg">
+                                <i class="fas fa-paw text-green-600 text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="text-lg font-semibold text-yellow-800">Pending</h3>
+                                <p class="text-3xl font-bold text-yellow-900"><%= pendingCount %></p>
+                            </div>
+                            <div class="bg-yellow-100 p-3 rounded-lg">
+                                <i class="fas fa-clock text-yellow-600 text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="text-lg font-semibold text-blue-800">Adopted</h3>
+                                <p class="text-3xl font-bold text-blue-900"><%= adoptedCount %></p>
+                            </div>
+                            <div class="bg-blue-100 p-3 rounded-lg">
+                                <i class="fas fa-home text-blue-600 text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Search and Filters Section -->
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
                     <!-- Filters -->
@@ -173,6 +234,23 @@
                                 data-filter="all" onclick="applyFilter('all')">
                             All Pets (${not empty pets ? pets.size() : 0})
                         </button>
+                        
+                        <!-- Adoption Status Filters - NEW -->
+                        <button class="px-5 py-2 rounded-full border hover:bg-green-50 transition duration-150 filter-btn chip-available"
+                                data-filter="status-available" onclick="applyFilter('status-available')">
+                            Available (<%= availableCount %>)
+                        </button>
+                        <button class="px-5 py-2 rounded-full border hover:bg-yellow-50 transition duration-150 filter-btn chip-pending"
+                                data-filter="status-pending" onclick="applyFilter('status-pending')">
+                            Pending (<%= pendingCount %>)
+                        </button>
+                        <button class="px-5 py-2 rounded-full border hover:bg-blue-50 transition duration-150 filter-btn chip-adopted"
+                                data-filter="status-adopted" onclick="applyFilter('status-adopted')">
+                            Adopted (<%= adoptedCount %>)
+                        </button>
+                        
+                        <div class="h1 border-l border-gray-300 mx-2"></div>
+                        
                         <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#A8E6CF] text-[#2B2B2B]"
                                 data-filter="gender-male" onclick="applyFilter('gender-male')">
                             ♂ Male (<%= maleCount %>)
@@ -249,6 +327,7 @@
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 7%;">Age</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 8%;">Gender</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 8%;">Size</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 12%;">Adoption Status</th> <!-- NEW COLUMN -->
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Color</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Health Status</th>
                                 <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 12%;">Actions</th>
@@ -261,7 +340,8 @@
                                         <tr class="pet-row hover:bg-gray-50 transition duration-100"
                                             data-gender="${pet.gender}"
                                             data-size="${pet.size}"
-                                            data-age="${pet.age != null ? pet.age : ''}">
+                                            data-age="${pet.age != null ? pet.age : ''}"
+                                            data-status="${pet.adoptionStatus}"> <!-- NEW: status data attribute -->
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color: #2B2B2B;">${pet.petId}</td>
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <div class="flex-shrink-0 h-12 w-12">
@@ -289,11 +369,44 @@
                                                     ${pet.size}
                                                 </span>
                                             </td>
+                                            <!-- Adoption Status Column - NEW -->
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <!-- Quick Status Update Form -->
+                                                <form method="POST" action="manage-pets" class="inline-block" onchange="this.submit()">
+                                                    <input type="hidden" name="action" value="updateStatus">
+                                                    <input type="hidden" name="petId" value="${pet.petId}">
+                                                    <input type="hidden" name="shelterId" value="<%= SessionUtil.getUserId(session) %>">
+                                                    <select name="adoptionStatus" class="status-dropdown ${pet.adoptionStatus == 'available' ? 'chip-available' : pet.adoptionStatus == 'pending' ? 'chip-pending' : 'chip-adopted'}">
+                                                        <option value="available" ${pet.adoptionStatus == 'available' ? 'selected' : ''} class="text-green-700">Available</option>
+                                                        <option value="pending" ${pet.adoptionStatus == 'pending' ? 'selected' : ''} class="text-yellow-700">Pending</option>
+                                                        <option value="adopted" ${pet.adoptionStatus == 'adopted' ? 'selected' : ''} class="text-blue-700">Adopted</option>
+                                                    </select>
+                                                </form>
+                                                
+                                                <!-- Status Display Badge -->
+                                                <span class="ml-2 px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                                    ${pet.adoptionStatus == 'available' ? 'chip-available' : pet.adoptionStatus == 'pending' ? 'chip-pending' : 'chip-adopted'}">
+                                                    <c:choose>
+                                                        <c:when test="${pet.adoptionStatus == 'available'}">
+                                                            <i class="fas fa-paw mr-1"></i> Available
+                                                        </c:when>
+                                                        <c:when test="${pet.adoptionStatus == 'pending'}">
+                                                            <i class="fas fa-clock mr-1"></i> Pending
+                                                        </c:when>
+                                                        <c:when test="${pet.adoptionStatus == 'adopted'}">
+                                                            <i class="fas fa-home mr-1"></i> Adopted
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            ${pet.adoptionStatus}
+                                                        </c:otherwise>
+                                                    </c:choose>
+                                                </span>
+                                            </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">${not empty pet.color ? pet.color : '-'}</td>
                                             <td class="px-6 py-4 text-sm" style="color: #2B2B2B;">${not empty pet.healthStatus ? pet.healthStatus : '-'}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                                 <div class="flex justify-center space-x-2">
-                                                    <button onclick="openEditModal(${pet.petId}, '${pet.name}', '${pet.species}', '${pet.breed}', ${pet.age != null ? pet.age : 'null'}, '${pet.gender}', '${pet.size}', '${pet.color}', '${pet.healthStatus}', '${pet.description}', '${pet.photoPath}')" 
+                                                    <button onclick="openEditModal(${pet.petId}, '${pet.name}', '${pet.species}', '${pet.breed}', ${pet.age != null ? pet.age : 'null'}, '${pet.gender}', '${pet.size}', '${pet.color}', '${pet.healthStatus}', '${pet.description}', '${pet.photoPath}', '${pet.adoptionStatus}')" 
                                                             class="action-button px-3 py-2 rounded-lg font-semibold text-white hover:bg-[#24483E]" 
                                                             style="background-color: #2F5D50;" title="Edit">
                                                         <i class="fas fa-edit"></i>
@@ -310,7 +423,7 @@
                                 </c:when>
                                 <c:otherwise>
                                     <tr>
-                                        <td colspan="11" class="px-6 py-8 text-center text-gray-500">
+                                        <td colspan="12" class="px-6 py-8 text-center text-gray-500"> <!-- Changed colspan from 11 to 12 -->
                                             <i class="fas fa-paw text-4xl mb-2"></i>
                                             <p class="text-lg">No pets found. Add your first pet!</p>
                                         </td>
@@ -324,6 +437,11 @@
                 <!-- Pet Count -->
                 <div class="text-sm mt-4" style="color: #2B2B2B;">
                     Total Pets: <span id="totalPetsCount" class="font-semibold">${not empty pets ? pets.size() : 0}</span>
+                    <span class="ml-4">
+                        <span class="chip-available px-2 py-1 rounded-full text-xs">Available: <%= availableCount %></span>
+                        <span class="chip-pending px-2 py-1 rounded-full text-xs ml-2">Pending: <%= pendingCount %></span>
+                        <span class="chip-adopted px-2 py-1 rounded-full text-xs ml-2">Adopted: <%= adoptedCount %></span>
+                    </span>
                     <span id="filteredCount" class="text-gray-600 ml-2 hidden"></span>
                 </div>
             </div>
@@ -401,6 +519,25 @@
                             <div>
                                 <label for="healthStatus" class="block text-sm font-medium" style="color: #2B2B2B;">Health Status: (Optional)</label>
                                 <input type="text" id="healthStatus" name="healthStatus" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="E.g., Vaccinated, Dewormed">
+                            </div>
+                        </div>
+                        
+                        <!-- Adoption Status Field - NEW -->
+                        <div>
+                            <label for="adoptionStatus" class="block text-sm font-medium" style="color: #2B2B2B;">Adoption Status: <span class="text-red-500">*</span></label>
+                            <div class="mt-2 space-x-4">
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="adoptionStatus" value="available" id="statusAvailable" checked class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300">
+                                    <span class="ml-2 chip-available px-3 py-1 rounded-full">Available</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="adoptionStatus" value="pending" id="statusPending" class="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300">
+                                    <span class="ml-2 chip-pending px-3 py-1 rounded-full">Pending</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="adoptionStatus" value="adopted" id="statusAdopted" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+                                    <span class="ml-2 chip-adopted px-3 py-1 rounded-full">Adopted</span>
+                                </label>
                             </div>
                         </div>
 
@@ -488,7 +625,8 @@
                 // Update button styles
                 document.querySelectorAll('.filter-btn').forEach(btn => {
                     btn.classList.remove('bg-primary', 'text-white', 'shadow-md', 'active-filter',
-                                        'chip-male', 'chip-female', 'chip-small', 'chip-medium', 'chip-large');
+                                        'chip-male', 'chip-female', 'chip-small', 'chip-medium', 'chip-large',
+                                        'chip-available', 'chip-pending', 'chip-adopted');
                     btn.classList.add('border', 'text-[#2B2B2B]', 'hover:bg-[#F6F3E7]');
                     
                     if (btn.getAttribute('data-filter') === filterType) {
@@ -507,6 +645,12 @@
                             btn.classList.add('chip-medium', 'shadow-md');
                         } else if (filterType === 'size-large') {
                             btn.classList.add('chip-large', 'shadow-md');
+                        } else if (filterType === 'status-available') {
+                            btn.classList.add('chip-available', 'shadow-md');
+                        } else if (filterType === 'status-pending') {
+                            btn.classList.add('chip-pending', 'shadow-md');
+                        } else if (filterType === 'status-adopted') {
+                            btn.classList.add('chip-adopted', 'shadow-md');
                         }
                     }
                 });
@@ -538,7 +682,7 @@
                 rows.forEach(row => {
                     let showRow = true;
                     
-                    // Apply gender/size filter
+                    // Apply gender/size/status filter
                     if (currentFilter !== 'all') {
                         if (currentFilter.startsWith('gender-')) {
                             const gender = currentFilter.split('-')[1];
@@ -548,6 +692,11 @@
                         } else if (currentFilter.startsWith('size-')) {
                             const size = currentFilter.split('-')[1];
                             if (row.getAttribute('data-size') !== size) {
+                                showRow = false;
+                            }
+                        } else if (currentFilter.startsWith('status-')) {
+                            const status = currentFilter.split('-')[1];
+                            if (row.getAttribute('data-status') !== status) {
                                 showRow = false;
                             }
                         }
@@ -615,7 +764,7 @@
                         const tableBody = document.getElementById('petsTableBody');
                         const messageRow = document.createElement('tr');
                         messageRow.innerHTML = `
-                            <td colspan="11" class="px-6 py-8 text-center text-gray-500">
+                            <td colspan="12" class="px-6 py-8 text-center text-gray-500">
                                 <i class="fas fa-filter text-4xl mb-2"></i>
                                 <p class="text-lg">No pets match the current filters.</p>
                                 <button onclick="clearAllFilters()" class="mt-2 px-4 py-2 text-sm rounded-xl border border-[#2F5D50] text-[#2F5D50] hover:bg-[#F6F3E7] transition duration-150">
@@ -642,7 +791,8 @@
                 // Reset button styles
                 document.querySelectorAll('.filter-btn').forEach(btn => {
                     btn.classList.remove('bg-primary', 'text-white', 'shadow-md', 'active-filter',
-                                        'chip-male', 'chip-female', 'chip-small', 'chip-medium', 'chip-large');
+                                        'chip-male', 'chip-female', 'chip-small', 'chip-medium', 'chip-large',
+                                        'chip-available', 'chip-pending', 'chip-adopted');
                     btn.classList.add('border', 'text-[#2B2B2B]', 'hover:bg-[#F6F3E7]');
                     
                     if (btn.getAttribute('data-filter') === 'all') {
@@ -700,12 +850,13 @@
                 document.getElementById('imagePreview').classList.add('hidden');
                 document.getElementById('previewImage').src = '';
                 document.getElementById('petPhoto').value = '';
+                document.getElementById('statusAvailable').checked = true;
                 
                 openModal('createModal');
             }
             
-            // Open Edit Modal with pet data
-            function openEditModal(petId, name, species, breed, age, gender, size, color, healthStatus, description, photoPath) {
+            // Open Edit Modal with pet data - UPDATED with adoptionStatus parameter
+            function openEditModal(petId, name, species, breed, age, gender, size, color, healthStatus, description, photoPath, adoptionStatus) {
                 document.getElementById('modalTitle').textContent = 'Edit Pet Details';
                 document.getElementById('formAction').value = 'update';
                 document.getElementById('formPetId').value = petId;
@@ -719,6 +870,17 @@
                 document.getElementById('color').value = color || '';
                 document.getElementById('healthStatus').value = healthStatus || '';
                 document.getElementById('description').value = description || '';
+                
+                // Set adoption status radio button
+                if (adoptionStatus === 'available') {
+                    document.getElementById('statusAvailable').checked = true;
+                } else if (adoptionStatus === 'pending') {
+                    document.getElementById('statusPending').checked = true;
+                } else if (adoptionStatus === 'adopted') {
+                    document.getElementById('statusAdopted').checked = true;
+                } else {
+                    document.getElementById('statusAvailable').checked = true;
+                }
                 
                 // Handle existing photo
                 if (photoPath && photoPath !== 'null') {
@@ -804,6 +966,7 @@
                 }, 5000);
                 
                 // Apply initial filter if URL has filter parameter
+                const urlParams = new URLSearchParams(window.location.search);
                 const urlFilter = urlParams.get('filter');
                 const urlAgeFilter = urlParams.get('ageFilter');
                 

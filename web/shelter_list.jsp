@@ -1,8 +1,11 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" isELIgnored="true"%>
 <%@ page import="com.rimba.adopt.util.SessionUtil" %>
+<%@ page import="com.rimba.adopt.dao.ShelterDAO" %>
+<%@ page import="com.rimba.adopt.model.Shelter" %>
+<%@ page import="java.util.List" %>
 
 <%
-    // Check if user is logged in and is admin
+    // Check if user is logged in and is adopter
     if (!SessionUtil.isLoggedIn(session)) {
         response.sendRedirect("index.jsp");
         return;
@@ -12,13 +15,17 @@
         response.sendRedirect("index.jsp");
         return;
     }
+    
+    // Get all approved shelters
+    ShelterDAO shelterDAO = new ShelterDAO();
+    List<Shelter> shelters = shelterDAO.getSheltersForPublic();
 %>
 <!DOCTYPE html>
 <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Shelter List</title>
+        <title>Shelter List - Rimba Adopt</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <style>
@@ -76,19 +83,10 @@
                 <div class="mb-8 p-6 bg-[#F9F9F9] rounded-lg border border-[#E5E5E5]">
                     <h2 class="text-xl font-semibold text-[#2F5D50] mb-4">Filter Shelters</h2>
                     <div class="flex flex-wrap gap-6">
-                        <!-- State Filter -->
+                        <!-- Search Filter -->
                         <div class="flex-1 min-w-[250px]">
-                            <label class="block text-[#2B2B2B] mb-2 font-medium">State</label>
-                            <select id="stateFilter" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]">
-                                <option value="">All States</option>
-                                <option value="kuala_lumpur">Kuala Lumpur</option>
-                                <option value="selangor">Selangor</option>
-                                <option value="johor">Johor</option>
-                                <option value="penang">Penang</option>
-                                <option value="perak">Perak</option>
-                                <option value="sabah">Sabah</option>
-                                <option value="sarawak">Sarawak</option>
-                            </select>
+                            <label class="block text-[#2B2B2B] mb-2 font-medium">Search</label>
+                            <input type="text" id="searchFilter" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]" placeholder="Search by name or location...">
                         </div>
 
                         <!-- Rating Filter -->
@@ -106,7 +104,7 @@
                         <!-- Filter Buttons -->
                         <div class="flex items-end gap-3">
                             <button id="applyFilter" class="px-6 py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">
-                                <i class="fas fa-filter mr-2"></i>Apply Filters
+                                <i class="fas fa-search mr-2"></i>Search
                             </button>
                             <button id="resetFilter" class="px-6 py-3 bg-[#E5E5E5] text-[#2B2B2B] font-medium rounded-lg hover:bg-[#D5D5D5] transition duration-300">
                                 <i class="fas fa-redo mr-2"></i>Reset
@@ -118,56 +116,60 @@
                 <!-- Results Count -->
                 <div class="flex justify-between items-center mb-6">
                     <p class="text-[#2B2B2B]">
-                        Showing <span id="resultCount" class="font-semibold">8</span> shelters
+                        Showing <span id="resultCount" class="font-semibold"><%= shelters.size() %></span> shelters
                     </p>
                     <div class="text-[#2B2B2B]">
-                        Page <span id="currentPage" class="font-semibold">1</span> of <span id="totalPages" class="font-semibold">3</span>
+                        Page <span id="currentPage" class="font-semibold">1</span> of <span id="totalPages" class="font-semibold">1</span>
                     </div>
                 </div>
 
                 <!-- Shelters Grid (4x2 layout) -->
                 <div id="sheltersContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <!-- Shelter cards will be dynamically generated here -->
-                    <!-- Example of one card structure -->
+                    <% for (Shelter shelter : shelters) { 
+                        double rating = shelter.getAvgRating();
+                        int reviewCount = shelter.getReviewCount();
+                    %>
                     <div class="shelter-card bg-white rounded-xl border border-[#E5E5E5] overflow-hidden card-hover">
                         <div class="relative">
-                            <img src="profile_picture/shelter/pic1.png" alt="Happy Paws Shelter" class="w-full h-48 object-cover">
+                            <img src="<%= shelter.getPhotoPath() != null ? shelter.getPhotoPath() : "profile_picture/shelter/default.png" %>" 
+                                 alt="<%= shelter.getShelterName() %>" 
+                                 class="w-full h-48 object-cover">
                             <div class="absolute top-3 right-3 bg-[#6DBF89] text-[#06321F] px-3 py-1 rounded-full text-sm font-medium">
                                 <i class="fas fa-check-circle mr-1"></i> Approved
                             </div>
                         </div>
                         <div class="p-5">
-                            <h3 class="text-xl font-bold text-[#2B2B2B] mb-2">Happy Paws Shelter</h3>
+                            <h3 class="text-xl font-bold text-[#2B2B2B] mb-2"><%= shelter.getShelterName() %></h3>
                             <div class="flex items-center mb-3">
                                 <i class="fas fa-map-marker-alt text-[#2F5D50] mr-2"></i>
-                                <span class="text-[#2B2B2B]">Kuala Lumpur</span>
+                                <span class="text-[#2B2B2B]"><%= shelter.getShelterAddress() %></span>
                             </div>
                             <div class="flex items-center mb-4">
                                 <div class="star-rating mr-2">
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star-half-alt"></i>
+                                    <%= generateStars(rating) %>
                                 </div>
-                                <span class="text-[#2B2B2B] font-medium">4.5</span>
-                                <span class="text-[#888] ml-1">(42 reviews)</span>
+                                <span class="text-[#2B2B2B] font-medium"><%= String.format("%.1f", rating) %></span>
+                                <span class="text-[#888] ml-1">(<%= reviewCount %> reviews)</span>
                             </div>
                             <div class="mb-4">
                                 <span class="inline-block bg-[#A8E6CF] text-[#2B2B2B] px-3 py-1 rounded-full text-sm mr-2 mb-2">
-                                    <i class="fas fa-paw mr-1"></i> Dogs
-                                </span>
-                                <span class="inline-block bg-[#A8E6CF] text-[#2B2B2B] px-3 py-1 rounded-full text-sm mr-2 mb-2">
-                                    <i class="fas fa-cat mr-1"></i> Cats
+                                    <i class="fas fa-paw mr-1"></i> Shelter
                                 </span>
                             </div>
-                            <a href="shelter_info.jsp" class="block w-full text-center py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">
+                            <p class="text-[#666] text-sm mb-4 line-clamp-2"><%= shelter.getShelterDescription() != null ? shelter.getShelterDescription() : "Animal shelter providing care and adoption services." %></p>
+                            <a href="shelter_info.jsp?id=<%= shelter.getShelterId() %>" class="block w-full text-center py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">
                                 View Details
                             </a>
                         </div>
                     </div>
-
-                    <!-- More cards will be generated by JavaScript -->
+                    <% } %>
+                    
+                    <% if (shelters.isEmpty()) { %>
+                    <div class="col-span-4 text-center py-8">
+                        <i class="fas fa-home text-4xl text-[#E5E5E5] mb-4"></i>
+                        <p class="text-[#888]">No shelters available at the moment.</p>
+                    </div>
+                    <% } %>
                 </div>
 
                 <!-- Pagination -->
@@ -178,10 +180,7 @@
                         </button>
 
                         <div id="pageNumbers" class="flex space-x-2">
-                            <!-- Page numbers will be generated here -->
-                            <button class="page-btn w-10 h-10 rounded-lg border border-[#2F5D50] bg-[#2F5D50] text-white">1</button>
-                            <button class="page-btn w-10 h-10 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]">2</button>
-                            <button class="page-btn w-10 h-10 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]">3</button>
+                            <!-- Page numbers will be generated by JavaScript -->
                         </div>
 
                         <button id="nextPage" class="p-3 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]">
@@ -202,6 +201,263 @@
         <!-- Load sidebar.js -->
         <script src="includes/sidebar.js"></script>
 
+        <script>
+            // Shelter data from JSP
+            const shelters = [
+                <% for (int i = 0; i < shelters.size(); i++) { 
+                    Shelter shelter = shelters.get(i);
+                    if (i > 0) out.print(",");
+                %>
+                {
+                    id: <%= shelter.getShelterId() %>,
+                    name: "<%= escapeJavaScript(shelter.getShelterName()) %>",
+                    address: "<%= escapeJavaScript(shelter.getShelterAddress()) %>",
+                    rating: <%= shelter.getAvgRating() %>,
+                    reviewCount: <%= shelter.getReviewCount() %>,
+                    description: "<%= escapeJavaScript(shelter.getShelterDescription() != null ? shelter.getShelterDescription() : "") %>",
+                    image: "<%= shelter.getPhotoPath() != null ? escapeJavaScript(shelter.getPhotoPath()) : "profile_picture/shelter/default.png" %>"
+                }
+                <% } %>
+            ];
+
+            // Pagination variables
+            let currentPage = 1;
+            const itemsPerPage = 8;
+            let filteredShelters = [...shelters];
+
+            // DOM Elements
+            const sheltersContainer = document.getElementById('sheltersContainer');
+            const resultCount = document.getElementById('resultCount');
+            const currentPageSpan = document.getElementById('currentPage');
+            const totalPagesSpan = document.getElementById('totalPages');
+            const prevPageBtn = document.getElementById('prevPage');
+            const nextPageBtn = document.getElementById('nextPage');
+            const pageNumbers = document.getElementById('pageNumbers');
+            const applyFilterBtn = document.getElementById('applyFilter');
+            const resetFilterBtn = document.getElementById('resetFilter');
+            const searchFilter = document.getElementById('searchFilter');
+            const ratingFilter = document.getElementById('ratingFilter');
+
+            // Initialize
+            document.addEventListener('DOMContentLoaded', function () {
+                renderShelters();
+                updatePagination();
+                attachEventListeners();
+            });
+
+            // Render shelters for current page
+            function renderShelters() {
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+                const pageShelters = filteredShelters.slice(startIndex, endIndex);
+
+                sheltersContainer.innerHTML = '';
+
+                pageShelters.forEach(shelter => {
+                    const card = createShelterCard(shelter);
+                    sheltersContainer.appendChild(card);
+                });
+
+                resultCount.textContent = filteredShelters.length;
+            }
+
+            // Create shelter card HTML
+            function createShelterCard(shelter) {
+                const card = document.createElement('div');
+                card.className = 'shelter-card bg-white rounded-xl border border-[#E5E5E5] overflow-hidden card-hover';
+
+                // Generate star HTML
+                const starsHTML = generateStars(shelter.rating);
+
+                card.innerHTML =
+                    '<div class="relative">' +
+                    '<img src="' + shelter.image + '" alt="' + shelter.name + '" class="w-full h-48 object-cover">' +
+                    '<div class="absolute top-3 right-3 bg-[#6DBF89] text-[#06321F] px-3 py-1 rounded-full text-sm font-medium">' +
+                    '<i class="fas fa-check-circle mr-1"></i> Approved' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="p-5">' +
+                    '<h3 class="text-xl font-bold text-[#2B2B2B] mb-2">' + shelter.name + '</h3>' +
+                    '<div class="flex items-center mb-3">' +
+                    '<i class="fas fa-map-marker-alt text-[#2F5D50] mr-2"></i>' +
+                    '<span class="text-[#2B2B2B]">' + shelter.address + '</span>' +
+                    '</div>' +
+                    '<div class="flex items-center mb-4">' +
+                    '<div class="star-rating mr-2">' +
+                    starsHTML +
+                    '</div>' +
+                    '<span class="text-[#2B2B2B] font-medium">' + shelter.rating.toFixed(1) + '</span>' +
+                    '<span class="text-[#888] ml-1">(' + shelter.reviewCount + ' reviews)</span>' +
+                    '</div>' +
+                    '<div class="mb-4">' +
+                    '<span class="inline-block bg-[#A8E6CF] text-[#2B2B2B] px-3 py-1 rounded-full text-sm mr-2 mb-2">' +
+                    '<i class="fas fa-paw mr-1"></i> Shelter' +
+                    '</span>' +
+                    '</div>' +
+                    '<p class="text-[#666] text-sm mb-4 line-clamp-2">' + shelter.description + '</p>' +
+                    '<a href="shelter_info.jsp?id=' + shelter.id + '" class="block w-full text-center py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">' +
+                    'View Details' +
+                    '</a>' +
+                    '</div>';
+
+                return card;
+            }
+
+            // Generate star rating HTML
+            function generateStars(rating) {
+                let starsHTML = '';
+                const fullStars = Math.floor(rating);
+                const hasHalfStar = rating % 1 >= 0.5;
+
+                for (let i = 1; i <= 5; i++) {
+                    if (i <= fullStars) {
+                        starsHTML += '<i class="fas fa-star"></i>';
+                    } else if (i === fullStars + 1 && hasHalfStar) {
+                        starsHTML += '<i class="fas fa-star-half-alt"></i>';
+                    } else {
+                        starsHTML += '<i class="far fa-star"></i>';
+                    }
+                }
+
+                return starsHTML;
+            }
+
+            // Update pagination controls
+            function updatePagination() {
+                const totalPages = Math.ceil(filteredShelters.length / itemsPerPage);
+
+                currentPageSpan.textContent = currentPage;
+                totalPagesSpan.textContent = totalPages;
+
+                // Update button states
+                prevPageBtn.disabled = currentPage === 1;
+                nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+
+                // Generate page number buttons
+                pageNumbers.innerHTML = '';
+                const maxVisiblePages = 5;
+                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+                if (endPage - startPage + 1 < maxVisiblePages) {
+                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.className = 'page-btn w-10 h-10 rounded-lg border ' +
+                            (i === currentPage ? 'border-[#2F5D50] bg-[#2F5D50] text-white' : 'border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]');
+                    pageBtn.textContent = i;
+                    pageBtn.addEventListener('click', () => {
+                        currentPage = i;
+                        renderShelters();
+                        updatePagination();
+                    });
+                    pageNumbers.appendChild(pageBtn);
+                }
+            }
+
+            // Apply filters
+            function applyFilters() {
+                const searchTerm = searchFilter.value.toLowerCase();
+                const minRating = parseFloat(ratingFilter.value);
+
+                filteredShelters = shelters.filter(shelter => {
+                    // Search filter
+                    if (searchTerm && 
+                        !shelter.name.toLowerCase().includes(searchTerm) && 
+                        !shelter.address.toLowerCase().includes(searchTerm)) {
+                        return false;
+                    }
+
+                    // Rating filter
+                    if (minRating > 0 && shelter.rating < minRating) {
+                        return false;
+                    }
+
+                    return true;
+                });
+
+                currentPage = 1;
+                renderShelters();
+                updatePagination();
+            }
+
+            // Reset filters
+            function resetFilters() {
+                searchFilter.value = '';
+                ratingFilter.value = '0';
+                filteredShelters = [...shelters];
+                currentPage = 1;
+                renderShelters();
+                updatePagination();
+            }
+
+            // Attach event listeners
+            function attachEventListeners() {
+                applyFilterBtn.addEventListener('click', applyFilters);
+                resetFilterBtn.addEventListener('click', resetFilters);
+
+                prevPageBtn.addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        renderShelters();
+                        updatePagination();
+                    }
+                });
+
+                nextPageBtn.addEventListener('click', () => {
+                    const totalPages = Math.ceil(filteredShelters.length / itemsPerPage);
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        renderShelters();
+                        updatePagination();
+                    }
+                });
+
+                // Add Enter key support for search
+                searchFilter.addEventListener('keyup', (e) => {
+                    if (e.key === 'Enter') {
+                        applyFilters();
+                    }
+                });
+            }
+        </script>
+
+    </body>
+</html>
+
+<%!
+    // Helper method to generate star HTML
+    private String generateStars(double rating) {
+        StringBuilder stars = new StringBuilder();
+        int fullStars = (int) Math.floor(rating);
+        boolean hasHalfStar = rating % 1 >= 0.5;
+        
+        for (int i = 1; i <= 5; i++) {
+            if (i <= fullStars) {
+                stars.append("<i class='fas fa-star'></i>");
+            } else if (i == fullStars + 1 && hasHalfStar) {
+                stars.append("<i class='fas fa-star-half-alt'></i>");
+            } else {
+                stars.append("<i class='far fa-star'></i>");
+            }
+        }
+        
+        return stars.toString();
+    }
+    
+    // Helper method to escape JavaScript strings
+    private String escapeJavaScript(String input) {
+        if (input == null) return "";
+        return input.replace("\\", "\\\\")
+                   .replace("\"", "\\\"")
+                   .replace("'", "\\'")
+                   .replace("\n", "\\n")
+                   .replace("\r", "\\r")
+                   .replace("\t", "\\t");
+    }
+%>
         <script>
             // Dummy shelter data
             const shelters = [

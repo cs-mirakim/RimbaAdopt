@@ -115,6 +115,14 @@
                         </div>
                     </div>
 
+                    <!-- Profile Photo Upload -->
+                    <div>
+                        <label for="profile_photo" class="block text-sm font-medium mb-1">Profile Photo</label>
+                        <input id="profile_photo" name="profile_photo" type="file" accept="image/*"
+                               class="w-full px-3 py-2 border border-[#E5E5E5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#2F5D50]"/>
+                        <p class="text-xs text-gray-500 mt-1">Max 2MB. JPG, PNG formats only.</p>
+                    </div>
+
                     <!-- Common fields -->
                     <div>
                         <label for="full_name" class="block text-sm font-medium mb-1">Full Name *</label>

@@ -198,21 +198,34 @@
 
 
         <script>
-            function getSelectedRole() {
-                return document.querySelector('input[name="role"]:checked').value;
-            }
+            // Update radio buttons to update hidden input
+            document.addEventListener('DOMContentLoaded', function () {
+                const roleRadios = document.querySelectorAll('input[name="role"]');
+                const roleInput = document.getElementById('roleInput');
 
-            function onLogin(e) {
-                e.preventDefault();
-                const role = getSelectedRole();
-                if (role === "admin")
-                    window.location.href = "dashboard_admin.jsp";
-                else if (role === "shelter")
-                    window.location.href = "dashboard_shelter.jsp";
-                else
-                    window.location.href = "dashboard_adopter.jsp";
-            }
+                roleRadios.forEach(radio => {
+                    radio.addEventListener('change', function () {
+                        roleInput.value = this.value;
+                    });
+                });
 
+                // Update reset popup role selection
+                const resetRoleRadios = document.querySelectorAll('#popup input[name="role"]');
+                const resetRoleInput = document.createElement('input');
+                resetRoleInput.type = 'hidden';
+                resetRoleInput.name = 'reset_role';
+                resetRoleInput.id = 'resetRoleInput';
+                resetRoleInput.value = 'admin';
+                document.querySelector('#popup form').appendChild(resetRoleInput);
+
+                resetRoleRadios.forEach(radio => {
+                    radio.addEventListener('change', function () {
+                        resetRoleInput.value = this.value;
+                    });
+                });
+            });
+
+            // Remove the old onLogin function since we're using form submission
             function openPopup() {
                 document.getElementById("popup").classList.remove("hidden");
             }
