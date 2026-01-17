@@ -16,14 +16,14 @@
         response.sendRedirect("index.jsp");
         return;
     }
-    
+
     // ===== FIX: Load pets data directly in JSP if not already set =====
     List<Pets> petsList = null;
     if (request.getAttribute("pets") == null) {
         try {
             int userId = SessionUtil.getUserId(session);
             int shelterId = userId; // shelter_id = user_id
-            
+
             PetsDAO petsDAO = new PetsDAO();
             petsList = petsDAO.getPetsByShelter(shelterId);
             request.setAttribute("pets", petsList);
@@ -34,7 +34,7 @@
     } else {
         petsList = (List<Pets>) request.getAttribute("pets");
     }
-    
+
     // Calculate filter counts
     int maleCount = 0;
     int femaleCount = 0;
@@ -48,31 +48,52 @@
     int availableCount = 0;
     int pendingCount = 0;
     int adoptedCount = 0;
-    
+
     if (petsList != null) {
         for (Pets pet : petsList) {
             // Gender counts
-            if ("male".equals(pet.getGender())) maleCount++;
-            if ("female".equals(pet.getGender())) femaleCount++;
-            
+            if ("male".equals(pet.getGender())) {
+                maleCount++;
+            }
+            if ("female".equals(pet.getGender())) {
+                femaleCount++;
+            }
+
             // Size counts
-            if ("small".equals(pet.getSize())) smallCount++;
-            if ("medium".equals(pet.getSize())) mediumCount++;
-            if ("large".equals(pet.getSize())) largeCount++;
-            
+            if ("small".equals(pet.getSize())) {
+                smallCount++;
+            }
+            if ("medium".equals(pet.getSize())) {
+                mediumCount++;
+            }
+            if ("large".equals(pet.getSize())) {
+                largeCount++;
+            }
+
             // Age counts
             if (pet.getAge() != null) {
                 int age = pet.getAge();
-                if (age >= 0 && age <= 1) age0_1++;
-                if (age > 1 && age <= 3) age1_3++;
-                if (age > 3 && age <= 5) age3_5++;
-                if (age > 5) age5plus++;
+                if (age >= 0 && age <= 1) {
+                    age0_1++;
+                }
+                if (age > 1 && age <= 3) {
+                    age1_3++;
+                }
+                if (age > 3 && age <= 5) {
+                    age3_5++;
+                }
+                if (age > 5) {
+                    age5plus++;
+                }
             }
-            
+
             // Adoption status counts - NEW
-            if ("available".equalsIgnoreCase(pet.getAdoptionStatus())) availableCount++;
-            if ("pending".equalsIgnoreCase(pet.getAdoptionStatus())) pendingCount++;
-            if ("adopted".equalsIgnoreCase(pet.getAdoptionStatus())) adoptedCount++;
+            if ("available".equalsIgnoreCase(pet.getAdoptionStatus())) {
+                availableCount++;
+            }
+            if ("adopted".equalsIgnoreCase(pet.getAdoptionStatus())) {
+                adoptedCount++;
+            }
         }
     }
 %>
@@ -99,7 +120,7 @@
             .chip-small { background-color: #BBDEFB; color: #2B2B2B; }
             .chip-medium { background-color: #C8E6C9; color: #2B2B2B; }
             .chip-large { background-color: #FFECB3; color: #2B2B2B; }
-            
+
             /* Adoption Status Chip Styles - NEW */
             .chip-available { background-color: #d1fae5; color: #065f46; border: 1px solid #10b981; }
             .chip-pending { background-color: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
@@ -133,12 +154,12 @@
                 border-radius: 50%;
                 margin-right: 6px;
             }
-            
+
             /* Active filter styles */
             .active-filter {
                 box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             }
-            
+
             /* Quick status update dropdown */
             .status-dropdown {
                 padding: 0.25rem 0.5rem;
@@ -151,7 +172,7 @@
     </head>
     <body class="flex flex-col min-h-screen relative bg-[#F6F3E7] text-main">
         <jsp:include page="includes/header.jsp" />
-        
+
         <!-- Success/Error Messages -->
         <c:if test="${not empty sessionScope.success}">
             <div class="fixed top-4 right-4 z-50 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-lg animate-slideIn">
@@ -162,7 +183,7 @@
             </div>
             <c:remove var="success" scope="session"/>
         </c:if>
-        
+
         <c:if test="${not empty sessionScope.error}">
             <div class="fixed top-4 right-4 z-50 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg animate-slideIn">
                 <div class="flex items-center">
@@ -172,7 +193,7 @@
             </div>
             <c:remove var="error" scope="session"/>
         </c:if>
-        
+
         <main class="flex-1 p-4 pt-6 relative z-10 flex justify-center items-start mb-2" style="background-color: #F6F3E7;">
             <div class="w-full bg-white py-8 px-6 rounded-3xl shadow-xl border" style="max-width: 1450px; border-color: #E5E5E5;">
                 <div class="mb-8 flex justify-between items-center">
@@ -187,37 +208,25 @@
                 </div>
                 <hr style="border-top: 1px solid #E5E5E5; margin-bottom: 1.5rem; margin-top: 1.5rem;" />
 
-                <!-- Stats Cards for Adoption Status - NEW -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <!-- Stats Cards for Adoption Status - DIPERBAIKI -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div class="bg-green-50 border border-green-200 rounded-xl p-4">
                         <div class="flex justify-between items-center">
                             <div>
                                 <h3 class="text-lg font-semibold text-green-800">Available</h3>
-                                <p class="text-3xl font-bold text-green-900"><%= availableCount %></p>
+                                <p class="text-3xl font-bold text-green-900"><%= availableCount%></p>
                             </div>
                             <div class="bg-green-100 p-3 rounded-lg">
                                 <i class="fas fa-paw text-green-600 text-2xl"></i>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <h3 class="text-lg font-semibold text-yellow-800">Pending</h3>
-                                <p class="text-3xl font-bold text-yellow-900"><%= pendingCount %></p>
-                            </div>
-                            <div class="bg-yellow-100 p-3 rounded-lg">
-                                <i class="fas fa-clock text-yellow-600 text-2xl"></i>
-                            </div>
-                        </div>
-                    </div>
-                    
+
                     <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
                         <div class="flex justify-between items-center">
                             <div>
                                 <h3 class="text-lg font-semibold text-blue-800">Adopted</h3>
-                                <p class="text-3xl font-bold text-blue-900"><%= adoptedCount %></p>
+                                <p class="text-3xl font-bold text-blue-900"><%= adoptedCount%></p>
                             </div>
                             <div class="bg-blue-100 p-3 rounded-lg">
                                 <i class="fas fa-home text-blue-600 text-2xl"></i>
@@ -234,45 +243,41 @@
                                 data-filter="all" onclick="applyFilter('all')">
                             All Pets (${not empty pets ? pets.size() : 0})
                         </button>
-                        
+
                         <!-- Adoption Status Filters - NEW -->
                         <button class="px-5 py-2 rounded-full border hover:bg-green-50 transition duration-150 filter-btn chip-available"
                                 data-filter="status-available" onclick="applyFilter('status-available')">
-                            Available (<%= availableCount %>)
-                        </button>
-                        <button class="px-5 py-2 rounded-full border hover:bg-yellow-50 transition duration-150 filter-btn chip-pending"
-                                data-filter="status-pending" onclick="applyFilter('status-pending')">
-                            Pending (<%= pendingCount %>)
+                            Available (<%= availableCount%>)
                         </button>
                         <button class="px-5 py-2 rounded-full border hover:bg-blue-50 transition duration-150 filter-btn chip-adopted"
                                 data-filter="status-adopted" onclick="applyFilter('status-adopted')">
-                            Adopted (<%= adoptedCount %>)
+                            Adopted (<%= adoptedCount%>)
                         </button>
-                        
+
                         <div class="h1 border-l border-gray-300 mx-2"></div>
-                        
+
                         <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#A8E6CF] text-[#2B2B2B]"
                                 data-filter="gender-male" onclick="applyFilter('gender-male')">
-                            ♂ Male (<%= maleCount %>)
+                            ♂ Male (<%= maleCount%>)
                         </button>
                         <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#F8BBD0] text-[#2B2B2B]"
                                 data-filter="gender-female" onclick="applyFilter('gender-female')">
-                            ♀ Female (<%= femaleCount %>)
+                            ♀ Female (<%= femaleCount%>)
                         </button>
                         <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#BBDEFB] text-[#2B2B2B]"
                                 data-filter="size-small" onclick="applyFilter('size-small')">
-                            Small (<%= smallCount %>)
+                            Small (<%= smallCount%>)
                         </button>
                         <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#C8E6C9] text-[#2B2B2B]"
                                 data-filter="size-medium" onclick="applyFilter('size-medium')">
-                            Medium (<%= mediumCount %>)
+                            Medium (<%= mediumCount%>)
                         </button>
                         <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#FFECB3] text-[#2B2B2B]"
                                 data-filter="size-large" onclick="applyFilter('size-large')">
-                            Large (<%= largeCount %>)
+                            Large (<%= largeCount%>)
                         </button>
                     </div>
-                    
+
                     <!-- Search Box -->
                     <div class="relative w-full md:w-80">
                         <form id="searchForm" action="manage-pets" method="GET" class="flex items-center">
@@ -297,19 +302,19 @@
                         </button>
                         <button class="px-4 py-2 text-sm rounded-full border hover:bg-[#F6F3E7] transition duration-150 age-filter-btn border-[#2F5D50] text-[#2F5D50]"
                                 data-age="0-1" onclick="applyAgeFilter('0-1')">
-                            0-1 year (<%= age0_1 %>)
+                            0-1 year (<%= age0_1%>)
                         </button>
                         <button class="px-4 py-2 text-sm rounded-full border hover:bg-[#F6F3E7] transition duration-150 age-filter-btn border-[#2F5D50] text-[#2F5D50]"
                                 data-age="1-3" onclick="applyAgeFilter('1-3')">
-                            1-3 years (<%= age1_3 %>)
+                            1-3 years (<%= age1_3%>)
                         </button>
                         <button class="px-4 py-2 text-sm rounded-full border hover:bg-[#F6F3E7] transition duration-150 age-filter-btn border-[#2F5D50] text-[#2F5D50]"
                                 data-age="3-5" onclick="applyAgeFilter('3-5')">
-                            3-5 years (<%= age3_5 %>)
+                            3-5 years (<%= age3_5%>)
                         </button>
                         <button class="px-4 py-2 text-sm rounded-full border hover:bg-[#F6F3E7] transition duration-150 age-filter-btn border-[#2F5D50] text-[#2F5D50]"
                                 data-age="5+" onclick="applyAgeFilter('5+')">
-                            5+ years (<%= age5plus %>)
+                            5+ years (<%= age5plus%>)
                         </button>
                     </div>
                 </div>
@@ -365,40 +370,22 @@
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                                    ${pet.size == 'small' ? 'chip-small' : pet.size == 'medium' ? 'chip-medium' : 'chip-large'}">
+                                                      ${pet.size == 'small' ? 'chip-small' : pet.size == 'medium' ? 'chip-medium' : 'chip-large'}">
                                                     ${pet.size}
                                                 </span>
                                             </td>
                                             <!-- Adoption Status Column - NEW -->
                                             <td class="px-6 py-4 whitespace-nowrap">
-                                                <!-- Quick Status Update Form -->
-                                                <form method="POST" action="manage-pets" class="inline-block" onchange="this.submit()">
-                                                    <input type="hidden" name="action" value="updateStatus">
-                                                    <input type="hidden" name="petId" value="${pet.petId}">
-                                                    <input type="hidden" name="shelterId" value="<%= SessionUtil.getUserId(session) %>">
-                                                    <select name="adoptionStatus" class="status-dropdown ${pet.adoptionStatus == 'available' ? 'chip-available' : pet.adoptionStatus == 'pending' ? 'chip-pending' : 'chip-adopted'}">
-                                                        <option value="available" ${pet.adoptionStatus == 'available' ? 'selected' : ''} class="text-green-700">Available</option>
-                                                        <option value="pending" ${pet.adoptionStatus == 'pending' ? 'selected' : ''} class="text-yellow-700">Pending</option>
-                                                        <option value="adopted" ${pet.adoptionStatus == 'adopted' ? 'selected' : ''} class="text-blue-700">Adopted</option>
-                                                    </select>
-                                                </form>
-                                                
-                                                <!-- Status Display Badge -->
-                                                <span class="ml-2 px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                                    ${pet.adoptionStatus == 'available' ? 'chip-available' : pet.adoptionStatus == 'pending' ? 'chip-pending' : 'chip-adopted'}">
+                                                <!-- Status Display Badge SAHAJA (TANPA dropdown) -->
+                                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                                      ${pet.adoptionStatus == 'available' ? 'chip-available' : 'chip-adopted'}">
                                                     <c:choose>
                                                         <c:when test="${pet.adoptionStatus == 'available'}">
                                                             <i class="fas fa-paw mr-1"></i> Available
                                                         </c:when>
-                                                        <c:when test="${pet.adoptionStatus == 'pending'}">
-                                                            <i class="fas fa-clock mr-1"></i> Pending
-                                                        </c:when>
                                                         <c:when test="${pet.adoptionStatus == 'adopted'}">
                                                             <i class="fas fa-home mr-1"></i> Adopted
                                                         </c:when>
-                                                        <c:otherwise>
-                                                            ${pet.adoptionStatus}
-                                                        </c:otherwise>
                                                     </c:choose>
                                                 </span>
                                             </td>
@@ -438,9 +425,8 @@
                 <div class="text-sm mt-4" style="color: #2B2B2B;">
                     Total Pets: <span id="totalPetsCount" class="font-semibold">${not empty pets ? pets.size() : 0}</span>
                     <span class="ml-4">
-                        <span class="chip-available px-2 py-1 rounded-full text-xs">Available: <%= availableCount %></span>
-                        <span class="chip-pending px-2 py-1 rounded-full text-xs ml-2">Pending: <%= pendingCount %></span>
-                        <span class="chip-adopted px-2 py-1 rounded-full text-xs ml-2">Adopted: <%= adoptedCount %></span>
+                        <span class="chip-available px-2 py-1 rounded-full text-xs">Available: <%= availableCount%></span>
+                        <span class="chip-adopted px-2 py-1 rounded-full text-xs ml-2">Adopted: <%= adoptedCount%></span>
                     </span>
                     <span id="filteredCount" class="text-gray-600 ml-2 hidden"></span>
                 </div>
@@ -461,7 +447,7 @@
                         <input type="hidden" name="action" id="formAction" value="create">
                         <input type="hidden" name="petId" id="formPetId" value="">
                         <input type="hidden" name="existingPhotoPath" id="formExistingPhotoPath" value="">
-                        
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label for="petName" class="block text-sm font-medium" style="color: #2B2B2B;">Pet Name: <span class="text-red-500">*</span></label>
@@ -521,18 +507,14 @@
                                 <input type="text" id="healthStatus" name="healthStatus" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="E.g., Vaccinated, Dewormed">
                             </div>
                         </div>
-                        
-                        <!-- Adoption Status Field - NEW -->
+
+                        <!-- Adoption Status Field - DIPERBAIKI -->
                         <div>
                             <label for="adoptionStatus" class="block text-sm font-medium" style="color: #2B2B2B;">Adoption Status: <span class="text-red-500">*</span></label>
                             <div class="mt-2 space-x-4">
                                 <label class="inline-flex items-center">
                                     <input type="radio" name="adoptionStatus" value="available" id="statusAvailable" checked class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300">
                                     <span class="ml-2 chip-available px-3 py-1 rounded-full">Available</span>
-                                </label>
-                                <label class="inline-flex items-center">
-                                    <input type="radio" name="adoptionStatus" value="pending" id="statusPending" class="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300">
-                                    <span class="ml-2 chip-pending px-3 py-1 rounded-full">Pending</span>
                                 </label>
                                 <label class="inline-flex items-center">
                                     <input type="radio" name="adoptionStatus" value="adopted" id="statusAdopted" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
@@ -546,16 +528,27 @@
                             <textarea id="description" name="description" rows="3" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="Describe the pet's personality, behavior, special needs, etc."></textarea>
                         </div>
 
+                        <!-- Pet Photo Section - dengan remove photo option -->
                         <div>
-                            <label for="petPhoto" class="block text-sm font-medium" style="color: #2B2B2B;">Pet Photo: (Optional)</label>
+                            <label for="petPhoto" class="block text-sm font-medium" style="color: #2B2B2B;">Pet Photo:</label>
                             <div class="mt-2 flex items-center space-x-4">
                                 <div class="flex-1">
                                     <input type="file" id="petPhoto" name="petPhoto" accept="image/*" 
                                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 
-                                                  file:rounded-lg file:border-0 file:text-sm file:font-semibold
-                                                  file:bg-[#2F5D50] file:text-white hover:file:bg-[#24483E]
-                                                  transition duration-150">
-                                    <p class="text-xs text-gray-500 mt-1">Upload a photo of the pet (JPG, PNG, GIF, etc.) - Max 5MB</p>
+                                           file:rounded-lg file:border-0 file:text-sm file:font-semibold
+                                           file:bg-[#2F5D50] file:text-white hover:file:bg-[#24483E]
+                                           transition duration-150">
+                                    <p class="text-xs text-gray-500 mt-1">Upload a new photo (JPG, PNG, GIF) - Max 5MB</p>
+
+                                    <!-- Checkbox untuk remove existing photo -->
+                                    <div id="removePhotoContainer" class="hidden mt-2">
+                                        <label class="inline-flex items-center">
+                                            <input type="checkbox" name="removePhoto" value="true" 
+                                                   class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded">
+                                            <span class="ml-2 text-sm text-red-600">Remove current photo</span>
+                                        </label>
+                                        <p class="text-xs text-gray-500">Current photo will be deleted and replaced with default</p>
+                                    </div>
                                 </div>
                                 <div id="imagePreview" class="hidden flex-shrink-0">
                                     <img id="previewImage" class="h-20 w-20 object-cover rounded-lg border" 
@@ -563,7 +556,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="flex justify-end pt-4 space-x-3">
                             <button type="button" onclick="closeModal('createModal')" class="px-5 py-2 rounded-xl border text-[#2B2B2B] hover:bg-gray-100 transition duration-150 font-medium" style="border-color: #E5E5E5;">
                                 Cancel
@@ -611,159 +604,163 @@
         <jsp:include page="includes/sidebar.jsp" />
         <script src="includes/sidebar.js"></script>
         <script>
-            // =======================================================
-            // FILTER FUNCTIONS (CLIENT-SIDE)
-            // =======================================================
-            
-            let currentFilter = 'all';
-            let currentAgeFilter = 'all';
-            let currentSearchTerm = '';
-            
-            function applyFilter(filterType) {
-                currentFilter = filterType;
-                
-                // Update button styles
-                document.querySelectorAll('.filter-btn').forEach(btn => {
-                    btn.classList.remove('bg-primary', 'text-white', 'shadow-md', 'active-filter',
+                        // =======================================================
+                        // FILTER FUNCTIONS (CLIENT-SIDE)
+                        // =======================================================
+
+                        let currentFilter = 'all';
+                        let currentAgeFilter = 'all';
+                        let currentSearchTerm = '';
+
+                        function applyFilter(filterType) {
+                            currentFilter = filterType;
+
+                            // Update button styles
+                            document.querySelectorAll('.filter-btn').forEach(btn => {
+                                btn.classList.remove('bg-primary', 'text-white', 'shadow-md', 'active-filter',
                                         'chip-male', 'chip-female', 'chip-small', 'chip-medium', 'chip-large',
                                         'chip-available', 'chip-pending', 'chip-adopted');
-                    btn.classList.add('border', 'text-[#2B2B2B]', 'hover:bg-[#F6F3E7]');
-                    
-                    if (btn.getAttribute('data-filter') === filterType) {
-                        btn.classList.remove('border', 'text-[#2B2B2B]', 'hover:bg-[#F6F3E7]');
-                        btn.classList.add('active-filter');
-                        
-                        if (filterType === 'all') {
-                            btn.classList.add('bg-primary', 'text-white', 'shadow-md');
-                        } else if (filterType === 'gender-male') {
-                            btn.classList.add('chip-male', 'shadow-md');
-                        } else if (filterType === 'gender-female') {
-                            btn.classList.add('chip-female', 'shadow-md');
-                        } else if (filterType === 'size-small') {
-                            btn.classList.add('chip-small', 'shadow-md');
-                        } else if (filterType === 'size-medium') {
-                            btn.classList.add('chip-medium', 'shadow-md');
-                        } else if (filterType === 'size-large') {
-                            btn.classList.add('chip-large', 'shadow-md');
-                        } else if (filterType === 'status-available') {
-                            btn.classList.add('chip-available', 'shadow-md');
-                        } else if (filterType === 'status-pending') {
-                            btn.classList.add('chip-pending', 'shadow-md');
-                        } else if (filterType === 'status-adopted') {
-                            btn.classList.add('chip-adopted', 'shadow-md');
+                                btn.classList.add('border', 'text-[#2B2B2B]', 'hover:bg-[#F6F3E7]');
+
+                                if (btn.getAttribute('data-filter') === filterType) {
+                                    btn.classList.remove('border', 'text-[#2B2B2B]', 'hover:bg-[#F6F3E7]');
+                                    btn.classList.add('active-filter');
+
+                                    if (filterType === 'all') {
+                                        btn.classList.add('bg-primary', 'text-white', 'shadow-md');
+                                    } else if (filterType === 'gender-male') {
+                                        btn.classList.add('chip-male', 'shadow-md');
+                                    } else if (filterType === 'gender-female') {
+                                        btn.classList.add('chip-female', 'shadow-md');
+                                    } else if (filterType === 'size-small') {
+                                        btn.classList.add('chip-small', 'shadow-md');
+                                    } else if (filterType === 'size-medium') {
+                                        btn.classList.add('chip-medium', 'shadow-md');
+                                    } else if (filterType === 'size-large') {
+                                        btn.classList.add('chip-large', 'shadow-md');
+                                    } else if (filterType === 'status-available') {
+                                        btn.classList.add('chip-available', 'shadow-md');
+                                    } else if (filterType === 'status-pending') {
+                                        btn.classList.add('chip-pending', 'shadow-md');
+                                    } else if (filterType === 'status-adopted') {
+                                        btn.classList.add('chip-adopted', 'shadow-md');
+                                    }
+                                }
+                            });
+
+                            filterAndDisplayPets();
                         }
-                    }
-                });
-                
-                filterAndDisplayPets();
-            }
-            
-            function applyAgeFilter(ageFilter) {
-                currentAgeFilter = ageFilter;
-                
-                // Update button styles
-                document.querySelectorAll('.age-filter-btn').forEach(btn => {
-                    btn.classList.remove('bg-primary', 'text-white', 'shadow-md', 'active-filter');
-                    btn.classList.add('border-[#2F5D50]', 'text-[#2F5D50]', 'hover:bg-[#F6F3E7]');
-                    
-                    if (btn.getAttribute('data-age') === ageFilter) {
-                        btn.classList.remove('border-[#2F5D50]', 'text-[#2F5D50]');
-                        btn.classList.add('bg-primary', 'text-white', 'shadow-md', 'active-filter');
-                    }
-                });
-                
-                filterAndDisplayPets();
-            }
-            
-            function filterAndDisplayPets() {
-                const rows = document.querySelectorAll('.pet-row');
-                let visibleCount = 0;
-                
-                rows.forEach(row => {
-                    let showRow = true;
-                    
-                    // Apply gender/size/status filter
-                    if (currentFilter !== 'all') {
-                        if (currentFilter.startsWith('gender-')) {
-                            const gender = currentFilter.split('-')[1];
-                            if (row.getAttribute('data-gender') !== gender) {
-                                showRow = false;
-                            }
-                        } else if (currentFilter.startsWith('size-')) {
-                            const size = currentFilter.split('-')[1];
-                            if (row.getAttribute('data-size') !== size) {
-                                showRow = false;
-                            }
-                        } else if (currentFilter.startsWith('status-')) {
-                            const status = currentFilter.split('-')[1];
-                            if (row.getAttribute('data-status') !== status) {
-                                showRow = false;
-                            }
+
+                        function applyAgeFilter(ageFilter) {
+                            currentAgeFilter = ageFilter;
+
+                            // Update button styles
+                            document.querySelectorAll('.age-filter-btn').forEach(btn => {
+                                btn.classList.remove('bg-primary', 'text-white', 'shadow-md', 'active-filter');
+                                btn.classList.add('border-[#2F5D50]', 'text-[#2F5D50]', 'hover:bg-[#F6F3E7]');
+
+                                if (btn.getAttribute('data-age') === ageFilter) {
+                                    btn.classList.remove('border-[#2F5D50]', 'text-[#2F5D50]');
+                                    btn.classList.add('bg-primary', 'text-white', 'shadow-md', 'active-filter');
+                                }
+                            });
+
+                            filterAndDisplayPets();
                         }
-                    }
-                    
-                    // Apply age filter
-                    if (showRow && currentAgeFilter !== 'all') {
-                        const ageAttr = row.getAttribute('data-age');
-                        if (ageAttr) {
-                            const age = parseInt(ageAttr);
-                            switch (currentAgeFilter) {
-                                case '0-1':
-                                    if (age < 0 || age > 1) showRow = false;
-                                    break;
-                                case '1-3':
-                                    if (age <= 1 || age > 3) showRow = false;
-                                    break;
-                                case '3-5':
-                                    if (age <= 3 || age > 5) showRow = false;
-                                    break;
-                                case '5+':
-                                    if (age <= 5) showRow = false;
-                                    break;
+
+                        function filterAndDisplayPets() {
+                            const rows = document.querySelectorAll('.pet-row');
+                            let visibleCount = 0;
+
+                            rows.forEach(row => {
+                                let showRow = true;
+
+                                // Apply gender/size/status filter
+                                if (currentFilter !== 'all') {
+                                    if (currentFilter.startsWith('gender-')) {
+                                        const gender = currentFilter.split('-')[1];
+                                        if (row.getAttribute('data-gender') !== gender) {
+                                            showRow = false;
+                                        }
+                                    } else if (currentFilter.startsWith('size-')) {
+                                        const size = currentFilter.split('-')[1];
+                                        if (row.getAttribute('data-size') !== size) {
+                                            showRow = false;
+                                        }
+                                    } else if (currentFilter.startsWith('status-')) {
+                                        const status = currentFilter.split('-')[1];
+                                        if (row.getAttribute('data-status') !== status) {
+                                            showRow = false;
+                                        }
+                                    }
+                                }
+
+                                // Apply age filter
+                                if (showRow && currentAgeFilter !== 'all') {
+                                    const ageAttr = row.getAttribute('data-age');
+                                    if (ageAttr) {
+                                        const age = parseInt(ageAttr);
+                                        switch (currentAgeFilter) {
+                                            case '0-1':
+                                                if (age < 0 || age > 1)
+                                                    showRow = false;
+                                                break;
+                                            case '1-3':
+                                                if (age <= 1 || age > 3)
+                                                    showRow = false;
+                                                break;
+                                            case '3-5':
+                                                if (age <= 3 || age > 5)
+                                                    showRow = false;
+                                                break;
+                                            case '5+':
+                                                if (age <= 5)
+                                                    showRow = false;
+                                                break;
+                                        }
+                                    } else {
+                                        // If pet has no age and filter is not 'all', hide it
+                                        showRow = false;
+                                    }
+                                }
+
+                                // Apply search filter
+                                if (showRow && currentSearchTerm) {
+                                    const petName = row.querySelector('.pet-name').textContent.toLowerCase();
+                                    const species = row.querySelector('.pet-species').textContent.toLowerCase();
+
+                                    if (!petName.includes(currentSearchTerm) && !species.includes(currentSearchTerm)) {
+                                        showRow = false;
+                                    }
+                                }
+
+                                // Show/hide row
+                                if (showRow) {
+                                    row.style.display = '';
+                                    visibleCount++;
+                                } else {
+                                    row.style.display = 'none';
+                                }
+                            });
+
+                            // Update counter display
+                            const totalCount = rows.length;
+                            const filteredCountSpan = document.getElementById('filteredCount');
+
+                            if (currentFilter !== 'all' || currentAgeFilter !== 'all' || currentSearchTerm) {
+                                filteredCountSpan.textContent = `(Filtered: ${visibleCount})`;
+                                filteredCountSpan.classList.remove('hidden');
+                            } else {
+                                filteredCountSpan.classList.add('hidden');
                             }
-                        } else {
-                            // If pet has no age and filter is not 'all', hide it
-                            showRow = false;
-                        }
-                    }
-                    
-                    // Apply search filter
-                    if (showRow && currentSearchTerm) {
-                        const petName = row.querySelector('.pet-name').textContent.toLowerCase();
-                        const species = row.querySelector('.pet-species').textContent.toLowerCase();
-                        
-                        if (!petName.includes(currentSearchTerm) && !species.includes(currentSearchTerm)) {
-                            showRow = false;
-                        }
-                    }
-                    
-                    // Show/hide row
-                    if (showRow) {
-                        row.style.display = '';
-                        visibleCount++;
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
-                
-                // Update counter display
-                const totalCount = rows.length;
-                const filteredCountSpan = document.getElementById('filteredCount');
-                
-                if (currentFilter !== 'all' || currentAgeFilter !== 'all' || currentSearchTerm) {
-                    filteredCountSpan.textContent = `(Filtered: ${visibleCount})`;
-                    filteredCountSpan.classList.remove('hidden');
-                } else {
-                    filteredCountSpan.classList.add('hidden');
-                }
-                
-                // Show message if no pets match filter
-                const noPetsRow = document.querySelector('tbody tr:not(.pet-row)');
-                if (visibleCount === 0 && rows.length > 0) {
-                    if (!noPetsRow) {
-                        const tableBody = document.getElementById('petsTableBody');
-                        const messageRow = document.createElement('tr');
-                        messageRow.innerHTML = `
+
+                            // Show message if no pets match filter
+                            const noPetsRow = document.querySelector('tbody tr:not(.pet-row)');
+                            if (visibleCount === 0 && rows.length > 0) {
+                                if (!noPetsRow) {
+                                    const tableBody = document.getElementById('petsTableBody');
+                                    const messageRow = document.createElement('tr');
+                                    messageRow.innerHTML = `
                             <td colspan="12" class="px-6 py-8 text-center text-gray-500">
                                 <i class="fas fa-filter text-4xl mb-2"></i>
                                 <p class="text-lg">No pets match the current filters.</p>
@@ -772,213 +769,233 @@
                                 </button>
                             </td>
                         `;
-                        tableBody.appendChild(messageRow);
-                    }
-                } else if (noPetsRow) {
-                    noPetsRow.remove();
-                }
-            }
-            
-            function clearAllFilters() {
-                // Reset all filters
-                currentFilter = 'all';
-                currentAgeFilter = 'all';
-                currentSearchTerm = '';
-                
-                // Reset search input
-                document.getElementById('searchInput').value = '';
-                
-                // Reset button styles
-                document.querySelectorAll('.filter-btn').forEach(btn => {
-                    btn.classList.remove('bg-primary', 'text-white', 'shadow-md', 'active-filter',
+                                    tableBody.appendChild(messageRow);
+                                }
+                            } else if (noPetsRow) {
+                                noPetsRow.remove();
+                            }
+                        }
+
+                        function clearAllFilters() {
+                            // Reset all filters
+                            currentFilter = 'all';
+                            currentAgeFilter = 'all';
+                            currentSearchTerm = '';
+
+                            // Reset search input
+                            document.getElementById('searchInput').value = '';
+
+                            // Reset button styles
+                            document.querySelectorAll('.filter-btn').forEach(btn => {
+                                btn.classList.remove('bg-primary', 'text-white', 'shadow-md', 'active-filter',
                                         'chip-male', 'chip-female', 'chip-small', 'chip-medium', 'chip-large',
                                         'chip-available', 'chip-pending', 'chip-adopted');
-                    btn.classList.add('border', 'text-[#2B2B2B]', 'hover:bg-[#F6F3E7]');
-                    
-                    if (btn.getAttribute('data-filter') === 'all') {
-                        btn.classList.remove('border', 'text-[#2B2B2B]', 'hover:bg-[#F6F3E7]');
-                        btn.classList.add('bg-primary', 'text-white', 'shadow-md', 'active-filter');
-                    }
-                });
-                
-                document.querySelectorAll('.age-filter-btn').forEach(btn => {
-                    btn.classList.remove('bg-primary', 'text-white', 'shadow-md', 'active-filter');
-                    btn.classList.add('border-[#2F5D50]', 'text-[#2F5D50]', 'hover:bg-[#F6F3E7]');
-                    
-                    if (btn.getAttribute('data-age') === 'all') {
-                        btn.classList.remove('border-[#2F5D50]', 'text-[#2F5D50]');
-                        btn.classList.add('bg-primary', 'text-white', 'shadow-md', 'active-filter');
-                    }
-                });
-                
-                // Show all pets
-                filterAndDisplayPets();
-            }
-            
-            // =======================================================
-            // MODAL FUNCTIONS
-            // =======================================================
-            
-            // Image preview function
-            function previewImage(event) {
-                const input = event.target;
-                const previewContainer = document.getElementById('imagePreview');
-                const previewImage = document.getElementById('previewImage');
-                
-                if (input.files && input.files[0]) {
-                    const reader = new FileReader();
-                    
-                    reader.onload = function(e) {
-                        previewImage.src = e.target.result;
-                        previewContainer.classList.remove('hidden');
-                    }
-                    
-                    reader.readAsDataURL(input.files[0]);
-                } else {
-                    previewContainer.classList.add('hidden');
-                    previewImage.src = '';
-                }
-            }
-            
-            // Open Create Modal (for adding new pet)
-            function openCreateModal() {
-                document.getElementById('modalTitle').textContent = 'Add New Pet';
-                document.getElementById('formAction').value = 'create';
-                document.getElementById('formPetId').value = '';
-                document.getElementById('formExistingPhotoPath').value = '';
-                document.getElementById('petForm').reset();
-                document.getElementById('imagePreview').classList.add('hidden');
-                document.getElementById('previewImage').src = '';
-                document.getElementById('petPhoto').value = '';
-                document.getElementById('statusAvailable').checked = true;
-                
-                openModal('createModal');
-            }
-            
-            // Open Edit Modal with pet data - UPDATED with adoptionStatus parameter
-            function openEditModal(petId, name, species, breed, age, gender, size, color, healthStatus, description, photoPath, adoptionStatus) {
-                document.getElementById('modalTitle').textContent = 'Edit Pet Details';
-                document.getElementById('formAction').value = 'update';
-                document.getElementById('formPetId').value = petId;
-                document.getElementById('formExistingPhotoPath').value = photoPath || '';
-                document.getElementById('petName').value = name;
-                document.getElementById('species').value = species;
-                document.getElementById('breed').value = breed || '';
-                document.getElementById('age').value = age !== 'null' ? age : '';
-                document.getElementById('gender').value = gender;
-                document.getElementById('size').value = size;
-                document.getElementById('color').value = color || '';
-                document.getElementById('healthStatus').value = healthStatus || '';
-                document.getElementById('description').value = description || '';
-                
-                // Set adoption status radio button
-                if (adoptionStatus === 'available') {
-                    document.getElementById('statusAvailable').checked = true;
-                } else if (adoptionStatus === 'pending') {
-                    document.getElementById('statusPending').checked = true;
-                } else if (adoptionStatus === 'adopted') {
-                    document.getElementById('statusAdopted').checked = true;
-                } else {
-                    document.getElementById('statusAvailable').checked = true;
-                }
-                
-                // Handle existing photo
-                if (photoPath && photoPath !== 'null') {
-                    const previewContainer = document.getElementById('imagePreview');
-                    const previewImage = document.getElementById('previewImage');
-                    previewImage.src = photoPath;
-                    previewContainer.classList.remove('hidden');
-                } else {
-                    document.getElementById('imagePreview').classList.add('hidden');
-                }
-                
-                openModal('createModal');
-            }
-            
-            // Open Delete Modal
-            function openDeleteModal(petId, petName) {
-                document.getElementById('deletePetName').textContent = petName;
-                document.getElementById('deletePetId').value = petId;
-                openModal('deleteModal');
-            }
-            
-            // Generic modal open/close functions
-            function openModal(modalId) {
-                const modal = document.getElementById(modalId);
-                modal.classList.remove('hidden');
-                setTimeout(() => {
-                    modal.classList.remove('opacity-0');
-                    modal.querySelector('div:nth-child(1)').classList.remove('scale-95');
-                }, 10);
-            }
-            
-            function closeModal(modalId) {
-                const modal = document.getElementById(modalId);
-                modal.classList.add('opacity-0');
-                modal.querySelector('div:nth-child(1)').classList.add('scale-95');
-                setTimeout(() => {
-                    modal.classList.add('hidden');
-                    if (modalId === 'createModal') {
-                        document.getElementById('petForm').reset();
-                        document.getElementById('imagePreview').classList.add('hidden');
-                        document.getElementById('previewImage').src = '';
-                    }
-                }, 300);
-            }
-            
-            // =======================================================
-            // INITIALIZATION
-            // =======================================================
-            
-            document.addEventListener('DOMContentLoaded', function() {
-                // File input preview
-                const photoInput = document.getElementById('petPhoto');
-                if (photoInput) {
-                    photoInput.addEventListener('change', previewImage);
-                }
-                
-                // Search functionality
-                const searchInput = document.getElementById('searchInput');
-                if (searchInput) {
-                    // Set current search term from URL parameter
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const searchParam = urlParams.get('search');
-                    if (searchParam) {
-                        searchInput.value = searchParam;
-                        currentSearchTerm = searchParam.toLowerCase();
-                        // Apply filter immediately
-                        filterAndDisplayPets();
-                    }
-                    
-                    // Live search (client-side)
-                    searchInput.addEventListener('input', function(e) {
-                        currentSearchTerm = e.target.value.toLowerCase().trim();
-                        filterAndDisplayPets();
-                    });
-                }
-                
-                // Auto-hide success/error messages after 5 seconds
-                setTimeout(() => {
-                    const messages = document.querySelectorAll('.fixed.top-4');
-                    messages.forEach(msg => {
-                        msg.style.display = 'none';
-                    });
-                }, 5000);
-                
-                // Apply initial filter if URL has filter parameter
-                const urlParams = new URLSearchParams(window.location.search);
-                const urlFilter = urlParams.get('filter');
-                const urlAgeFilter = urlParams.get('ageFilter');
-                
-                if (urlFilter) {
-                    applyFilter(urlFilter);
-                }
-                if (urlAgeFilter) {
-                    applyAgeFilter(urlAgeFilter);
-                }
-            });
+                                btn.classList.add('border', 'text-[#2B2B2B]', 'hover:bg-[#F6F3E7]');
+
+                                if (btn.getAttribute('data-filter') === 'all') {
+                                    btn.classList.remove('border', 'text-[#2B2B2B]', 'hover:bg-[#F6F3E7]');
+                                    btn.classList.add('bg-primary', 'text-white', 'shadow-md', 'active-filter');
+                                }
+                            });
+
+                            document.querySelectorAll('.age-filter-btn').forEach(btn => {
+                                btn.classList.remove('bg-primary', 'text-white', 'shadow-md', 'active-filter');
+                                btn.classList.add('border-[#2F5D50]', 'text-[#2F5D50]', 'hover:bg-[#F6F3E7]');
+
+                                if (btn.getAttribute('data-age') === 'all') {
+                                    btn.classList.remove('border-[#2F5D50]', 'text-[#2F5D50]');
+                                    btn.classList.add('bg-primary', 'text-white', 'shadow-md', 'active-filter');
+                                }
+                            });
+
+                            // Show all pets
+                            filterAndDisplayPets();
+                        }
+
+                        // =======================================================
+                        // MODAL FUNCTIONS
+                        // =======================================================
+
+                        // Image preview function
+                        function previewImage(event) {
+                            const input = event.target;
+                            const previewContainer = document.getElementById('imagePreview');
+                            const previewImage = document.getElementById('previewImage');
+
+                            if (input.files && input.files[0]) {
+                                const reader = new FileReader();
+
+                                reader.onload = function (e) {
+                                    previewImage.src = e.target.result;
+                                    previewContainer.classList.remove('hidden');
+                                }
+
+                                reader.readAsDataURL(input.files[0]);
+                            } else {
+                                previewContainer.classList.add('hidden');
+                                previewImage.src = '';
+                            }
+                        }
+
+                        // Open Create Modal (for adding new pet)
+                        function openCreateModal() {
+                            document.getElementById('modalTitle').textContent = 'Add New Pet';
+                            document.getElementById('formAction').value = 'create';
+                            document.getElementById('formPetId').value = '';
+                            document.getElementById('formExistingPhotoPath').value = '';
+                            document.getElementById('petForm').reset();
+                            document.getElementById('imagePreview').classList.add('hidden');
+                            document.getElementById('previewImage').src = '';
+                            document.getElementById('petPhoto').value = '';
+                            document.getElementById('statusAvailable').checked = true;
+
+                            openModal('createModal');
+                        }
+
+                        // Open Edit Modal - update untuk show/hide remove photo option
+                        function openEditModal(petId, name, species, breed, age, gender, size, color, healthStatus, description, photoPath, adoptionStatus) {
+                            document.getElementById('modalTitle').textContent = 'Edit Pet Details';
+                            document.getElementById('formAction').value = 'update';
+                            document.getElementById('formPetId').value = petId;
+                            document.getElementById('formExistingPhotoPath').value = photoPath || '';
+                            document.getElementById('petName').value = name;
+                            document.getElementById('species').value = species;
+                            document.getElementById('breed').value = breed || '';
+                            document.getElementById('age').value = age !== 'null' ? age : '';
+                            document.getElementById('gender').value = gender;
+                            document.getElementById('size').value = size;
+                            document.getElementById('color').value = color || '';
+                            document.getElementById('healthStatus').value = healthStatus || '';
+                            document.getElementById('description').value = description || '';
+
+                            // Set adoption status
+                            if (adoptionStatus === 'available') {
+                                document.getElementById('statusAvailable').checked = true;
+                            } else if (adoptionStatus === 'adopted') {
+                                document.getElementById('statusAdopted').checked = true;
+                            }
+
+                            // Handle existing photo
+                            const removePhotoContainer = document.getElementById('removePhotoContainer');
+                            if (photoPath && photoPath !== 'null' && !photoPath.includes('default.png')) {
+                                const previewContainer = document.getElementById('imagePreview');
+                                const previewImage = document.getElementById('previewImage');
+                                previewImage.src = photoPath;
+                                previewContainer.classList.remove('hidden');
+
+                                // Show remove photo option
+                                removePhotoContainer.classList.remove('hidden');
+                            } else {
+                                document.getElementById('imagePreview').classList.add('hidden');
+                                // Hide remove photo option if no photo or default photo
+                                removePhotoContainer.classList.add('hidden');
+                            }
+
+                            openModal('createModal');
+                        }
+
+//                      Open Create Modal - hide remove photo option
+                        function openCreateModal() {
+                            document.getElementById('modalTitle').textContent = 'Add New Pet';
+                            document.getElementById('formAction').value = 'create';
+                            document.getElementById('formPetId').value = '';
+                            document.getElementById('formExistingPhotoPath').value = '';
+                            document.getElementById('petForm').reset();
+                            document.getElementById('imagePreview').classList.add('hidden');
+                            document.getElementById('previewImage').src = '';
+                            document.getElementById('petPhoto').value = '';
+                            document.getElementById('statusAvailable').checked = true;
+
+                            // Hide remove photo option for create mode
+                            document.getElementById('removePhotoContainer').classList.add('hidden');
+
+                            openModal('createModal');
+                        }
+
+                        // Open Delete Modal
+                        function openDeleteModal(petId, petName) {
+                            document.getElementById('deletePetName').textContent = petName;
+                            document.getElementById('deletePetId').value = petId;
+                            openModal('deleteModal');
+                        }
+
+                        // Generic modal open/close functions
+                        function openModal(modalId) {
+                            const modal = document.getElementById(modalId);
+                            modal.classList.remove('hidden');
+                            setTimeout(() => {
+                                modal.classList.remove('opacity-0');
+                                modal.querySelector('div:nth-child(1)').classList.remove('scale-95');
+                            }, 10);
+                        }
+
+                        function closeModal(modalId) {
+                            const modal = document.getElementById(modalId);
+                            modal.classList.add('opacity-0');
+                            modal.querySelector('div:nth-child(1)').classList.add('scale-95');
+                            setTimeout(() => {
+                                modal.classList.add('hidden');
+                                if (modalId === 'createModal') {
+                                    document.getElementById('petForm').reset();
+                                    document.getElementById('imagePreview').classList.add('hidden');
+                                    document.getElementById('previewImage').src = '';
+                                }
+                            }, 300);
+                        }
+
+                        // =======================================================
+                        // INITIALIZATION
+                        // =======================================================
+
+                        document.addEventListener('DOMContentLoaded', function () {
+                            // File input preview
+                            const photoInput = document.getElementById('petPhoto');
+                            if (photoInput) {
+                                photoInput.addEventListener('change', previewImage);
+                            }
+
+                            // Search functionality
+                            const searchInput = document.getElementById('searchInput');
+                            if (searchInput) {
+                                // Set current search term from URL parameter
+                                const urlParams = new URLSearchParams(window.location.search);
+                                const searchParam = urlParams.get('search');
+                                if (searchParam) {
+                                    searchInput.value = searchParam;
+                                    currentSearchTerm = searchParam.toLowerCase();
+                                    // Apply filter immediately
+                                    filterAndDisplayPets();
+                                }
+
+                                // Live search (client-side)
+                                searchInput.addEventListener('input', function (e) {
+                                    currentSearchTerm = e.target.value.toLowerCase().trim();
+                                    filterAndDisplayPets();
+                                });
+                            }
+
+                            // Auto-hide success/error messages after 5 seconds
+                            setTimeout(() => {
+                                const messages = document.querySelectorAll('.fixed.top-4');
+                                messages.forEach(msg => {
+                                    msg.style.display = 'none';
+                                });
+                            }, 5000);
+
+                            // Apply initial filter if URL has filter parameter
+                            const urlParams = new URLSearchParams(window.location.search);
+                            const urlFilter = urlParams.get('filter');
+                            const urlAgeFilter = urlParams.get('ageFilter');
+
+                            if (urlFilter) {
+                                applyFilter(urlFilter);
+                            }
+                            if (urlAgeFilter) {
+                                applyAgeFilter(urlAgeFilter);
+                            }
+                        });
         </script>
-        
+
         <!-- Animation for messages -->
         <style>
             @keyframes slideIn {

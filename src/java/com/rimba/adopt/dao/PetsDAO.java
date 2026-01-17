@@ -20,7 +20,7 @@ public class PetsDAO {
         try {
             conn = DatabaseConnection.getConnection();
             System.out.println("DEBUG: Creating pet for shelter ID: " + pet.getShelterId());
-            
+
             pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 
             pstmt.setInt(1, pet.getShelterId());
@@ -75,14 +75,20 @@ public class PetsDAO {
             // Adoption status - NEW, default to 'available' if not set
             String adoptionStatus = pet.getAdoptionStatus();
             if (adoptionStatus != null && !adoptionStatus.isEmpty()) {
-                pstmt.setString(12, adoptionStatus);
+                // Validasi status yang dibenarkan
+                if (adoptionStatus.equals("available") || adoptionStatus.equals("adopted")) {
+                    pstmt.setString(12, adoptionStatus);
+                } else {
+                    // Jika status tidak sah, set ke 'available' secara default
+                    pstmt.setString(12, "available");
+                }
             } else {
                 pstmt.setString(12, "available");
             }
 
             System.out.println("DEBUG: Executing SQL: " + sql);
-            System.out.println("DEBUG: Pet data - Name: " + pet.getName() + ", Species: " + pet.getSpecies() + 
-                             ", Gender: " + pet.getGender() + ", Status: " + adoptionStatus);
+            System.out.println("DEBUG: Pet data - Name: " + pet.getName() + ", Species: " + pet.getSpecies()
+                    + ", Gender: " + pet.getGender() + ", Status: " + adoptionStatus);
 
             int affectedRows = pstmt.executeUpdate();
             System.out.println("DEBUG: Affected rows: " + affectedRows);
@@ -105,13 +111,15 @@ public class PetsDAO {
             e.printStackTrace();
             throw e;
         } finally {
-            if (rs != null) rs.close();
-            if (pstmt != null) pstmt.close();
+            if (rs != null) {
+                rs.close();
+            }
+            if (pstmt != null) {
+                pstmt.close();
+            }
             DatabaseConnection.closeConnection(conn);
         }
     }
-    
-    
 
     // Get all pets for a specific shelter
     public List<Pets> getPetsByShelter(int shelterId) throws SQLException {
@@ -125,7 +133,7 @@ public class PetsDAO {
         try {
             conn = DatabaseConnection.getConnection();
             System.out.println("DEBUG: Getting pets for shelter ID: " + shelterId);
-            
+
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, shelterId);
             rs = pstmt.executeQuery();
@@ -135,9 +143,9 @@ public class PetsDAO {
                 count++;
                 Pets pet = resultSetToPet(rs);
                 pets.add(pet);
-                System.out.println("DEBUG: Found pet #" + count + " - ID: " + pet.getPetId() + 
-                                 ", Name: " + pet.getName() + 
-                                 ", Status: " + pet.getAdoptionStatus());
+                System.out.println("DEBUG: Found pet #" + count + " - ID: " + pet.getPetId()
+                        + ", Name: " + pet.getName()
+                        + ", Status: " + pet.getAdoptionStatus());
             }
 
             System.out.println("DEBUG: Total pets found: " + pets.size());
@@ -148,8 +156,12 @@ public class PetsDAO {
             e.printStackTrace();
             throw e;
         } finally {
-            if (rs != null) rs.close();
-            if (pstmt != null) pstmt.close();
+            if (rs != null) {
+                rs.close();
+            }
+            if (pstmt != null) {
+                pstmt.close();
+            }
             DatabaseConnection.closeConnection(conn);
         }
     }
@@ -177,8 +189,12 @@ public class PetsDAO {
             return pets;
 
         } finally {
-            if (rs != null) rs.close();
-            if (pstmt != null) pstmt.close();
+            if (rs != null) {
+                rs.close();
+            }
+            if (pstmt != null) {
+                pstmt.close();
+            }
             DatabaseConnection.closeConnection(conn);
         }
     }
@@ -207,8 +223,12 @@ public class PetsDAO {
             return pets;
 
         } finally {
-            if (rs != null) rs.close();
-            if (pstmt != null) pstmt.close();
+            if (rs != null) {
+                rs.close();
+            }
+            if (pstmt != null) {
+                pstmt.close();
+            }
             DatabaseConnection.closeConnection(conn);
         }
     }
@@ -234,8 +254,12 @@ public class PetsDAO {
             return null;
 
         } finally {
-            if (rs != null) rs.close();
-            if (pstmt != null) pstmt.close();
+            if (rs != null) {
+                rs.close();
+            }
+            if (pstmt != null) {
+                pstmt.close();
+            }
             DatabaseConnection.closeConnection(conn);
         }
     }
@@ -251,7 +275,7 @@ public class PetsDAO {
         try {
             conn = DatabaseConnection.getConnection();
             System.out.println("DEBUG: Getting pet by ID: " + petId + " for shelter: " + shelterId);
-            
+
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, petId);
             pstmt.setInt(2, shelterId);
@@ -262,7 +286,7 @@ public class PetsDAO {
                 System.out.println("DEBUG: Found pet - ID: " + petId + ", Name: " + pet.getName());
                 return pet;
             }
-            
+
             System.out.println("DEBUG: No pet found with ID: " + petId + " for shelter: " + shelterId);
             return null;
 
@@ -271,8 +295,12 @@ public class PetsDAO {
             e.printStackTrace();
             throw e;
         } finally {
-            if (rs != null) rs.close();
-            if (pstmt != null) pstmt.close();
+            if (rs != null) {
+                rs.close();
+            }
+            if (pstmt != null) {
+                pstmt.close();
+            }
             DatabaseConnection.closeConnection(conn);
         }
     }
@@ -289,7 +317,7 @@ public class PetsDAO {
         try {
             conn = DatabaseConnection.getConnection();
             System.out.println("DEBUG: Updating pet ID: " + pet.getPetId() + " for shelter: " + pet.getShelterId());
-            
+
             pstmt = conn.prepareStatement(sql);
 
             pstmt.setString(1, pet.getName());
@@ -343,7 +371,13 @@ public class PetsDAO {
             // Adoption status - NEW
             String adoptionStatus = pet.getAdoptionStatus();
             if (adoptionStatus != null && !adoptionStatus.isEmpty()) {
-                pstmt.setString(11, adoptionStatus);
+                // Validasi status yang dibenarkan
+                if (adoptionStatus.equals("available") || adoptionStatus.equals("adopted")) {
+                    pstmt.setString(11, adoptionStatus);
+                } else {
+                    // Jika status tidak sah, set ke 'available'
+                    pstmt.setString(11, "available");
+                }
             } else {
                 pstmt.setString(11, "available");
             }
@@ -354,7 +388,7 @@ public class PetsDAO {
             System.out.println("DEBUG: Executing update SQL");
             int affectedRows = pstmt.executeUpdate();
             System.out.println("DEBUG: Update affected rows: " + affectedRows);
-            
+
             return affectedRows > 0;
 
         } catch (SQLException e) {
@@ -362,13 +396,22 @@ public class PetsDAO {
             e.printStackTrace();
             throw e;
         } finally {
-            if (pstmt != null) pstmt.close();
+            if (pstmt != null) {
+                pstmt.close();
+            }
             DatabaseConnection.closeConnection(conn);
         }
     }
 
-    // Update only adoption status (NEW)
+// Update only adoption status (NEW) - VERSI STRICT
     public boolean updateAdoptionStatus(int petId, int shelterId, String adoptionStatus) throws SQLException {
+        // Validasi status - hanya terima 'available' atau 'adopted'
+        if (adoptionStatus == null
+                || (!adoptionStatus.equals("available") && !adoptionStatus.equals("adopted"))) {
+            throw new IllegalArgumentException("Invalid adoption status: '" + adoptionStatus
+                    + "'. Only 'available' or 'adopted' are allowed.");
+        }
+
         String sql = "UPDATE pets SET adoption_status = ? WHERE pet_id = ? AND shelter_id = ?";
 
         Connection conn = null;
@@ -376,11 +419,10 @@ public class PetsDAO {
 
         try {
             conn = DatabaseConnection.getConnection();
-            System.out.println("DEBUG: Updating adoption status for pet ID: " + petId + 
-                             " to: " + adoptionStatus + " for shelter: " + shelterId);
-            
-            pstmt = conn.prepareStatement(sql);
+            System.out.println("DEBUG: Updating adoption status for pet ID: " + petId
+                    + " to: " + adoptionStatus + " for shelter: " + shelterId);
 
+            pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, adoptionStatus);
             pstmt.setInt(2, petId);
             pstmt.setInt(3, shelterId);
@@ -394,7 +436,9 @@ public class PetsDAO {
             e.printStackTrace();
             throw e;
         } finally {
-            if (pstmt != null) pstmt.close();
+            if (pstmt != null) {
+                pstmt.close();
+            }
             DatabaseConnection.closeConnection(conn);
         }
     }
@@ -409,7 +453,7 @@ public class PetsDAO {
         try {
             conn = DatabaseConnection.getConnection();
             System.out.println("DEBUG: Deleting pet ID: " + petId + " for shelter: " + shelterId);
-            
+
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, petId);
             pstmt.setInt(2, shelterId);
@@ -423,7 +467,9 @@ public class PetsDAO {
             e.printStackTrace();
             throw e;
         } finally {
-            if (pstmt != null) pstmt.close();
+            if (pstmt != null) {
+                pstmt.close();
+            }
             DatabaseConnection.closeConnection(conn);
         }
     }
@@ -449,8 +495,12 @@ public class PetsDAO {
             return 0;
 
         } finally {
-            if (rs != null) rs.close();
-            if (pstmt != null) pstmt.close();
+            if (rs != null) {
+                rs.close();
+            }
+            if (pstmt != null) {
+                pstmt.close();
+            }
             DatabaseConnection.closeConnection(conn);
         }
     }
@@ -477,8 +527,12 @@ public class PetsDAO {
             return 0;
 
         } finally {
-            if (rs != null) rs.close();
-            if (pstmt != null) pstmt.close();
+            if (rs != null) {
+                rs.close();
+            }
+            if (pstmt != null) {
+                pstmt.close();
+            }
             DatabaseConnection.closeConnection(conn);
         }
     }
@@ -508,8 +562,12 @@ public class PetsDAO {
             return pets;
 
         } finally {
-            if (rs != null) rs.close();
-            if (pstmt != null) pstmt.close();
+            if (rs != null) {
+                rs.close();
+            }
+            if (pstmt != null) {
+                pstmt.close();
+            }
             DatabaseConnection.closeConnection(conn);
         }
     }
@@ -540,8 +598,12 @@ public class PetsDAO {
             return pets;
 
         } finally {
-            if (rs != null) rs.close();
-            if (pstmt != null) pstmt.close();
+            if (rs != null) {
+                rs.close();
+            }
+            if (pstmt != null) {
+                pstmt.close();
+            }
             DatabaseConnection.closeConnection(conn);
         }
     }
@@ -568,47 +630,25 @@ public class PetsDAO {
             return pets;
 
         } finally {
-            if (rs != null) rs.close();
-            if (pstmt != null) pstmt.close();
+            if (rs != null) {
+                rs.close();
+            }
+            if (pstmt != null) {
+                pstmt.close();
+            }
             DatabaseConnection.closeConnection(conn);
         }
     }
 // ========== METHODS FOR DASHBOARD SHELTER ==========
 
-// Count pets by shelter - NEW METHOD
-public int countPetsByShelter(int shelterId) throws SQLException {
-    String query = "SELECT COUNT(*) FROM pets WHERE shelter_id = ? AND status = 'available'";
-    
-    Connection conn = null;
-    PreparedStatement pstmt = null;
-    ResultSet rs = null;
-    
-    try {
-        conn = DatabaseConnection.getConnection();
-        pstmt = conn.prepareStatement(query);
-        pstmt.setInt(1, shelterId);
-        
-        rs = pstmt.executeQuery();
-        
-        if (rs.next()) {
-            return rs.getInt(1);
-        }
-        
-        return 0;
-        
-    } finally {
-        if (rs != null) try { rs.close(); } catch (SQLException e) {}
-        if (pstmt != null) try { pstmt.close(); } catch (SQLException e) {}
-        DatabaseConnection.closeConnection(conn);
-    }
-}
+// GANTI method countPetsByShelter() dengan ini:
     // Get all available pets (for public adoption listing)
     public List<Pets> getAllAvailablePets() throws SQLException {
         List<Pets> pets = new ArrayList<Pets>();
         String sql = "SELECT p.*, s.shelter_name FROM pets p "
-                   + "JOIN shelter s ON p.shelter_id = s.shelter_id "
-                   + "WHERE p.adoption_status = 'available' AND s.approval_status = 'approved' "
-                   + "ORDER BY p.created_at DESC";
+                + "JOIN shelter s ON p.shelter_id = s.shelter_id "
+                + "WHERE p.adoption_status = 'available' AND s.approval_status = 'approved' "
+                + "ORDER BY p.created_at DESC";
 
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -627,8 +667,12 @@ public int countPetsByShelter(int shelterId) throws SQLException {
             return pets;
 
         } finally {
-            if (rs != null) rs.close();
-            if (pstmt != null) pstmt.close();
+            if (rs != null) {
+                rs.close();
+            }
+            if (pstmt != null) {
+                pstmt.close();
+            }
             DatabaseConnection.closeConnection(conn);
         }
     }
@@ -636,7 +680,7 @@ public int countPetsByShelter(int shelterId) throws SQLException {
     // Helper method to convert ResultSet to Pets object
     private Pets resultSetToPet(ResultSet rs) throws SQLException {
         Pets pet = new Pets();
-        
+
         try {
             pet.setPetId(rs.getInt("pet_id"));
             pet.setShelterId(rs.getInt("shelter_id"));
@@ -653,7 +697,7 @@ public int countPetsByShelter(int shelterId) throws SQLException {
             pet.setDescription(rs.getString("description"));
             pet.setHealthStatus(rs.getString("health_status"));
             pet.setPhotoPath(rs.getString("photo_path"));
-            
+
             // Handle adoption_status - might be NULL
             String adoptionStatus = rs.getString("adoption_status");
             if (adoptionStatus != null && !adoptionStatus.isEmpty()) {
@@ -661,7 +705,7 @@ public int countPetsByShelter(int shelterId) throws SQLException {
             } else {
                 pet.setAdoptionStatus("available"); // Default value
             }
-            
+
             pet.setCreatedAt(rs.getTimestamp("created_at"));
 
             // Try to get shelter_name if exists (for getAllAvailablePets)
@@ -694,6 +738,34 @@ public int countPetsByShelter(int shelterId) throws SQLException {
         return pet;
     }
 
- 
-}
+    // Get pet photo path by ID
+    public String getPetPhotoPath(int petId, int shelterId) throws SQLException {
+        String sql = "SELECT photo_path FROM pets WHERE pet_id = ? AND shelter_id = ?";
 
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DatabaseConnection.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, petId);
+            pstmt.setInt(2, shelterId);
+
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("photo_path");
+            }
+            return null;
+
+        } finally {
+            if (rs != null) {
+                rs.close();
+            }
+            if (pstmt != null) {
+                pstmt.close();
+            }
+            DatabaseConnection.closeConnection(conn);
+        }
+    }
+}

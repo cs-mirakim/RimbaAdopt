@@ -2,6 +2,8 @@ package com.rimba.adopt.controller;
 
 import com.rimba.adopt.dao.AdoptionRequestDAO;
 import com.rimba.adopt.dao.AdoptionRecordDAO;
+import com.rimba.adopt.dao.FeedbackDAO;
+import com.rimba.adopt.dao.PetsDAO;
 import com.rimba.adopt.model.AdoptionRecord;
 import com.rimba.adopt.util.DatabaseConnection;
 import com.rimba.adopt.util.SessionUtil;
@@ -46,54 +48,32 @@ public class ManageAdoptionRequestServlet extends HttpServlet {
 
         try {
             conn = DatabaseConnection.getConnection();
+            int shelterId = getShelterIdFromUserId(conn, userId); // Anda sudah ada method ini
 
-            if ("view".equals(action)) {
-                String requestIdStr = request.getParameter("id");
-                if (requestIdStr != null) {
-                    // Get request details AND set the full list
-                    int shelterId = getShelterIdFromUserId(conn, userId);
-                    AdoptionRequestDAO requestDAO = new AdoptionRequestDAO();
+            // ========== NEW: ADD DASHBOARD ACTION ==========
+            // GANTI bahagian ini dalam doGet():
+            if ("dashboard".equals(action)) {
+                // Get all dashboard data
+                DashboardData dashboardData = getDashboardData(conn, shelterId);
 
-                    // MUST load full list also
-                    List<Map<String, Object>> requests = requestDAO.getRequestsWithDetails(shelterId, "all", "");
-                    request.setAttribute("requests", requests);
-                    request.setAttribute("filter", "all");
+                // Set all attributes for JSP
+                request.setAttribute("totalPets", dashboardData.getTotalPets());
+                request.setAttribute("pendingRequests", dashboardData.getPendingRequests());
+                request.setAttribute("approvedRequests", dashboardData.getApprovedRequests());
+                request.setAttribute("rejectedRequests", dashboardData.getRejectedRequests());
+                request.setAttribute("cancelledRequests", dashboardData.getCancelledRequests());
+                request.setAttribute("averageRating", dashboardData.getAverageRating());
+                request.setAttribute("monthlyStats", dashboardData.getMonthlyStats());
+                request.setAttribute("monthlyFeedbackStats", dashboardData.getMonthlyFeedbackStats());
 
-                    // Forward instead of redirect
-                    request.getRequestDispatcher("manage_request.jsp").forward(request, response);
-                    return;  // IMPORTANT
-                }
-            } else {
-                // List all requests for the shelter
-                String filter = request.getParameter("filter");
-                String search = request.getParameter("search");
-
-                if (filter == null) {
-                    filter = "all";
-                }
-                if (search == null) {
-                    search = "";
-                }
-
-                // Get shelterId from users table
-                int shelterId = getShelterIdFromUserId(conn, userId);
-
-                // Get requests
-                AdoptionRequestDAO requestDAO = new AdoptionRequestDAO();
-                List<Map<String, Object>> requests = requestDAO.getRequestsWithDetails(shelterId, filter, search);
-
-                // Get pending count
-                int pendingCount = requestDAO.countPendingRequests(shelterId);
-
-                // Set attributes for JSP
-                request.setAttribute("requests", requests);
-                request.setAttribute("filter", filter);
-                request.setAttribute("search", search);
-                request.setAttribute("pendingCount", pendingCount);
-                request.setAttribute("shelterId", shelterId);
-
-                // Forward to JSP
-                request.getRequestDispatcher("manage_request.jsp").forward(request, response);
+                // Forward to dashboard JSP
+                request.getRequestDispatcher("dashboard_shelter.jsp").forward(request, response);
+                return;
+            } // TAMBAH ELSE untuk handle bila tiada action atau action lain
+            else {
+                // Default: redirect ke dashboard
+                response.sendRedirect("ManageAdoptionRequest?action=dashboard");
+                return;
             }
 
         } catch (SQLException | NumberFormatException e) {
@@ -216,5 +196,120 @@ public class ManageAdoptionRequestServlet extends HttpServlet {
         }
 
         throw new SQLException("User is not a shelter or shelter not found");
+    }
+
+    // ========== NEW METHOD FOR DASHBOARD DATA ==========
+    private DashboardData getDashboardData(Connection conn, int shelterId) throws SQLException {
+        DashboardData data = new DashboardData();
+
+        try {
+            // Initialize DAOs
+            PetsDAO petsDAO = new PetsDAO();
+            AdoptionRequestDAO requestDAO = new AdoptionRequestDAO();
+            FeedbackDAO feedbackDAO = new FeedbackDAO();
+
+            // 1. Get total pets count
+            data.setTotalPets(petsDAO.getPetCountByShelter(shelterId));
+
+            // 2. Get adoption request counts by status
+            Map<String, Integer> requestCounts = requestDAO.countRequestsByStatus(shelterId);
+            data.setPendingRequests(requestCounts.getOrDefault("pending", 0));
+            data.setApprovedRequests(requestCounts.getOrDefault("approved", 0));
+            data.setRejectedRequests(requestCounts.getOrDefault("rejected", 0));
+            data.setCancelledRequests(requestCounts.getOrDefault("cancelled", 0));
+
+            // 3. Get average rating
+            data.setAverageRating(feedbackDAO.getAverageRatingByShelterId(shelterId));
+
+            // 4. Get monthly request statistics
+            data.setMonthlyStats(requestDAO.getMonthlyRequestStats(shelterId));
+
+            // 5. Get monthly feedback statistics
+            data.setMonthlyFeedbackStats(feedbackDAO.getMonthlyFeedbackStats(shelterId));
+
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Error getting dashboard data", e);
+            throw e;
+        }
+
+        return data;
+    }
+
+// ========== NEW INNER CLASS FOR DASHBOARD DATA ==========
+    private static class DashboardData {
+
+        private Integer totalPets;
+        private Integer pendingRequests;
+        private Integer approvedRequests;
+        private Integer rejectedRequests;
+        private Integer cancelledRequests;
+        private Double averageRating;
+        private Map<String, Object> monthlyStats;
+        private Map<String, Object> monthlyFeedbackStats;
+
+        // Getters and Setters
+        public Integer getTotalPets() {
+            return totalPets;
+        }
+
+        public void setTotalPets(Integer totalPets) {
+            this.totalPets = totalPets;
+        }
+
+        public Integer getPendingRequests() {
+            return pendingRequests;
+        }
+
+        public void setPendingRequests(Integer pendingRequests) {
+            this.pendingRequests = pendingRequests;
+        }
+
+        public Integer getApprovedRequests() {
+            return approvedRequests;
+        }
+
+        public void setApprovedRequests(Integer approvedRequests) {
+            this.approvedRequests = approvedRequests;
+        }
+
+        public Integer getRejectedRequests() {
+            return rejectedRequests;
+        }
+
+        public void setRejectedRequests(Integer rejectedRequests) {
+            this.rejectedRequests = rejectedRequests;
+        }
+
+        public Integer getCancelledRequests() {
+            return cancelledRequests;
+        }
+
+        public void setCancelledRequests(Integer cancelledRequests) {
+            this.cancelledRequests = cancelledRequests;
+        }
+
+        public Double getAverageRating() {
+            return averageRating;
+        }
+
+        public void setAverageRating(Double averageRating) {
+            this.averageRating = averageRating;
+        }
+
+        public Map<String, Object> getMonthlyStats() {
+            return monthlyStats;
+        }
+
+        public void setMonthlyStats(Map<String, Object> monthlyStats) {
+            this.monthlyStats = monthlyStats;
+        }
+
+        public Map<String, Object> getMonthlyFeedbackStats() {
+            return monthlyFeedbackStats;
+        }
+
+        public void setMonthlyFeedbackStats(Map<String, Object> monthlyFeedbackStats) {
+            this.monthlyFeedbackStats = monthlyFeedbackStats;
+        }
     }
 }
