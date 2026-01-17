@@ -195,6 +195,32 @@ public class RegistrationServlet extends HttpServlet {
             throws ServletException, IOException {
 
         request.setCharacterEncoding("UTF-8");
+        response.setContentType("application/json; charset=UTF-8");
+
+        String action = request.getParameter("action");
+
+        // ========== HANDLE APPROVE/REJECT ACTIONS ==========
+        if ("approve".equals(action)) {
+            handleApprove(request, response);
+            return;
+        }
+
+        if ("reject".equals(action)) {
+            handleReject(request, response);
+            return;
+        }
+
+        if ("bulkApprove".equals(action)) {
+            handleBulkApprove(request, response);
+            return;
+        }
+
+        if ("bulkReject".equals(action)) {
+            handleBulkReject(request, response);
+            return;
+        }
+
+        // ========== EXISTING REGISTRATION CODE (keep as is) ==========
         response.setContentType("text/html; charset=UTF-8");
 
         Connection conn = null;
@@ -392,10 +418,412 @@ public class RegistrationServlet extends HttpServlet {
         }
     }
 
+    // ========== HANDLE SINGLE APPROVE ==========
+    private void handleApprove(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        String shelterIdStr = request.getParameter("shelterId");
+        String reason = request.getParameter("reason");
+
+        if (shelterIdStr == null || shelterIdStr.isEmpty()) {
+            response.getWriter().write("{\"success\":false,\"error\":\"Missing shelterId\"}");
+            return;
+        }
+
+        Connection conn = null;
+        try {
+            int shelterId = Integer.parseInt(shelterIdStr);
+
+            conn = DatabaseConnection.getConnection();
+
+            // Get admin ID from session
+            HttpSession session = request.getSession(false);
+            if (session == null || session.getAttribute("userId") == null) {
+                response.getWriter().write("{\"success\":false,\"error\":\"Not logged in\"}");
+                return;
+            }
+
+            int adminId = (Integer) session.getAttribute("userId");
+
+            UsersDao usersDao = new UsersDao(conn);
+            boolean success = usersDao.approveShelter(shelterId, adminId, reason);
+
+            if (success) {
+                response.getWriter().write("{\"success\":true,\"message\":\"Shelter approved successfully\"}");
+            } else {
+                response.getWriter().write("{\"success\":false,\"error\":\"Failed to approve shelter\"}");
+            }
+
+        } catch (NumberFormatException e) {
+            logger.log(Level.SEVERE, "Invalid shelterId format", e);
+            response.getWriter().write("{\"success\":false,\"error\":\"Invalid shelter ID\"}");
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Database error during approval", e);
+            response.getWriter().write("{\"success\":false,\"error\":\"Database error: " + e.getMessage() + "\"}");
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.close();
+                } catch (SQLException e) {
+                    logger.log(Level.WARNING, "Failed to close connection", e);
+                }
+            }
+        }
+    }
+
+// ========== HANDLE SINGLE REJECT ==========
+    private void handleReject(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        String shelterIdStr = request.getParameter("shelterId");
+        String reason = request.getParameter("reason");
+
+        if (shelterIdStr == null || shelterIdStr.isEmpty()) {
+            response.getWriter().write("{\"success\":false,\"error\":\"Missing shelterId\"}");
+            return;
+        }
+
+        if (reason == null || reason.trim().isEmpty()) {
+            response.getWriter().write("{\"success\":false,\"error\":\"Rejection reason is required\"}");
+            return;
+        }
+
+        Connection conn = null;
+        try {
+            int shelterId = Integer.parseInt(shelterIdStr);
+
+            conn = DatabaseConnection.getConnection();
+
+            // Get admin ID from session
+            HttpSession session = request.getSession(false);
+            if (session == null || session.getAttribute("userId") == null) {
+                response.getWriter().write("{\"success\":false,\"error\":\"Not logged in\"}");
+                return;
+            }
+
+            int adminId = (Integer) session.getAttribute("userId");
+
+            UsersDao usersDao = new UsersDao(conn);
+            boolean success = usersDao.rejectShelter(shelterId, adminId, reason);
+
+            if (success) {
+                response.getWriter().write("{\"success\":true,\"message\":\"Shelter rejected successfully\"}");
+            } else {
+                response.getWriter().write("{\"success\":false,\"error\":\"Failed to reject shelter\"}");
+            }
+
+        } catch (NumberFormatException e) {
+            logger.log(Level.SEVERE, "Invalid shelterId format", e);
+            response.getWriter().write("{\"success\":false,\"error\":\"Invalid shelter ID\"}");
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Database error during rejection", e);
+            response.getWriter().write("{\"success\":false,\"error\":\"Database error: " + e.getMessage() + "\"}");
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.close();
+                } catch (SQLException e) {
+                    logger.log(Level.WARNING, "Failed to close connection", e);
+                }
+            }
+        }
+    }
+
+// ========== HANDLE BULK APPROVE ==========
+    private void handleBulkApprove(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        String[] shelterIds = request.getParameterValues("shelterIds[]");
+        String reason = request.getParameter("reason");
+
+        if (shelterIds == null || shelterIds.length == 0) {
+            response.getWriter().write("{\"success\":false,\"error\":\"No shelters selected\"}");
+            return;
+        }
+
+        Connection conn = null;
+        try {
+            conn = DatabaseConnection.getConnection();
+            conn.setAutoCommit(false);
+
+            // Get admin ID from session
+            HttpSession session = request.getSession(false);
+            if (session == null || session.getAttribute("userId") == null) {
+                response.getWriter().write("{\"success\":false,\"error\":\"Not logged in\"}");
+                return;
+            }
+
+            int adminId = (Integer) session.getAttribute("userId");
+
+            UsersDao usersDao = new UsersDao(conn);
+            int successCount = 0;
+
+            for (String shelterIdStr : shelterIds) {
+                try {
+                    int shelterId = Integer.parseInt(shelterIdStr);
+                    if (usersDao.approveShelter(shelterId, adminId, reason)) {
+                        successCount++;
+                    }
+                } catch (NumberFormatException e) {
+                    logger.log(Level.WARNING, "Invalid shelterId in bulk approve: " + shelterIdStr, e);
+                }
+            }
+
+            conn.commit();
+
+            response.getWriter().write("{\"success\":true,\"count\":" + successCount + "}");
+
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Database error during bulk approval", e);
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ex) {
+                    logger.log(Level.SEVERE, "Error during rollback", ex);
+                }
+            }
+            response.getWriter().write("{\"success\":false,\"error\":\"Database error: " + e.getMessage() + "\"}");
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException e) {
+                    logger.log(Level.WARNING, "Failed to close connection", e);
+                }
+            }
+        }
+    }
+
+// ========== HANDLE BULK REJECT ==========
+    private void handleBulkReject(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        String[] shelterIds = request.getParameterValues("shelterIds[]");
+        String reason = request.getParameter("reason");
+
+        if (shelterIds == null || shelterIds.length == 0) {
+            response.getWriter().write("{\"success\":false,\"error\":\"No shelters selected\"}");
+            return;
+        }
+
+        if (reason == null || reason.trim().isEmpty()) {
+            response.getWriter().write("{\"success\":false,\"error\":\"Rejection reason is required\"}");
+            return;
+        }
+
+        Connection conn = null;
+        try {
+            conn = DatabaseConnection.getConnection();
+            conn.setAutoCommit(false);
+
+            // Get admin ID from session
+            HttpSession session = request.getSession(false);
+            if (session == null || session.getAttribute("userId") == null) {
+                response.getWriter().write("{\"success\":false,\"error\":\"Not logged in\"}");
+                return;
+            }
+
+            int adminId = (Integer) session.getAttribute("userId");
+
+            UsersDao usersDao = new UsersDao(conn);
+            int successCount = 0;
+
+            for (String shelterIdStr : shelterIds) {
+                try {
+                    int shelterId = Integer.parseInt(shelterIdStr);
+                    if (usersDao.rejectShelter(shelterId, adminId, reason)) {
+                        successCount++;
+                    }
+                } catch (NumberFormatException e) {
+                    logger.log(Level.WARNING, "Invalid shelterId in bulk reject: " + shelterIdStr, e);
+                }
+            }
+
+            conn.commit();
+
+            response.getWriter().write("{\"success\":true,\"count\":" + successCount + "}");
+
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Database error during bulk rejection", e);
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ex) {
+                    logger.log(Level.SEVERE, "Error during rollback", ex);
+                }
+            }
+            response.getWriter().write("{\"success\":false,\"error\":\"Database error: " + e.getMessage() + "\"}");
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException e) {
+                    logger.log(Level.WARNING, "Failed to close connection", e);
+                }
+            }
+        }
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // Redirect to register page jika accessed via GET
+
+        String action = request.getParameter("action");
+
+        // Handle API requests untuk review_registrations.jsp
+        if ("getRegistrations".equals(action)) {
+            handleGetRegistrations(request, response);
+            return;
+        }
+
+        if ("getStatistics".equals(action)) {
+            handleGetStatistics(request, response);
+            return;
+        }
+
+        // Default: redirect to register page
         response.sendRedirect("register.jsp");
+    }
+
+    // ========== HANDLE GET REGISTRATIONS FOR FRONTEND ==========
+    private void handleGetRegistrations(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        Connection conn = null;
+        try {
+            conn = DatabaseConnection.getConnection();
+            UsersDao usersDao = new UsersDao(conn);
+
+            // Get all registrations
+            java.util.List<java.util.Map<String, Object>> registrations = usersDao.getAllRegistrationsForReview();
+
+            // Convert to JSON manually (simple approach)
+            StringBuilder json = new StringBuilder("[");
+
+            for (int i = 0; i < registrations.size(); i++) {
+                java.util.Map<String, Object> reg = registrations.get(i);
+
+                if (i > 0) {
+                    json.append(",");
+                }
+
+                json.append("{");
+                json.append("\"id\":\"").append(escapeJson(String.valueOf(reg.get("id")))).append("\",");
+                json.append("\"userId\":").append(reg.get("userId")).append(",");
+                json.append("\"name\":\"").append(escapeJson(String.valueOf(reg.get("name")))).append("\",");
+                json.append("\"email\":\"").append(escapeJson(String.valueOf(reg.get("email")))).append("\",");
+                json.append("\"type\":\"").append(escapeJson(String.valueOf(reg.get("type")))).append("\",");
+                json.append("\"date\":\"").append(escapeJson(String.valueOf(reg.get("date")))).append("\",");
+                json.append("\"status\":\"").append(escapeJson(String.valueOf(reg.get("status")))).append("\",");
+
+                // Details object
+                json.append("\"details\":{");
+                json.append("\"contactPerson\":\"").append(escapeJson(String.valueOf(reg.get("name")))).append("\",");
+                json.append("\"phone\":\"").append(escapeJson(String.valueOf(reg.getOrDefault("phone", "")))).append("\",");
+                json.append("\"address\":\"").append(escapeJson(String.valueOf(reg.getOrDefault("address", "")))).append("\",");
+                json.append("\"description\":\"").append(escapeJson(String.valueOf(reg.getOrDefault("description", "")))).append("\",");
+                json.append("\"occupation\":\"").append(escapeJson(String.valueOf(reg.getOrDefault("occupation", "")))).append("\",");
+                json.append("\"homeType\":\"").append(escapeJson(String.valueOf(reg.getOrDefault("householdType", "")))).append("\",");
+                json.append("\"reason\":\"Looking to adopt a pet\"");
+                json.append("},");
+
+                // Approval/Rejection info
+                String rejectionReason = String.valueOf(reg.getOrDefault("rejectionReason", ""));
+                String approvalReason = String.valueOf(reg.getOrDefault("approvalMessage", ""));
+
+                json.append("\"rejectionReason\":\"").append(escapeJson(rejectionReason.equals("null") ? "" : rejectionReason)).append("\",");
+                json.append("\"approvalReason\":\"").append(escapeJson(approvalReason.equals("null") ? "" : approvalReason)).append("\"");
+
+                json.append("}");
+            }
+
+            json.append("]");
+
+            response.getWriter().write(json.toString());
+
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Error fetching registrations", e);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write("{\"error\":\"Failed to load registrations\"}");
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.close();
+                } catch (SQLException e) {
+                    logger.log(Level.WARNING, "Failed to close connection", e);
+                }
+            }
+        }
+    }
+
+// ========== HANDLE GET STATISTICS FOR FRONTEND ==========
+    private void handleGetStatistics(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        Connection conn = null;
+        try {
+            conn = DatabaseConnection.getConnection();
+            UsersDao usersDao = new UsersDao(conn);
+
+            // Get statistics
+            java.util.Map<String, Object> stats = usersDao.getApprovalStatistics();
+
+            // Convert to JSON manually
+            StringBuilder json = new StringBuilder("{");
+            json.append("\"pendingCount\":").append(stats.getOrDefault("pendingCount", 0)).append(",");
+            json.append("\"approvedToday\":").append(stats.getOrDefault("approvedToday", 0)).append(",");
+            json.append("\"rejectedToday\":").append(stats.getOrDefault("rejectedToday", 0)).append(",");
+            json.append("\"totalApproved\":").append(stats.getOrDefault("totalApproved", 0)).append(",");
+            json.append("\"totalRejected\":").append(stats.getOrDefault("totalRejected", 0)).append(",");
+            json.append("\"rejectionRate\":").append(stats.getOrDefault("rejectionRate", 0));
+            json.append("}");
+
+            response.getWriter().write(json.toString());
+
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Error fetching statistics", e);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write("{\"error\":\"Failed to load statistics\"}");
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.close();
+                } catch (SQLException e) {
+                    logger.log(Level.WARNING, "Failed to close connection", e);
+                }
+            }
+        }
+    }
+
+// ========== HELPER: ESCAPE JSON STRINGS ==========
+    private String escapeJson(String value) {
+        if (value == null || value.equals("null")) {
+            return "";
+        }
+        return value.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
     }
 }

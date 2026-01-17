@@ -1,5 +1,13 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="com.rimba.adopt.util.SessionUtil" %>
+<%@ page import="com.rimba.adopt.dao.UsersDao" %>
+<%@ page import="com.rimba.adopt.util.DatabaseConnection" %>
+<%@ page import="java.sql.Connection" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
+<%@ page import="java.util.HashMap" %>
+<%@ page import="java.util.ArrayList" %>
+<%@ page import="java.text.SimpleDateFormat" %>
 
 <%
 // Check if user is logged in and is admin
@@ -12,6 +20,243 @@
         response.sendRedirect("index.jsp");
         return;
     }
+
+    // Initialize variables - USING OLD JAVA SYNTAX (no diamond operator)
+    Map<String, Integer> stats = new HashMap<String, Integer>();
+    List<Map<String, Object>> recentAdopters = new ArrayList<Map<String, Object>>();
+    List<Map<String, Object>> recentShelters = new ArrayList<Map<String, Object>>();
+    int[] adopterTrends = new int[12];
+    int[] shelterTrends = new int[12];
+
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+
+    Connection conn = null;
+    java.sql.PreparedStatement pstmt = null;
+    java.sql.ResultSet rs = null;
+
+    try {
+        conn = DatabaseConnection.getConnection();
+        UsersDao usersDao = new UsersDao(conn);
+
+        // === GET TOTAL USERS ===
+        String totalUsersSql = "SELECT COUNT(*) as count FROM users WHERE role IN ('adopter', 'shelter')";
+        pstmt = conn.prepareStatement(totalUsersSql);
+        rs = pstmt.executeQuery();
+        if (rs.next()) {
+            stats.put("totalUsers", rs.getInt("count"));
+        }
+        rs.close();
+        pstmt.close();
+
+        // === GET TODAY'S REGISTRATIONS ===
+        String todaySql = "SELECT COUNT(*) as count FROM users WHERE DATE(created_at) = CURRENT_DATE AND role IN ('adopter', 'shelter')";
+        pstmt = conn.prepareStatement(todaySql);
+        rs = pstmt.executeQuery();
+        if (rs.next()) {
+            stats.put("todayRegistrations", rs.getInt("count"));
+        }
+        rs.close();
+        pstmt.close();
+
+        // === GET ADOPTER REGISTRATIONS ===
+        String adopterSql = "SELECT COUNT(*) as count FROM users WHERE role = 'adopter'";
+        pstmt = conn.prepareStatement(adopterSql);
+        rs = pstmt.executeQuery();
+        if (rs.next()) {
+            stats.put("adopterRegistrations", rs.getInt("count"));
+        }
+        rs.close();
+        pstmt.close();
+
+        // === GET SHELTER REGISTRATIONS ===
+        String shelterSql = "SELECT COUNT(*) as count FROM users WHERE role = 'shelter'";
+        pstmt = conn.prepareStatement(shelterSql);
+        rs = pstmt.executeQuery();
+        if (rs.next()) {
+            stats.put("shelterRegistrations", rs.getInt("count"));
+        }
+        rs.close();
+        pstmt.close();
+
+        // === GET PENDING SHELTER APPROVALS ===
+        String pendingSql = "SELECT COUNT(*) as count FROM shelter WHERE approval_status = 'pending'";
+        pstmt = conn.prepareStatement(pendingSql);
+        rs = pstmt.executeQuery();
+        if (rs.next()) {
+            stats.put("pendingApprovals", rs.getInt("count"));
+        }
+        rs.close();
+        pstmt.close();
+        
+
+        // === GET MONTHLY REGISTRATIONS ===
+        String monthlySql = "SELECT COUNT(*) as count FROM users WHERE MONTH(created_at) = MONTH(CURRENT_DATE) AND YEAR(created_at) = YEAR(CURRENT_DATE) AND role IN ('adopter', 'shelter')";
+        pstmt = conn.prepareStatement(monthlySql);
+        rs = pstmt.executeQuery();
+        if (rs.next()) {
+            stats.put("monthlyRegistrations", rs.getInt("count"));
+        }
+        rs.close();
+        pstmt.close();
+
+        // === GET VERIFIED USERS ===
+        String verifiedSql = "SELECT COUNT(*) as count FROM users u "
+                + "LEFT JOIN shelter s ON u.user_id = s.shelter_id "
+                + "WHERE (u.role = 'adopter') OR "
+                + "(u.role = 'shelter' AND s.approval_status = 'approved')";
+        pstmt = conn.prepareStatement(verifiedSql);
+        rs = pstmt.executeQuery();
+        if (rs.next()) {
+            stats.put("verifiedUsers", rs.getInt("count"));
+        }
+
+        // === GET APPROVED SHELTERS ===
+        String approvedShelterSql = "SELECT COUNT(*) as count FROM shelter WHERE approval_status = 'approved'";
+        pstmt = conn.prepareStatement(approvedShelterSql);
+        rs = pstmt.executeQuery();
+        if (rs.next()) {
+            stats.put("approvedShelters", rs.getInt("count"));
+        }
+        rs.close();
+        pstmt.close();
+
+        // === GET REGISTRATION TRENDS (12 months) ===
+        String trendsSql = "SELECT MONTH(u.created_at) as month, u.role, COUNT(*) as count "
+                + "FROM users u "
+                + "WHERE YEAR(u.created_at) = YEAR(CURRENT_DATE) AND u.role IN ('adopter', 'shelter') "
+                + "GROUP BY MONTH(u.created_at), u.role "
+                + "ORDER BY month";
+
+        pstmt = conn.prepareStatement(trendsSql);
+        rs = pstmt.executeQuery();
+
+        while (rs.next()) {
+            int month = rs.getInt("month") - 1; // Convert to 0-based index
+            String role = rs.getString("role");
+            int count = rs.getInt("count");
+
+            if ("adopter".equals(role)) {
+                adopterTrends[month] = count;
+            } else if ("shelter".equals(role)) {
+                shelterTrends[month] = count;
+            }
+        }
+        rs.close();
+        pstmt.close();
+
+        // === GET RECENT ADOPTER REGISTRATIONS (latest 15) ===
+        String recentAdopterSql = "SELECT u.user_id, u.name, u.email, u.created_at, 'adopter' as role "
+                + "FROM users u "
+                + "WHERE u.role = 'adopter' "
+                + "ORDER BY u.created_at DESC "
+                + "FETCH FIRST 15 ROWS ONLY";
+
+        pstmt = conn.prepareStatement(recentAdopterSql);
+        rs = pstmt.executeQuery();
+
+        while (rs.next()) {
+            Map<String, Object> adopter = new HashMap<String, Object>();
+            adopter.put("id", "USR-" + rs.getInt("user_id"));
+            adopter.put("name", rs.getString("name"));
+            adopter.put("email", rs.getString("email"));
+            adopter.put("date", sdf.format(rs.getTimestamp("created_at")));
+            adopter.put("status", "Verified");
+            adopter.put("statusColor", "#6DBF89");
+            adopter.put("statusText", "#06321F");
+            recentAdopters.add(adopter);
+        }
+        rs.close();
+        pstmt.close();
+
+        // === GET RECENT SHELTER REGISTRATIONS (latest 12) ===
+        String recentShelterSql = "SELECT u.user_id, u.name, u.email, u.created_at, s.approval_status "
+                + "FROM users u "
+                + "LEFT JOIN shelter s ON u.user_id = s.shelter_id "
+                + "WHERE u.role = 'shelter' "
+                + "ORDER BY u.created_at DESC "
+                + "FETCH FIRST 12 ROWS ONLY";
+
+        pstmt = conn.prepareStatement(recentShelterSql);
+        rs = pstmt.executeQuery();
+
+        while (rs.next()) {
+            Map<String, Object> shelter = new HashMap<String, Object>();
+            shelter.put("id", "SHT-" + rs.getInt("user_id"));
+            shelter.put("name", rs.getString("name"));
+            shelter.put("email", rs.getString("email"));
+            shelter.put("date", sdf.format(rs.getTimestamp("created_at")));
+
+            String approvalStatus = rs.getString("approval_status");
+            // UBAH BAHAGIAN NI - hanya 3 status
+            if ("approved".equals(approvalStatus)) {
+                shelter.put("status", "Approved");
+                shelter.put("statusColor", "#6DBF89");
+                shelter.put("statusText", "#06321F");
+            } else if ("rejected".equals(approvalStatus)) {
+                shelter.put("status", "Rejected");
+                shelter.put("statusColor", "#B84A4A");
+                shelter.put("statusText", "#FFFFFF");
+            } else {
+                // Default: pending or null
+                shelter.put("status", "Pending");
+                shelter.put("statusColor", "#C49A6C");
+                shelter.put("statusText", "#FFFFFF");
+            }
+            recentShelters.add(shelter);
+        }
+
+        // === GET PENDING VERIFICATION ===
+        String pendingVerificationSql = "SELECT COUNT(*) as count FROM users u LEFT JOIN shelter s ON u.user_id = s.shelter_id WHERE u.role = 'shelter' AND (s.approval_status IS NULL OR s.approval_status = 'pending')";
+        pstmt = conn.prepareStatement(pendingVerificationSql);
+        rs = pstmt.executeQuery();
+        if (rs.next()) {
+            stats.put("pendingVerification", rs.getInt("count"));
+        }
+        rs.close();
+        pstmt.close();
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        // Set default values if error
+        stats.put("totalUsers", 0);
+        stats.put("todayRegistrations", 0);
+        stats.put("adopterRegistrations", 0);
+        stats.put("shelterRegistrations", 0);
+        stats.put("pendingApprovals", 0);
+        stats.put("monthlyRegistrations", 0);
+        stats.put("verifiedUsers", 0);
+        stats.put("approvedShelters", 0);
+        stats.put("pendingVerification", 0);
+    } finally {
+        // Manual resource cleanup (no try-with-resources)
+        try {
+            if (rs != null) {
+                rs.close();
+            }
+        } catch (Exception e) {
+        }
+        try {
+            if (pstmt != null) {
+                pstmt.close();
+            }
+        } catch (Exception e) {
+        }
+        try {
+            if (conn != null) {
+                conn.close();
+            }
+        } catch (Exception e) {
+        }
+    }
+
+    // Convert arrays to JSON for JavaScript
+    String adopterTrendsJson = java.util.Arrays.toString(adopterTrends);
+    String shelterTrendsJson = java.util.Arrays.toString(shelterTrends);
+
+    // Calculate verification rate
+    int totalUsersForRate = stats.containsKey("totalUsers") ? stats.get("totalUsers") : 1;
+    int verifiedUsersForRate = stats.containsKey("verifiedUsers") ? stats.get("verifiedUsers") : 0;
+    int verificationRate = totalUsersForRate > 0 ? (verifiedUsersForRate * 100 / totalUsersForRate) : 0;
 %>
 
 <!DOCTYPE html>
@@ -127,8 +372,34 @@
         <div class="p-4 pt-6 relative z-10 flex justify-center items-start">
             <div class="w-full" style="max-width: 1450px;">
                 <div class="relative overflow-hidden rounded-xl shadow-lg">
-                    <!-- Banner Images -->
+                    <!-- Banner Images - Get from database -->
                     <div class="banner-container relative" style="height: 400px;">
+                        <%
+                            Connection bannerConn = null;
+                            java.sql.PreparedStatement bannerPstmt = null;
+                            java.sql.ResultSet bannerRs = null;
+                            try {
+                                bannerConn = DatabaseConnection.getConnection();
+                                String bannerSql = "SELECT image_path FROM awareness_banner WHERE status = 'visible' ORDER BY COALESCE(display_order, 999) ASC";
+                                bannerPstmt = bannerConn.prepareStatement(bannerSql);
+                                bannerRs = bannerPstmt.executeQuery();
+
+                                int bannerIndex = 0;
+                                while (bannerRs.next()) {
+                                    String imagePath = bannerRs.getString("image_path");
+                                    if (imagePath != null && !imagePath.isEmpty()) {
+                        %>
+                        <div class="banner-slide <%= bannerIndex == 0 ? "active" : ""%>">
+                            <img src="<%= imagePath%>" alt="Banner <%= bannerIndex + 1%>" class="w-full h-full object-cover">
+                        </div>
+                        <%
+                                    bannerIndex++;
+                                }
+                            }
+
+                            // If no banners in database, use static defaults
+                            if (bannerIndex == 0) {
+                        %>
                         <div class="banner-slide active">
                             <img src="banner/banner1.jpg" alt="Banner 1" class="w-full h-full object-cover">
                         </div>
@@ -144,9 +415,51 @@
                         <div class="banner-slide">
                             <img src="banner/banner5.jpg" alt="Banner 5" class="w-full h-full object-cover">
                         </div>
+                        <%
+                            }
+                        } catch (Exception e) {
+                            // Fallback to static banners if error
+                        %>
+                        <div class="banner-slide active">
+                            <img src="banner/banner1.jpg" alt="Banner 1" class="w-full h-full object-cover">
+                        </div>
+                        <div class="banner-slide">
+                            <img src="banner/banner2.jpg" alt="Banner 2" class="w-full h-full object-cover">
+                        </div>
+                        <div class="banner-slide">
+                            <img src="banner/banner3.jpg" alt="Banner 3" class="w-full h-full object-cover">
+                        </div>
+                        <div class="banner-slide">
+                            <img src="banner/banner4.jpg" alt="Banner 4" class="w-full h-full object-cover">
+                        </div>
+                        <div class="banner-slide">
+                            <img src="banner/banner5.jpg" alt="Banner 5" class="w-full h-full object-cover">
+                        </div>
+                        <%
+                            } finally {
+                                try {
+                                    if (bannerRs != null) {
+                                        bannerRs.close();
+                                    }
+                                } catch (Exception e) {
+                                }
+                                try {
+                                    if (bannerPstmt != null) {
+                                        bannerPstmt.close();
+                                    }
+                                } catch (Exception e) {
+                                }
+                                try {
+                                    if (bannerConn != null) {
+                                        bannerConn.close();
+                                    }
+                                } catch (Exception e) {
+                                }
+                            }
+                        %>
 
                         <!-- Navigation Arrows -->
-                        <button onclick="changeSlide(-1)" class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-3 rounded-full transition">
+                        <button onclick="changeSlide( - 1)" class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-3 rounded-full transition">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                             </svg>
@@ -159,12 +472,8 @@
                     </div>
 
                     <!-- Dots Indicator -->
-                    <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center justify-center">
-                        <span class="dot active" onclick="currentSlide(1)"></span>
-                        <span class="dot" onclick="currentSlide(2)"></span>
-                        <span class="dot" onclick="currentSlide(3)"></span>
-                        <span class="dot" onclick="currentSlide(4)"></span>
-                        <span class="dot" onclick="currentSlide(5)"></span>
+                    <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center justify-center" id="dotsContainer">
+                        <!-- Dots will be generated by JavaScript -->
                     </div>
                 </div>
             </div>
@@ -187,36 +496,47 @@
                     <!-- Total Users -->
                     <div class="bg-[#F6F3E7] p-5 rounded-lg shadow-sm border-l-4 border-[#2F5D50]">
                         <p class="text-sm font-medium" style="color: #2F5D50;">Total Users</p>
-                        <p class="text-3xl font-bold" style="color: #2B2B2B;">1,248</p>
-                        <p class="text-xs text-gray-500 mt-1">1,201 adopters, 47 shelters</p>
+                        <p class="text-3xl font-bold" style="color: #2B2B2B;"><%= stats.containsKey("totalUsers") ? stats.get("totalUsers") : 0%></p>
+                        <p class="text-xs text-gray-500 mt-1">
+                            <%= stats.containsKey("adopterRegistrations") ? stats.get("adopterRegistrations") : 0%> adopters, 
+                            <%= stats.containsKey("shelterRegistrations") ? stats.get("shelterRegistrations") : 0%> shelters
+                        </p>
                     </div>
 
                     <!-- New Registrations (Today) -->
                     <div class="bg-[#F6F3E7] p-5 rounded-lg shadow-sm border-l-4 border-[#57A677]">
                         <p class="text-sm font-medium" style="color: #57A677;">Today's Registrations</p>
-                        <p class="text-3xl font-bold" style="color: #2B2B2B;">12</p>
-                        <p class="text-xs text-gray-500 mt-1">10 adopters, 2 shelters</p>
+                        <p class="text-3xl font-bold" style="color: #2B2B2B;"><%= stats.containsKey("todayRegistrations") ? stats.get("todayRegistrations") : 0%></p>
+                        <%
+                            // Estimate today's adopters and shelters
+                            int todayTotal = stats.containsKey("todayRegistrations") ? stats.get("todayRegistrations") : 0;
+                            int todayAdopters = (int) (todayTotal * 0.8);
+                            int todayShelters = (int) (todayTotal * 0.2);
+                        %>
+                        <p class="text-xs text-gray-500 mt-1"><%= todayAdopters%> adopters, <%= todayShelters%> shelters</p>
                     </div>
 
                     <!-- Pending Shelter Approvals -->
                     <div class="bg-[#F6F3E7] p-5 rounded-lg shadow-sm border-l-4 border-[#C49A6C]">
                         <p class="text-sm font-medium" style="color: #C49A6C;">Pending Approvals</p>
-                        <p class="text-3xl font-bold" style="color: #2B2B2B;">8</p>
+                        <p class="text-3xl font-bold" style="color: #2B2B2B;">
+                            <%= stats.containsKey("pendingApprovals") ? stats.get("pendingApprovals") : 0%>
+                        </p>
                         <p class="text-xs text-gray-500 mt-1">Shelters awaiting review</p>
                     </div>
 
                     <!-- Monthly Registrations -->
                     <div class="bg-[#F6F3E7] p-5 rounded-lg shadow-sm border-l-4 border-[#6DBF89]">
                         <p class="text-sm font-medium" style="color: #57A677;">This Month</p>
-                        <p class="text-3xl font-bold" style="color: #2B2B2B;">148</p>
+                        <p class="text-3xl font-bold" style="color: #2B2B2B;"><%= stats.containsKey("monthlyRegistrations") ? stats.get("monthlyRegistrations") : 0%></p>
                         <p class="text-xs text-gray-500 mt-1">New registrations</p>
                     </div>
 
                     <!-- Verified Users -->
                     <div class="bg-[#F6F3E7] p-5 rounded-lg shadow-sm border-l-4 border-[#2F5D50]">
                         <p class="text-sm font-medium" style="color: #2F5D50;">Verified Users</p>
-                        <p class="text-3xl font-bold" style="color: #2B2B2B;">1,180</p>
-                        <p class="text-xs text-gray-500 mt-1">95% verification rate</p>
+                        <p class="text-3xl font-bold" style="color: #2B2B2B;"><%= stats.containsKey("verifiedUsers") ? stats.get("verifiedUsers") : 0%></p>
+                        <p class="text-xs text-gray-500 mt-1"><%= verificationRate%>% verification rate</p>
                     </div>
                 </div>
 
@@ -236,14 +556,17 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div class="bg-[#E8F5EE] p-5 rounded-lg shadow-sm border-l-4 border-[#6DBF89]">
                                 <p class="text-sm font-medium" style="color: #57A677;">Adopter Registrations</p>
-                                <p class="text-3xl font-bold" style="color: #2B2B2B;">1,201</p>
+                                <p class="text-3xl font-bold" style="color: #2B2B2B;"><%= stats.containsKey("adopterRegistrations") ? stats.get("adopterRegistrations") : 0%></p>
                                 <p class="text-xs text-gray-500 mt-1">Active adopters in system</p>
                             </div>
 
                             <div class="bg-[#F5F0EB] p-5 rounded-lg shadow-sm border-l-4 border-[#C49A6C]">
                                 <p class="text-sm font-medium" style="color: #C49A6C;">Shelter Registrations</p>
-                                <p class="text-3xl font-bold" style="color: #2B2B2B;">47</p>
-                                <p class="text-xs text-gray-500 mt-1">39 approved, 8 pending</p>
+                                <p class="text-3xl font-bold" style="color: #2B2B2B;"><%= stats.containsKey("shelterRegistrations") ? stats.get("shelterRegistrations") : 0%></p>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    <%= stats.containsKey("approvedShelters") ? stats.get("approvedShelters") : 0%> approved, 
+                                    <%= stats.containsKey("pendingApprovals") ? stats.get("pendingApprovals") : 0%> pending
+                                </p>
                             </div>
                         </div>
 
@@ -269,7 +592,7 @@
                         <div class="flex-1 overflow-y-auto mb-4">
                             <div class="space-y-6">
                                 <!-- Manage Banner -->
-                                <a href="manage_banner.jsp" class="flex items-center gap-3 p-3 rounded-lg text-white hover:bg-[#24483E] transition group w-full quick-link" style="background-color: #2F5D50;">
+                                <a href="ManageBannerServlet" class="flex items-center gap-3 p-3 rounded-lg text-white hover:bg-[#24483E] transition group w-full quick-link" style="background-color: #2F5D50;">
                                     <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background-color: rgba(255, 255, 255, 0.2);">
                                         <svg class="w-5 h-5 quick-link-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
@@ -327,7 +650,7 @@
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-bold" style="color: #2B2B2B;">Recent Registration Activities</h2>
                         <a href="review_registrations.jsp" class="text-sm hover:text-[#24483E] font-medium" style="color: #2F5D50;">
-                            View All Registrations ?
+                            View All Registrations →
                         </a>
                     </div>
 
@@ -348,7 +671,7 @@
                                         </div>
                                     </div>
                                     <span class="px-3 py-1 text-sm rounded-full" style="background-color: #2F5D50; color: #FFFFFF;">
-                                        Total: 15
+                                        Total: <%= recentAdopters.size()%>
                                     </span>
                                 </div>
                             </div>
@@ -360,12 +683,10 @@
                                             <tr class="border-b border-[#E5E5E5]">
                                                 <th class="text-left py-3 px-4 text-sm font-medium" style="color: #2B2B2B;">User</th>
                                                 <th class="text-left py-3 px-4 text-sm font-medium" style="color: #2B2B2B;">Date</th>
-                                                <th class="text-left py-3 px-4 text-sm font-medium" style="color: #2B2B2B;">Status</th>
-                                                <th class="text-left py-3 px-4 text-sm font-medium" style="color: #2B2B2B;">Action</th>
-                                            </tr>
+                                                <th class="text-left py-3 px-4 text-sm font-medium" style="color: #2B2B2B;">Status</th>                                            </tr>
                                         </thead>
                                         <tbody id="adopterTableBody">
-                                            <!-- Adopter rows will be inserted here by JavaScript -->
+                                            <!-- Adopter rows akan diisi oleh JavaScript -->
                                         </tbody>
                                     </table>
                                 </div>
@@ -373,10 +694,10 @@
                                 <!-- Adopter Pagination -->
                                 <div class="flex justify-between items-center p-4 border-t border-[#E5E5E5]">
                                     <div class="text-sm" style="color: #2B2B2B;">
-                                        Showing <span id="adopterStart">1</span> to <span id="adopterEnd">5</span> of <span id="adopterTotal">15</span> entries
+                                        Showing <span id="adopterStart">1</span> to <span id="adopterEnd">5</span> of <span id="adopterTotal"><%= recentAdopters.size()%></span> entries
                                     </div>
                                     <div class="flex items-center space-x-1" id="adopterPagination">
-                                        <!-- Pagination buttons will be inserted here by JavaScript -->
+                                        <!-- Pagination buttons akan diisi oleh JavaScript -->
                                     </div>
                                 </div>
                             </div>
@@ -398,7 +719,7 @@
                                         </div>
                                     </div>
                                     <span class="px-3 py-1 text-sm rounded-full" style="background-color: #2F5D50; color: #FFFFFF;">
-                                        Total: 12
+                                        Total: <%= recentShelters.size()%>
                                     </span>
                                 </div>
                             </div>
@@ -411,11 +732,10 @@
                                                 <th class="text-left py-3 px-4 text-sm font-medium" style="color: #2B2B2B;">Shelter</th>
                                                 <th class="text-left py-3 px-4 text-sm font-medium" style="color: #2B2B2B;">Date</th>
                                                 <th class="text-left py-3 px-4 text-sm font-medium" style="color: #2B2B2B;">Status</th>
-                                                <th class="text-left py-3 px-4 text-sm font-medium" style="color: #2B2B2B;">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody id="shelterTableBody">
-                                            <!-- Shelter rows will be inserted here by JavaScript -->
+                                            <!-- Shelter rows akan diisi oleh JavaScript -->
                                         </tbody>
                                     </table>
                                 </div>
@@ -423,10 +743,10 @@
                                 <!-- Shelter Pagination -->
                                 <div class="flex justify-between items-center p-4 border-t border-[#E5E5E5]">
                                     <div class="text-sm" style="color: #2B2B2B;">
-                                        Showing <span id="shelterStart">1</span> to <span id="shelterEnd">5</span> of <span id="shelterTotal">12</span> entries
+                                        Showing <span id="shelterStart">1</span> to <span id="shelterEnd">5</span> of <span id="shelterTotal"><%= recentShelters.size()%></span> entries
                                     </div>
                                     <div class="flex items-center space-x-1" id="shelterPagination">
-                                        <!-- Pagination buttons will be inserted here by JavaScript -->
+                                        <!-- Pagination buttons akan diisi oleh JavaScript -->
                                     </div>
                                 </div>
                             </div>
@@ -451,194 +771,229 @@
                             let slideIndex = 1;
                             let slideTimer;
                             function showSlides(n) {
-                                let slides = document.getElementsByClassName("banner-slide");
-                                let dots = document.getElementsByClassName("dot");
-                                if (n > slides.length) {
-                                    slideIndex = 1
-                                }
-                                if (n < 1) {
-                                    slideIndex = slides.length
-                                }
+                            let slides = document.getElementsByClassName("banner-slide");
+                            let dots = document.getElementsByClassName("dot");
+                            if (n > slides.length) {
+                            slideIndex = 1
+                            }
+                            if (n < 1) {
+                            slideIndex = slides.length
+                            }
 
-                                for (let i = 0; i < slides.length; i++) {
-                                    slides[i].classList.remove("active");
-                                }
-                                for (let i = 0; i < dots.length; i++) {
-                                    dots[i].classList.remove("active");
-                                }
+                            for (let i = 0; i < slides.length; i++) {
+                            slides[i].classList.remove("active");
+                            }
+                            for (let i = 0; i < dots.length; i++) {
+                            dots[i].classList.remove("active");
+                            }
 
-                                slides[slideIndex - 1].classList.add("active");
-                                dots[slideIndex - 1].classList.add("active");
+                            if (slides.length > 0) {
+                            slides[slideIndex - 1].classList.add("active");
+                            if (dots.length > 0) {
+                            dots[slideIndex - 1].classList.add("active");
+                            }
+                            }
                             }
 
                             function changeSlide(n) {
-                                clearInterval(slideTimer);
-                                showSlides(slideIndex += n);
-                                startAutoSlide();
+                            clearInterval(slideTimer);
+                            showSlides(slideIndex += n);
+                            startAutoSlide();
                             }
 
                             function currentSlide(n) {
-                                clearInterval(slideTimer);
-                                showSlides(slideIndex = n);
-                                startAutoSlide();
+                            clearInterval(slideTimer);
+                            showSlides(slideIndex = n);
+                            startAutoSlide();
                             }
 
                             function startAutoSlide() {
-                                slideTimer = setInterval(() => {
-                                    slideIndex++;
-                                    showSlides(slideIndex);
-                                }, 5000);
+                            let slides = document.getElementsByClassName("banner-slide");
+                            if (slides.length > 0) {
+                            slideTimer = setInterval(() => {
+                            slideIndex++;
+                            showSlides(slideIndex);
+                            }, 5000);
+                            }
+                            }
+
+                            // Generate dots based on number of slides
+                            function generateDots() {
+                            let slides = document.getElementsByClassName("banner-slide");
+                            let dotsContainer = document.getElementById("dotsContainer");
+                            if (slides.length > 0 && dotsContainer) {
+                            dotsContainer.innerHTML = '';
+                            for (let i = 1; i <= slides.length; i++) {
+                            let dot = document.createElement("span");
+                            dot.className = i === 1 ? "dot active" : "dot";
+                            dot.onclick = function() { currentSlide(i); };
+                            dotsContainer.appendChild(dot);
+                            }
+                            }
                             }
 
                             // Initialize slideshow
+                            document.addEventListener('DOMContentLoaded', function() {
+                            generateDots();
                             showSlides(slideIndex);
                             startAutoSlide();
-                            // Registration Trends Chart (Line Chart)
+                            });
+                            // Registration Trends Chart (Line Chart) - USING REAL DATA
+                            const adopterTrends = <%= adopterTrendsJson%>;
+                            const shelterTrends = <%= shelterTrendsJson%>;
                             const trendsCtx = document.getElementById('registrationTrendsChart').getContext('2d');
                             const registrationTrendsChart = new Chart(trendsCtx, {
-                                type: 'line',
-                                data: {
+                            type: 'line',
+                                    data: {
                                     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                                    datasets: [
-                                        {
+                                            datasets: [
+                                            {
                                             label: 'Adopter Registrations',
-                                            data: [85, 92, 78, 105, 120, 98, 115, 132, 128, 145, 150, 142],
-                                            borderColor: '#2F5D50',
-                                            backgroundColor: 'rgba(47, 93, 80, 0.1)',
-                                            borderWidth: 3,
-                                            tension: 0.4,
-                                            pointRadius: 4,
-                                            pointBackgroundColor: '#2F5D50',
-                                            fill: true
-                                        },
-                                        {
+                                                    data: adopterTrends,
+                                                    borderColor: '#2F5D50',
+                                                    backgroundColor: 'rgba(47, 93, 80, 0.1)',
+                                                    borderWidth: 3,
+                                                    tension: 0.4,
+                                                    pointRadius: 4,
+                                                    pointBackgroundColor: '#2F5D50',
+                                                    fill: true
+                                            },
+                                            {
                                             label: 'Shelter Registrations',
-                                            data: [3, 4, 2, 5, 6, 4, 5, 8, 7, 9, 10, 8],
-                                            borderColor: '#6DBF89',
-                                            backgroundColor: 'rgba(109, 191, 137, 0.1)',
-                                            borderWidth: 3,
-                                            tension: 0.4,
-                                            pointRadius: 4,
-                                            pointBackgroundColor: '#6DBF89',
-                                            fill: true
-                                        }
-                                    ]
-                                },
-                                options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    scales: {
-                                        x: {
-                                            grid: {
-                                                display: false
-                                            },
-                                            title: {
-                                                display: true,
-                                                text: 'Month'
+                                                    data: shelterTrends,
+                                                    borderColor: '#6DBF89',
+                                                    backgroundColor: 'rgba(109, 191, 137, 0.1)',
+                                                    borderWidth: 3,
+                                                    tension: 0.4,
+                                                    pointRadius: 4,
+                                                    pointBackgroundColor: '#6DBF89',
+                                                    fill: true
                                             }
-                                        },
-                                        y: {
-                                            beginAtZero: true,
-                                            ticks: {
-                                                stepSize: 20
-                                            },
-                                            title: {
-                                                display: true,
-                                                text: 'Number of Registrations'
-                                            }
-                                        }
+                                            ]
                                     },
-                                    plugins: {
-                                        legend: {
+                                    options: {
+                                    responsive: true,
+                                            maintainAspectRatio: false,
+                                            scales: {
+                                            x: {
+                                            grid: {
+                                            display: false
+                                            },
+                                                    title: {
+                                                    display: true,
+                                                            text: 'Month'
+                                                    }
+                                            },
+                                                    y: {
+                                                    beginAtZero: true,
+                                                            ticks: {
+                                                            stepSize: 5
+                                                            },
+                                                            title: {
+                                                            display: true,
+                                                                    text: 'Number of Registrations'
+                                                            }
+                                                    }
+                                            },
+                                            plugins: {
+                                            legend: {
                                             position: 'top'
-                                        },
-                                        tooltip: {
-                                            mode: 'index',
-                                            intersect: false
-                                        }
+                                            },
+                                                    tooltip: {
+                                                    mode: 'index',
+                                                            intersect: false
+                                                    }
+                                            }
                                     }
-                                }
                             });
-                            // Registration Status Chart (Doughnut Chart)
+                            // Registration Status Chart (Doughnut Chart) - USING REAL DATA
+                            const verifiedUsers = <%= stats.containsKey("verifiedUsers") ? stats.get("verifiedUsers") : 0%>;
+                            const pendingVerification = <%= stats.containsKey("pendingVerification") ? stats.get("pendingVerification") : 0%>;
+                            const approvedShelters = <%= stats.containsKey("approvedShelters") ? stats.get("approvedShelters") : 0%>;
+                            const pendingShelterReview = <%= stats.containsKey("pendingApprovals") ? stats.get("pendingApprovals") : 0%>;
                             const statusCtx = document.getElementById('registrationStatusChart').getContext('2d');
                             const registrationStatusChart = new Chart(statusCtx, {
-                                type: 'doughnut',
-                                data: {
-                                    labels: ['Verified Users', 'Pending Verification', 'Approved Shelters', 'Pending Shelter Review'],
-                                    datasets: [{
-                                            data: [1120, 81, 39, 8],
-                                            backgroundColor: [
-                                                '#6DBF89',
-                                                '#C49A6C',
-                                                '#2F5D50',
-                                                '#B84A4A'
+                            type: 'doughnut',
+                                    data: {
+                                    labels: ['Verified Users', 'Pending Shelters', 'Approved Shelters', 'Rejected Shelter'],
+                                            datasets: [{
+                                            data: [
+                                                    verifiedUsers,
+                                                    pendingVerification,
+                                                    approvedShelters,
+                                                    pendingShelterReview
                                             ],
-                                            borderWidth: 2,
-                                            borderColor: '#ffffff'
-                                        }]
-                                },
-                                options: {
+                                                    backgroundColor: [
+                                                            '#6DBF89',
+                                                            '#C49A6C',
+                                                            '#2F5D50',
+                                                            '#B84A4A'
+                                                    ],
+                                                    borderWidth: 2,
+                                                    borderColor: '#ffffff'
+                                            }]
+                                    },
+                                    options: {
                                     responsive: true,
-                                    maintainAspectRatio: false,
-                                    plugins: {
-                                        legend: {
+                                            maintainAspectRatio: false,
+                                            plugins: {
+                                            legend: {
                                             position: 'right',
-                                            labels: {
-                                                boxWidth: 12,
-                                                padding: 15
-                                            }
-                                        },
-                                        tooltip: {
-                                            callbacks: {
-                                                label: function (context) {
+                                                    labels: {
+                                                    boxWidth: 12,
+                                                            padding: 15
+                                                    }
+                                            },
+                                                    tooltip: {
+                                                    callbacks: {
+                                                    label: function (context) {
                                                     let label = context.label || '';
                                                     if (label) {
-                                                        label += ': ';
+                                                    label += ': ';
                                                     }
                                                     const value = context.raw;
                                                     const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                                    const percentage = Math.round((value / total) * 100);
+                                                    const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
                                                     label += value + ' (' + percentage + '%)';
                                                     return label;
-                                                }
-                                            }
-                                        }
-                                    },
-                                    cutout: '65%'
-                                }
+                                                    }
+                                                    }
+                                                    }
+                                            },
+                                            cutout: '65%'
+                                    }
                             });
-                            // Sample Data for Adopter Registrations
+                            // Sample Data for Adopter Registrations - USING REAL DATA FROM JSP
                             const adopterRegistrations = [
-                                {id: 'USR-1024', name: 'John Smith', email: 'john.smith@email.com', date: '2023-10-15 14:30', status: 'Verified', statusColor: '#6DBF89', statusText: '#06321F'},
-                                {id: 'USR-1025', name: 'Sarah Johnson', email: 'sarah.j@email.com', date: '2023-10-15 09:45', status: 'New', statusColor: '#A8E6CF', statusText: '#2B2B2B'},
-                                {id: 'USR-1026', name: 'Michael Brown', email: 'm.brown@email.com', date: '2023-10-14 13:10', status: 'Pending', statusColor: '#C49A6C', statusText: '#FFFFFF'},
-                                {id: 'USR-1027', name: 'Emma Davis', email: 'emma.d@email.com', date: '2023-10-14 10:20', status: 'Verified', statusColor: '#6DBF89', statusText: '#06321F'},
-                                {id: 'USR-1028', name: 'Robert Wilson', email: 'robert.w@email.com', date: '2023-10-13 16:45', status: 'Verified', statusColor: '#6DBF89', statusText: '#06321F'},
-                                {id: 'USR-1029', name: 'Lisa Anderson', email: 'lisa.a@email.com', date: '2023-10-13 11:30', status: 'Pending', statusColor: '#C49A6C', statusText: '#FFFFFF'},
-                                {id: 'USR-1030', name: 'James Miller', email: 'james.m@email.com', date: '2023-10-12 14:15', status: 'Rejected', statusColor: '#B84A4A', statusText: '#FFFFFF'},
-                                {id: 'USR-1031', name: 'Patricia Taylor', email: 'patricia.t@email.com', date: '2023-10-12 09:50', status: 'Verified', statusColor: '#6DBF89', statusText: '#06321F'},
-                                {id: 'USR-1032', name: 'Christopher Lee', email: 'chris.l@email.com', date: '2023-10-11 15:25', status: 'New', statusColor: '#A8E6CF', statusText: '#2B2B2B'},
-                                {id: 'USR-1033', name: 'Jennifer Harris', email: 'jennifer.h@email.com', date: '2023-10-11 12:40', status: 'Verified', statusColor: '#6DBF89', statusText: '#06321F'},
-                                {id: 'USR-1034', name: 'William Clark', email: 'william.c@email.com', date: '2023-10-10 17:55', status: 'Pending', statusColor: '#C49A6C', statusText: '#FFFFFF'},
-                                {id: 'USR-1035', name: 'Amanda Lewis', email: 'amanda.l@email.com', date: '2023-10-10 13:20', status: 'Verified', statusColor: '#6DBF89', statusText: '#06321F'},
-                                {id: 'USR-1036', name: 'David Walker', email: 'david.w@email.com', date: '2023-10-09 16:10', status: 'Rejected', statusColor: '#B84A4A', statusText: '#FFFFFF'},
-                                {id: 'USR-1037', name: 'Karen Hall', email: 'karen.h@email.com', date: '2023-10-09 10:45', status: 'Verified', statusColor: '#6DBF89', statusText: '#06321F'},
-                                {id: 'USR-1038', name: 'Steven Allen', email: 'steven.a@email.com', date: '2023-10-08 14:30', status: 'New', statusColor: '#A8E6CF', statusText: '#2B2B2B'}
+            <% for (int i = 0; i < recentAdopters.size(); i++) {
+                    Map<String, Object> adopter = recentAdopters.get(i);
+            %>
+                            {
+                            id: '<%= adopter.get("id")%>',
+                                    name: '<%= adopter.get("name")%>',
+                                    email: '<%= adopter.get("email")%>',
+                                    date: '<%= adopter.get("date")%>',
+                                    status: '<%= adopter.get("status")%>',
+                                    statusColor: '<%= adopter.get("statusColor")%>',
+                                    statusText: '<%= adopter.get("statusText")%>'
+                            }<%= i < recentAdopters.size() - 1 ? "," : ""%>
+            <% } %>
                             ];
-                            // Sample Data for Shelter Registrations
+                            // Sample Data for Shelter Registrations - USING REAL DATA FROM JSP
                             const shelterRegistrations = [
-                                {id: 'SHT-0047', name: 'Happy Paws Shelter', email: 'contact@happypaws.org', date: '2023-10-15 11:15', status: 'Pending Review', statusColor: '#C49A6C', statusText: '#FFFFFF'},
-                                {id: 'SHT-0039', name: 'City Animal Rescue', email: 'admin@cityrescue.org', date: '2023-10-14 16:20', status: 'Approved', statusColor: '#6DBF89', statusText: '#06321F'},
-                                {id: 'SHT-0048', name: 'Furry Friends Haven', email: 'info@furryfriends.org', date: '2023-10-14 13:45', status: 'Pending Review', statusColor: '#C49A6C', statusText: '#FFFFFF'},
-                                {id: 'SHT-0040', name: 'Safe Haven Center', email: 'contact@safehaven.org', date: '2023-10-13 15:30', status: 'Approved', statusColor: '#6DBF89', statusText: '#06321F'},
-                                {id: 'SHT-0049', name: 'Pet Paradise Shelter', email: 'hello@petparadise.org', date: '2023-10-13 10:15', status: 'Rejected', statusColor: '#B84A4A', statusText: '#FFFFFF'},
-                                {id: 'SHT-0041', name: 'Second Chance Rescue', email: 'admin@secondchance.org', date: '2023-10-12 14:50', status: 'Approved', statusColor: '#6DBF89', statusText: '#06321F'},
-                                {id: 'SHT-0050', name: 'Wildlife Care Center', email: 'contact@wildlifecare.org', date: '2023-10-12 09:25', status: 'Pending Review', statusColor: '#C49A6C', statusText: '#FFFFFF'},
-                                {id: 'SHT-0042', name: 'Animal Hope Shelter', email: 'info@animalhope.org', date: '2023-10-11 17:40', status: 'Approved', statusColor: '#6DBF89', statusText: '#06321F'},
-                                {id: 'SHT-0051', name: 'Companion Animal Rescue', email: 'admin@companion.org', date: '2023-10-11 12:55', status: 'New Application', statusColor: '#A8E6CF', statusText: '#2B2B2B'},
-                                {id: 'SHT-0043', name: 'Forever Home Rescue', email: 'contact@foreverhome.org', date: '2023-10-10 16:30', status: 'Approved', statusColor: '#6DBF89', statusText: '#06321F'},
-                                {id: 'SHT-0052', name: 'Pawsitive Rescue', email: 'info@pawsitive.org', date: '2023-10-10 11:45', status: 'Pending Review', statusColor: '#C49A6C', statusText: '#FFFFFF'},
-                                {id: 'SHT-0044', name: 'Kindred Spirits Sanctuary', email: 'admin@kindredspirits.org', date: '2023-10-09 15:20', status: 'Approved', statusColor: '#6DBF89', statusText: '#06321F'}
+            <% for (int i = 0; i < recentShelters.size(); i++) {
+                    Map<String, Object> shelter = recentShelters.get(i);
+            %>
+                            {
+                            id: '<%= shelter.get("id")%>',
+                                    name: '<%= shelter.get("name")%>',
+                                    email: '<%= shelter.get("email")%>',
+                                    date: '<%= shelter.get("date")%>',
+                                    status: '<%= shelter.get("status")%>',
+                                    statusColor: '<%= shelter.get("statusColor")%>',
+                                    statusText: '<%= shelter.get("statusText")%>'
+                            }<%= i < recentShelters.size() - 1 ? "," : ""%>
+            <% }%>
                             ];
                             // Pagination Configuration
                             const itemsPerPage = 5;
@@ -646,156 +1001,167 @@
                             let currentShelterPage = 1;
                             // Function to render adopter table
                             function renderAdopterTable(page) {
-                                const startIndex = (page - 1) * itemsPerPage;
-                                const endIndex = startIndex + itemsPerPage;
-                                const pageData = adopterRegistrations.slice(startIndex, endIndex);
-                                const totalPages = Math.ceil(adopterRegistrations.length / itemsPerPage);
-                                // Update table body
-                                const tableBody = document.getElementById('adopterTableBody');
-                                tableBody.innerHTML = '';
-                                pageData.forEach(adopter => {
-                                    const row = document.createElement('tr');
-                                    row.className = 'border-b border-[#E5E5E5] hover:bg-[#F6F3E7]';
+                            const startIndex = (page - 1) * itemsPerPage;
+                            const endIndex = startIndex + itemsPerPage;
+                            const pageData = adopterRegistrations.slice(startIndex, endIndex);
+                            const totalPages = Math.ceil(adopterRegistrations.length / itemsPerPage);
+                            // Update table body
+                            const tableBody = document.getElementById('adopterTableBody');
+                            tableBody.innerHTML = '';
+                            pageData.forEach(adopter => {
+                            const row = document.createElement('tr');
+                            row.className = 'border-b border-[#E5E5E5] hover:bg-[#F6F3E7]';
+                            row.innerHTML =
                                     row.innerHTML =
-                                            '<td class="py-3 px-4">' +
-                                            '<div>' +
-                                            '<span class="font-medium block" style="color: #2B2B2B;">' + adopter.name + '</span>' +
-                                            '<span class="text-xs text-gray-500">' + adopter.email + '</span>' +
-                                            '</div>' +
-                                            '</td>' +
-                                            '<td class="py-3 px-4">' +
-                                            '<span class="text-gray-500 text-sm">' + adopter.date + '</span>' +
-                                            '</td>' +
-                                            '<td class="py-3 px-4">' +
-                                            '<span class="px-2 py-1 text-xs rounded-full" style="background-color: ' + adopter.statusColor + '; color: ' + adopter.statusText + '; border: 1px solid ' + adopter.statusColor + '">' +
-                                            adopter.status +
-                                            '</span>' +
-                                            '</td>' +
-                                            '<td class="py-3 px-4">' +
-                                            '<button class="px-3 py-1 text-sm text-white rounded hover:bg-[#24483E] transition" style="background-color: #2F5D50;">' +
-                                            (adopter.status === 'Pending' ? 'Verify' : 'View') +
-                                            '</button>' +
-                                            '</td>';
-                                    tableBody.appendChild(row);
-                                });
-                                // Update pagination info
-                                document.getElementById('adopterStart').textContent = startIndex + 1;
-                                document.getElementById('adopterEnd').textContent = Math.min(endIndex, adopterRegistrations.length);
-                                document.getElementById('adopterTotal').textContent = adopterRegistrations.length;
-                                // Render pagination buttons
-                                renderPagination('adopter', page, totalPages);
+                                    '<td class="py-3 px-4">' +
+                                    '<div>' +
+                                    '<span class="font-medium block" style="color: #2B2B2B;">' + adopter.name + '</span>' +
+                                    '<span class="text-xs text-gray-500">' + adopter.email + '</span>' +
+                                    '</div>' +
+                                    '</td>' +
+                                    '<td class="py-3 px-4">' +
+                                    '<span class="text-gray-500 text-sm">' + adopter.date + '</span>' +
+                                    '</td>' +
+                                    '<td class="py-3 px-4">' +
+                                    '<span class="px-2 py-1 text-xs rounded-full" style="background-color: ' + adopter.statusColor + '; color: ' + adopter.statusText + '; border: 1px solid ' + adopter.statusColor + '">' +
+                                    adopter.status +
+                                    '</span>' +
+                                    '</td>';
+                            tableBody.appendChild(row);
+                            });
+                            // Update pagination info
+                            document.getElementById('adopterStart').textContent = startIndex + 1;
+                            document.getElementById('adopterEnd').textContent = Math.min(endIndex, adopterRegistrations.length);
+                            document.getElementById('adopterTotal').textContent = adopterRegistrations.length;
+                            // Render pagination buttons
+                            renderPagination('adopter', page, totalPages);
                             }
 
                             // Function to render shelter table
                             function renderShelterTable(page) {
-                                const startIndex = (page - 1) * itemsPerPage;
-                                const endIndex = startIndex + itemsPerPage;
-                                const pageData = shelterRegistrations.slice(startIndex, endIndex);
-                                const totalPages = Math.ceil(shelterRegistrations.length / itemsPerPage);
-                                // Update table body
-                                const tableBody = document.getElementById('shelterTableBody');
-                                tableBody.innerHTML = '';
-                                pageData.forEach(shelter => {
-                                    const row = document.createElement('tr');
-                                    row.className = 'border-b border-[#E5E5E5] hover:bg-[#F6F3E7]';
-                                    row.innerHTML =
-                                            '<td class="py-3 px-4">' +
-                                            '<div>' +
-                                            '<span class="font-medium block" style="color: #2B2B2B;">' + shelter.name + '</span>' +
-                                            '<span class="text-xs text-gray-500">' + shelter.email + '</span>' +
-                                            '</div>' +
-                                            '</td>' +
-                                            '<td class="py-3 px-4">' +
-                                            '<span class="text-gray-500 text-sm">' + shelter.date + '</span>' +
-                                            '</td>' +
-                                            '<td class="py-3 px-4">' +
-                                            '<span class="px-2 py-1 text-xs rounded-full" style="background-color: ' + shelter.statusColor + '; color: ' + shelter.statusText + '; border: 1px solid ' + shelter.statusColor + '">' +
-                                            shelter.status +
-                                            '</span>' +
-                                            '</td>' +
-                                            '<td class="py-3 px-4">' +
-                                            '<button class="px-3 py-1 text-sm text-white rounded transition ' + (shelter.status === 'Pending Review' ? 'hover:bg-[#B38459]' : 'hover:bg-[#24483E]') + '" ' +
-                                            'style="background-color: ' + (shelter.status === 'Pending Review' ? '#C49A6C' : '#2F5D50') + ';">' +
-                                            (shelter.status === 'Pending Review' ? 'Review' : 'View') +
-                                            '</button>' +
-                                            '</td>';
-                                    tableBody.appendChild(row);
-                                });
-                                // Update pagination info
-                                document.getElementById('shelterStart').textContent = startIndex + 1;
-                                document.getElementById('shelterEnd').textContent = Math.min(endIndex, shelterRegistrations.length);
-                                document.getElementById('shelterTotal').textContent = shelterRegistrations.length;
-                                // Render pagination buttons
-                                renderPagination('shelter', page, totalPages);
+                            const startIndex = (page - 1) * itemsPerPage;
+                            const endIndex = startIndex + itemsPerPage;
+                            const pageData = shelterRegistrations.slice(startIndex, endIndex);
+                            const totalPages = Math.ceil(shelterRegistrations.length / itemsPerPage);
+                            // Update table body
+                            const tableBody = document.getElementById('shelterTableBody');
+                            tableBody.innerHTML = '';
+                            pageData.forEach(shelter => {
+                            const row = document.createElement('tr');
+                            row.className = 'border-b border-[#E5E5E5] hover:bg-[#F6F3E7]';
+                            row.innerHTML =
+                                    '<td class="py-3 px-4">' +
+                                    '<div>' +
+                                    '<span class="font-medium block" style="color: #2B2B2B;">' + shelter.name + '</span>' +
+                                    '<span class="text-xs text-gray-500">' + shelter.email + '</span>' +
+                                    '</div>' +
+                                    '</td>' +
+                                    '<td class="py-3 px-4">' +
+                                    '<span class="text-gray-500 text-sm">' + shelter.date + '</span>' +
+                                    '</td>' +
+                                    '<td class="py-3 px-4">' +
+                                    '<span class="px-2 py-1 text-xs rounded-full" style="background-color: ' + shelter.statusColor + '; color: ' + shelter.statusText + '; border: 1px solid ' + shelter.statusColor + '">' +
+                                    shelter.status +
+                                    '</span>' +
+                                    '</td>';
+                            tableBody.appendChild(row);
+                            });
+                            // Update pagination info
+                            document.getElementById('shelterStart').textContent = startIndex + 1;
+                            document.getElementById('shelterEnd').textContent = Math.min(endIndex, shelterRegistrations.length);
+                            document.getElementById('shelterTotal').textContent = shelterRegistrations.length;
+                            // Render pagination buttons
+                            renderPagination('shelter', page, totalPages);
                             }
 
                             // Function to render pagination buttons
                             function renderPagination(type, currentPage, totalPages) {
-                                // PERBAIKAN: Gunakan backtick untuk template literal
-                                const paginationContainer = document.getElementById(type + 'Pagination');
-                                paginationContainer.innerHTML = '';
-
-                                // Previous button
-                                const prevButton = document.createElement('button');
-                                prevButton.className = 'pagination-btn';
-                                prevButton.innerHTML = '&laquo;';
-                                prevButton.disabled = currentPage === 1;
-                                prevButton.addEventListener('click', () => {
-                                    if (type === 'adopter') {
-                                        currentAdopterPage--;
-                                        renderAdopterTable(currentAdopterPage);
-                                    } else {
-                                        currentShelterPage--;
-                                        renderShelterTable(currentShelterPage);
-                                    }
-                                });
-                                paginationContainer.appendChild(prevButton);
-
-                                // Page buttons
-                                const maxVisiblePages = 3;
-                                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-                                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-                                if (endPage - startPage + 1 < maxVisiblePages) {
-                                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
-                                }
-
-                                for (let i = startPage; i <= endPage; i++) {
-                                    const pageButton = document.createElement('button');
-                                    // PERBAIKAN: Format yang betul
-                                    pageButton.className = 'pagination-btn' + (i === currentPage ? ' active' : '');
-                                    pageButton.textContent = i;
-                                    pageButton.addEventListener('click', () => {
-                                        if (type === 'adopter') {
-                                            currentAdopterPage = i;
-                                            renderAdopterTable(currentAdopterPage);
-                                        } else {
-                                            currentShelterPage = i;
-                                            renderShelterTable(currentShelterPage);
-                                        }
-                                    });
-                                    paginationContainer.appendChild(pageButton);
-                                }
-
-                                // Next button
-                                const nextButton = document.createElement('button');
-                                nextButton.className = 'pagination-btn';
-                                nextButton.innerHTML = '&raquo;';
-                                nextButton.disabled = currentPage === totalPages;
-                                nextButton.addEventListener('click', () => {
-                                    if (type === 'adopter') {
-                                        currentAdopterPage++;
-                                        renderAdopterTable(currentAdopterPage);
-                                    } else {
-                                        currentShelterPage++;
-                                        renderShelterTable(currentShelterPage);
-                                    }
-                                });
-                                paginationContainer.appendChild(nextButton);
+                            const paginationContainer = document.getElementById(type + 'Pagination');
+                            paginationContainer.innerHTML = '';
+                            // Previous button
+                            const prevButton = document.createElement('button');
+                            prevButton.className = 'pagination-btn';
+                            prevButton.innerHTML = '&laquo;';
+                            prevButton.disabled = currentPage === 1;
+                            prevButton.addEventListener('click', () => {
+                            if (type === 'adopter') {
+                            currentAdopterPage--;
+                            renderAdopterTable(currentAdopterPage);
+                            } else {
+                            currentShelterPage--;
+                            renderShelterTable(currentShelterPage);
                             }
+                            });
+                            paginationContainer.appendChild(prevButton);
+                            // Page buttons
+                            const maxVisiblePages = 3;
+                            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                            if (endPage - startPage + 1 < maxVisiblePages) {
+                            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                            }
+
+                            for (let i = startPage; i <= endPage; i++) {
+                            const pageButton = document.createElement('button');
+                            pageButton.className = 'pagination-btn' + (i === currentPage ? ' active' : '');
+                            pageButton.textContent = i;
+                            pageButton.addEventListener('click', () => {
+                            if (type === 'adopter') {
+                            currentAdopterPage = i;
+                            renderAdopterTable(currentAdopterPage);
+                            } else {
+                            currentShelterPage = i;
+                            renderShelterTable(currentShelterPage);
+                            }
+                            });
+                            paginationContainer.appendChild(pageButton);
+                            }
+
+                            // Next button
+                            const nextButton = document.createElement('button');
+                            nextButton.className = 'pagination-btn';
+                            nextButton.innerHTML = '&raquo;';
+                            nextButton.disabled = currentPage === totalPages;
+                            nextButton.addEventListener('click', () => {
+                            if (type === 'adopter') {
+                            currentAdopterPage++;
+                            renderAdopterTable(currentAdopterPage);
+                            } else {
+                            currentShelterPage++;
+                            renderShelterTable(currentShelterPage);
+                            }
+                            });
+                            paginationContainer.appendChild(nextButton);
+                            }
+
+                            // Helper functions for actions
+                            function viewAdopter(adopterId) {
+                            // Extract numeric ID from "USR-XXXX"
+                            const id = adopterId.replace('USR-', '');
+                            window.location.href = 'view_profile.jsp?user_id=' + id; // ← BETUL KAN NAMA PAGE
+                            }
+
+                            function viewShelter(shelterId) {
+                            // Extract numeric ID from "SHT-XXXX"
+                            const id = shelterId.replace('SHT-', '');
+                            window.location.href = 'view_profile.jsp?user_id=' + id; // ← SAMA MACAM ADOPTER
+                            }
+
+                            function reviewShelter(shelterId) {
+                            // Extract numeric ID from "SHT-XXXX"
+                            const id = shelterId.replace('SHT-', '');
+                            window.location.href = 'review_registrations.jsp?shelter_id=' + id;
+                            }
+
                             // Initialize tables
+                            document.addEventListener('DOMContentLoaded', function() {
                             renderAdopterTable(currentAdopterPage);
                             renderShelterTable(currentShelterPage);
+                            // Auto-refresh data every 2 minutes
+                            setInterval(() => {
+                            location.reload();
+                            }, 120000); // 120000ms = 2 minutes
+                            });
         </script>
 
     </body>
