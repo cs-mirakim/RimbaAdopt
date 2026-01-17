@@ -9,6 +9,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 public class UsersDao {
 
@@ -243,17 +247,18 @@ public class UsersDao {
                 }
             }
 
-        } else if ("admin".equals(role)) {
+        } // BEFORE (Line lebih kurang 180-190)
+        else if ("admin".equals(role)) {
             String sql = "SELECT * FROM admin WHERE admin_id = ?";
             try (PreparedStatement stmt = connection.prepareStatement(sql)) {
                 stmt.setInt(1, userId);
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
-                        // GANTI Map dengan Admin Object
+                        // GANTI Map dengan Admin Object  ← BETULKAN INI
                         Admin admin = new Admin();
                         admin.setAdminId(rs.getInt("admin_id"));
                         admin.setPosition(rs.getString("position"));
-                        profileData.put("admin", admin);  // ← OBJECT, bukan Map!
+                        profileData.put("admin", admin);  // ← BETUL!
                     }
                 }
             }
@@ -502,5 +507,219 @@ public class UsersDao {
             logger.log(Level.SEVERE, "Error deleting user with ID: " + userId, e);
             throw e;
         }
+    }
+    // UsersDao.java - TAMBAH methods ini di hujung class, SEBELUM tutup kurungan }
+
+// ========== GET PENDING SHELTER REGISTRATIONS ==========
+    public List<Map<String, Object>> getPendingShelters() throws SQLException {
+        List<Map<String, Object>> pendingShelters = new ArrayList<>();
+
+        String sql = "SELECT u.user_id, u.name, u.email, u.phone, u.created_at, "
+                + "s.shelter_name, s.shelter_address, s.shelter_description, "
+                + "s.approval_status, s.reviewed_by, s.reviewed_at, s.rejection_reason "
+                + "FROM users u "
+                + "JOIN shelter s ON u.user_id = s.shelter_id "
+                + "WHERE s.approval_status = 'pending' "
+                + "ORDER BY u.created_at DESC";
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                Map<String, Object> shelter = new HashMap<>();
+                shelter.put("id", "SHT-" + rs.getInt("user_id"));
+                shelter.put("userId", rs.getInt("user_id"));
+                shelter.put("name", rs.getString("shelter_name"));
+                shelter.put("email", rs.getString("email"));
+                shelter.put("type", "Shelter");
+                shelter.put("date", rs.getTimestamp("created_at").toLocalDateTime().toLocalDate().toString());
+                shelter.put("status", "pending");
+                shelter.put("phone", rs.getString("phone"));
+                shelter.put("address", rs.getString("shelter_address"));
+                shelter.put("description", rs.getString("shelter_description"));
+                shelter.put("rejectionReason", rs.getString("rejection_reason"));
+                shelter.put("reviewedBy", rs.getString("reviewed_by"));
+                shelter.put("reviewedAt", rs.getTimestamp("reviewed_at"));
+
+                pendingShelters.add(shelter);
+            }
+        }
+
+        return pendingShelters;
+    }
+
+// ========== GET ALL REGISTRATIONS FOR REVIEW ==========
+    public List<Map<String, Object>> getAllRegistrationsForReview() throws SQLException {
+        List<Map<String, Object>> registrations = new ArrayList<>();
+
+        // Get shelters
+        String shelterSql = "SELECT u.user_id, u.name, u.email, u.phone, u.created_at, "
+                + "s.shelter_name, s.shelter_address, s.shelter_description, "
+                + "s.approval_status, s.reviewed_by, s.reviewed_at, s.rejection_reason, "
+                + "s.approval_message "
+                + "FROM users u "
+                + "JOIN shelter s ON u.user_id = s.shelter_id "
+                + "ORDER BY u.created_at DESC";
+
+        try (PreparedStatement stmt = connection.prepareStatement(shelterSql);
+                ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                Map<String, Object> registration = new HashMap<>();
+                registration.put("id", "SHT-" + rs.getInt("user_id"));
+                registration.put("userId", rs.getInt("user_id"));
+                registration.put("name", rs.getString("shelter_name"));
+                registration.put("email", rs.getString("email"));
+                registration.put("type", "Shelter");
+                registration.put("date", rs.getTimestamp("created_at").toLocalDateTime().toLocalDate().toString());
+
+                String approvalStatus = rs.getString("approval_status");
+                registration.put("status", approvalStatus);
+
+                registration.put("phone", rs.getString("phone"));
+                registration.put("address", rs.getString("shelter_address"));
+                registration.put("description", rs.getString("shelter_description"));
+                registration.put("rejectionReason", rs.getString("rejection_reason"));
+                registration.put("approvalMessage", rs.getString("approval_message"));
+                registration.put("reviewedBy", rs.getString("reviewed_by"));
+                registration.put("reviewedAt", rs.getTimestamp("reviewed_at"));
+
+                registrations.add(registration);
+            }
+        }
+
+        // Get adopters (auto approved - show as "approved" status)
+        String adopterSql = "SELECT u.user_id, u.name, u.email, u.phone, u.created_at, "
+                + "a.address, a.occupation, a.household_type "
+                + "FROM users u "
+                + "JOIN adopter a ON u.user_id = a.adopter_id "
+                + "ORDER BY u.created_at DESC";
+
+        try (PreparedStatement stmt = connection.prepareStatement(adopterSql);
+                ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                Map<String, Object> registration = new HashMap<>();
+                registration.put("id", "USR-" + rs.getInt("user_id"));
+                registration.put("userId", rs.getInt("user_id"));
+                registration.put("name", rs.getString("name"));
+                registration.put("email", rs.getString("email"));
+                registration.put("type", "Adopter");
+                registration.put("date", rs.getTimestamp("created_at").toLocalDateTime().toLocalDate().toString());
+                registration.put("status", "approved"); // Adopters are auto-approved
+                registration.put("phone", rs.getString("phone"));
+                registration.put("address", rs.getString("address"));
+                registration.put("occupation", rs.getString("occupation"));
+                registration.put("householdType", rs.getString("household_type"));
+
+                registrations.add(registration);
+            }
+        }
+
+        return registrations;
+    }
+
+// ========== APPROVE SHELTER ==========
+    public boolean approveShelter(int shelterId, int adminId, String approvalMessage) throws SQLException {
+        String sql = "UPDATE shelter SET approval_status = 'approved', "
+                + "reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP, "
+                + "approval_message = ?, rejection_reason = NULL, "
+                + "notification_sent = 0, notification_sent_at = NULL "
+                + "WHERE shelter_id = ? AND approval_status = 'pending'";
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, adminId);
+            stmt.setString(2, approvalMessage);
+            stmt.setInt(3, shelterId);
+
+            int rowsUpdated = stmt.executeUpdate();
+            logger.info("Approved shelter ID: " + shelterId + " by admin ID: " + adminId);
+            return rowsUpdated > 0;
+        }
+    }
+
+// ========== REJECT SHELTER ==========
+    public boolean rejectShelter(int shelterId, int adminId, String rejectionReason) throws SQLException {
+        String sql = "UPDATE shelter SET approval_status = 'rejected', "
+                + "reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP, "
+                + "rejection_reason = ?, approval_message = NULL, "
+                + "notification_sent = 0, notification_sent_at = NULL "
+                + "WHERE shelter_id = ? AND approval_status = 'pending'";
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, adminId);
+            stmt.setString(2, rejectionReason);
+            stmt.setInt(3, shelterId);
+
+            int rowsUpdated = stmt.executeUpdate();
+            logger.info("Rejected shelter ID: " + shelterId + " by admin ID: " + adminId);
+            return rowsUpdated > 0;
+        }
+    }
+
+// ========== GET APPROVAL STATISTICS ==========
+    public Map<String, Object> getApprovalStatistics() throws SQLException {
+        Map<String, Object> stats = new HashMap<>();
+
+        // Total pending shelters
+        String pendingSql = "SELECT COUNT(*) as count FROM shelter WHERE approval_status = 'pending'";
+        try (PreparedStatement stmt = connection.prepareStatement(pendingSql);
+                ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                stats.put("pendingCount", rs.getInt("count"));
+            }
+        }
+
+        // Approved today
+        String approvedTodaySql = "SELECT COUNT(*) as count FROM shelter "
+                + "WHERE approval_status = 'approved' "
+                + "AND DATE(reviewed_at) = CURRENT_DATE";
+        try (PreparedStatement stmt = connection.prepareStatement(approvedTodaySql);
+                ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                stats.put("approvedToday", rs.getInt("count"));
+            }
+        }
+
+        // Rejected today
+        String rejectedTodaySql = "SELECT COUNT(*) as count FROM shelter "
+                + "WHERE approval_status = 'rejected' "
+                + "AND DATE(reviewed_at) = CURRENT_DATE";
+        try (PreparedStatement stmt = connection.prepareStatement(rejectedTodaySql);
+                ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                stats.put("rejectedToday", rs.getInt("count"));
+            }
+        }
+
+        // Total approved
+        String totalApprovedSql = "SELECT COUNT(*) as count FROM shelter WHERE approval_status = 'approved'";
+        try (PreparedStatement stmt = connection.prepareStatement(totalApprovedSql);
+                ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                stats.put("totalApproved", rs.getInt("count"));
+            }
+        }
+
+        // Total rejected
+        String totalRejectedSql = "SELECT COUNT(*) as count FROM shelter WHERE approval_status = 'rejected'";
+        try (PreparedStatement stmt = connection.prepareStatement(totalRejectedSql);
+                ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                stats.put("totalRejected", rs.getInt("count"));
+            }
+        }
+
+        // Calculate rejection rate
+        int totalProcessed = ((Number) stats.getOrDefault("totalApproved", 0)).intValue()
+                + ((Number) stats.getOrDefault("totalRejected", 0)).intValue();
+
+        double rejectionRate = 0;
+        if (totalProcessed > 0) {
+            rejectionRate = (((Number) stats.getOrDefault("totalRejected", 0)).doubleValue() / totalProcessed) * 100;
+        }
+        stats.put("rejectionRate", Math.round(rejectionRate * 100.0) / 100.0);
+
+        return stats;
     }
 }
