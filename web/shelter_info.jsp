@@ -116,7 +116,7 @@
                 <!-- Back Button and Title -->
                 <div class="mb-8">
                     <div class="flex items-center justify-between mb-2">
-                        <a href="shelter_list.jsp" class="flex items-center text-[#2F5D50] hover:text-[#24483E]">
+                        <a href="shelter_list.html" class="flex items-center text-[#2F5D50] hover:text-[#24483E]">
                             <i class="fas fa-arrow-left mr-2"></i> Back to Shelters
                         </a>
                         <div class="bg-[#6DBF89] text-[#06321F] px-4 py-2 rounded-full text-sm font-medium">
@@ -598,9 +598,59 @@
                     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
                     let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
-                    if (endPage - startPage + 1 < maxVisiblePages) {
-                        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            // Open feedback modal
+            function openFeedbackModal() {
+                feedbackModal.classList.add('show');
+                setTimeout(() => {
+                    const modalContent = feedbackModal.querySelector('.modal-content');
+                    modalContent.classList.add('show');
+                }, 10);
+            }
+
+            // Close feedback modal
+            function closeFeedbackModal() {
+                const modalContent = feedbackModal.querySelector('.modal-content');
+                modalContent.classList.remove('show');
+
+                setTimeout(() => {
+                    feedbackModal.classList.remove('show');
+                    resetReviewForm();
+                }, 300);
+            }
+
+            // Reset review form
+            function resetReviewForm() {
+                selectedRating = 0;
+                selectedRatingInput.value = "0";
+
+                // Reset stars
+                starRatingElements.forEach(star => {
+                    star.classList.remove('fas');
+                    star.classList.add('far');
+                });
+
+                // Reset form fields
+                document.getElementById('reviewTitle').value = '';
+                document.getElementById('reviewComment').value = '';
+            }
+
+            // Handle star rating selection
+            function handleStarClick(e) {
+                const rating = parseInt(e.target.getAttribute('data-value'));
+                selectedRating = rating;
+                selectedRatingInput.value = rating.toString();
+
+                // Update star display
+                starRatingElements.forEach((star, index) => {
+                    if (index < rating) {
+                        star.classList.remove('far');
+                        star.classList.add('fas');
+                    } else {
+                        star.classList.remove('fas');
+                        star.classList.add('far');
                     }
+                });
+            }
 
                     for (let i = startPage; i <= endPage; i++) {
                         const pageBtn = document.createElement('button');

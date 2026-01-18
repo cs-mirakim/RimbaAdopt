@@ -101,4 +101,9 @@ public class LostReport implements Serializable {
     public void setCreatedAt(Timestamp createdAt) {
         this.createdAt = createdAt;
     }
+
+    public void setName(String name) {
+        // This method is just for backward compatibility
+        // We'll handle name separately in the DAO
+    }
 }
