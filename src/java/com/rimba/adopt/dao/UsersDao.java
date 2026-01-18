@@ -722,4 +722,36 @@ public class UsersDao {
 
         return stats;
     }
+    // ========== GET RECENT ACTIVITY ==========
+public List<Map<String, Object>> getRecentActivity(int limit) throws SQLException {
+    List<Map<String, Object>> activities = new ArrayList<>();
+    
+    String sql = "SELECT s.shelter_id, s.shelter_name, s.approval_status, "
+            + "s.reviewed_at, s.reviewed_by, u.name as reviewer_name "
+            + "FROM shelter s "
+            + "LEFT JOIN users u ON s.reviewed_by = u.user_id "
+            + "WHERE s.approval_status IN ('approved', 'rejected') "
+            + "AND s.reviewed_at IS NOT NULL "
+            + "ORDER BY s.reviewed_at DESC "
+            + "FETCH FIRST ? ROWS ONLY";
+    
+    try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        stmt.setInt(1, limit);
+        
+        try (ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                Map<String, Object> activity = new HashMap<>();
+                activity.put("shelterId", rs.getInt("shelter_id"));
+                activity.put("shelterName", rs.getString("shelter_name"));
+                activity.put("status", rs.getString("approval_status"));
+                activity.put("reviewedAt", rs.getTimestamp("reviewed_at"));
+                activity.put("reviewerName", rs.getString("reviewer_name"));
+                
+                activities.add(activity);
+            }
+        }
+    }
+    
+    return activities;
+}
 }
