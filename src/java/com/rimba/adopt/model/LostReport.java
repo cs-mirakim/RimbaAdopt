@@ -9,7 +9,7 @@ public class LostReport implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private Integer lostId;
-    private Integer adopterId;           // ID adopter sahaja
+    private Integer adopterId;
     private String petName;
     private String species;
     private String lastSeenLocation;
@@ -22,7 +22,6 @@ public class LostReport implements Serializable {
     public LostReport() {
     }
 
-    // Getters and Setters
     public Integer getLostId() {
         return lostId;
     }
@@ -101,5 +100,10 @@ public class LostReport implements Serializable {
 
     public void setCreatedAt(Timestamp createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public void setName(String name) {
+        // This method is just for backward compatibility
+        // We'll handle name separately in the DAO
     }
 }

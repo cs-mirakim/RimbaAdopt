@@ -1,4 +1,19 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="com.rimba.adopt.util.SessionUtil" %>
+
+<%
+    // Check if user is logged in and is admin
+    if (!SessionUtil.isLoggedIn(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+
+    if (!SessionUtil.isAdmin(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+%>
+
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -928,9 +943,9 @@
             </div>
         </div>
 
-       <!-- Sidebar container -->
+        <!-- Sidebar container -->
         <jsp:include page="includes/sidebar.jsp" />
-        
+
         <!-- Load sidebar.js -->
         <script src="includes/sidebar.js"></script>
 
@@ -1764,60 +1779,60 @@
                     if (item.status === 'Rejected' && item.rejectionReason) {
                         const shortReason = item.rejectionReason.length > 60 ? item.rejectionReason.substring(0, 60) + '...' : item.rejectionReason;
                         reasonBadge = '<div class="reason-box rejection-reason-box mt-1">' +
-                                      '<span class="font-medium">Reason:</span> ' + shortReason +
-                                      '</div>';
+                                '<span class="font-medium">Reason:</span> ' + shortReason +
+                                '</div>';
                     } else if (item.status === 'Approved' && item.approvalReason) {
                         const shortReason = item.approvalReason.length > 60 ? item.approvalReason.substring(0, 60) + '...' : item.approvalReason;
                         reasonBadge = '<div class="reason-box approval-reason-box mt-1">' +
-                                      '<span class="font-medium">Reason:</span> ' + shortReason +
-                                      '</div>';
+                                '<span class="font-medium">Reason:</span> ' + shortReason +
+                                '</div>';
                     }
 
                     // Determine row HTML with concatenation
                     const isSelected = selectedRegistrations.has(item.id) ? 'checked' : '';
                     const typeClass = item.type === 'Shelter' ? 'bg-[#F5F0EB] text-[#C49A6C]' : 'bg-[#E8F5EE] text-[#57A677]';
-                    
+
                     let actionButtons = '';
                     if (item.status === 'Pending Review' || item.status === 'Pending' || item.status === 'New') {
                         actionButtons = '<button class="action-btn action-btn-approve quick-approve" data-id="' + item.id + '">Approve</button>' +
-                                        '<button class="action-btn action-btn-reject quick-reject" data-id="' + item.id + '">Reject</button>';
+                                '<button class="action-btn action-btn-reject quick-reject" data-id="' + item.id + '">Reject</button>';
                     }
 
-                    const rejectionDateHtml = item.status === 'Rejected' && item.rejectionDate ? 
-                        '<div class="text-xs text-red-500">Rejected: ' + item.rejectionDate + '</div>' : '';
-                    const approvalDateHtml = item.status === 'Approved' && item.approvalDate ? 
-                        '<div class="text-xs text-green-500">Approved: ' + item.approvalDate + '</div>' : '';
+                    const rejectionDateHtml = item.status === 'Rejected' && item.rejectionDate ?
+                            '<div class="text-xs text-red-500">Rejected: ' + item.rejectionDate + '</div>' : '';
+                    const approvalDateHtml = item.status === 'Approved' && item.approvalDate ?
+                            '<div class="text-xs text-green-500">Approved: ' + item.approvalDate + '</div>' : '';
 
                     row.innerHTML = '<td class="py-3 px-4">' +
-                                      '<div class="flex items-center">' +
-                                        '<input type="checkbox" class="row-checkbox mr-3" data-id="' + item.id + '" ' + isSelected + '>' +
-                                        '<span class="font-mono text-sm" style="color: #2B2B2B;">' + item.id + '</span>' +
-                                      '</div>' +
-                                    '</td>' +
-                                    '<td class="py-3 px-4">' +
-                                      '<div>' +
-                                        '<span class="font-medium block" style="color: #2B2B2B;">' + item.name + '</span>' +
-                                        '<span class="text-xs text-gray-500">' + item.email + '</span>' +
-                                        reasonBadge +
-                                      '</div>' +
-                                    '</td>' +
-                                    '<td class="py-3 px-4">' +
-                                      '<span class="px-3 py-1 text-xs rounded-full ' + typeClass + '">' + item.type + '</span>' +
-                                    '</td>' +
-                                    '<td class="py-3 px-4">' +
-                                      '<span class="text-gray-500 text-sm">' + item.date + '</span>' +
-                                      rejectionDateHtml +
-                                      approvalDateHtml +
-                                    '</td>' +
-                                    '<td class="py-3 px-4">' +
-                                      '<span class="status-badge ' + statusClass + '">' + item.status + '</span>' +
-                                    '</td>' +
-                                    '<td class="py-3 px-4">' +
-                                      '<div class="flex space-x-2">' +
-                                        '<button class="action-btn action-btn-view view-details" data-id="' + item.id + '">View</button>' +
-                                        actionButtons +
-                                      '</div>' +
-                                    '</td>';
+                            '<div class="flex items-center">' +
+                            '<input type="checkbox" class="row-checkbox mr-3" data-id="' + item.id + '" ' + isSelected + '>' +
+                            '<span class="font-mono text-sm" style="color: #2B2B2B;">' + item.id + '</span>' +
+                            '</div>' +
+                            '</td>' +
+                            '<td class="py-3 px-4">' +
+                            '<div>' +
+                            '<span class="font-medium block" style="color: #2B2B2B;">' + item.name + '</span>' +
+                            '<span class="text-xs text-gray-500">' + item.email + '</span>' +
+                            reasonBadge +
+                            '</div>' +
+                            '</td>' +
+                            '<td class="py-3 px-4">' +
+                            '<span class="px-3 py-1 text-xs rounded-full ' + typeClass + '">' + item.type + '</span>' +
+                            '</td>' +
+                            '<td class="py-3 px-4">' +
+                            '<span class="text-gray-500 text-sm">' + item.date + '</span>' +
+                            rejectionDateHtml +
+                            approvalDateHtml +
+                            '</td>' +
+                            '<td class="py-3 px-4">' +
+                            '<span class="status-badge ' + statusClass + '">' + item.status + '</span>' +
+                            '</td>' +
+                            '<td class="py-3 px-4">' +
+                            '<div class="flex space-x-2">' +
+                            '<button class="action-btn action-btn-view view-details" data-id="' + item.id + '">View</button>' +
+                            actionButtons +
+                            '</div>' +
+                            '</td>';
 
                     tableBody.appendChild(row);
                 });
@@ -1989,7 +2004,7 @@
                         filterText = 'Rejected';
 
                     typeChip.innerHTML = filterText +
-                        '<span class="remove" data-filter="type">&times;</span>';
+                            '<span class="remove" data-filter="type">&times;</span>';
 
                     typeChip.querySelector('.remove').addEventListener('click', (e) => {
                         e.stopPropagation();
@@ -2013,7 +2028,7 @@
                     statusChip.className = 'filter-chip active';
                     const statusText = currentStatusFilter.charAt(0).toUpperCase() + currentStatusFilter.slice(1);
                     statusChip.innerHTML = statusText +
-                        '<span class="remove" data-filter="status">&times;</span>';
+                            '<span class="remove" data-filter="status">&times;</span>';
                     statusChip.querySelector('.remove').addEventListener('click', (e) => {
                         e.stopPropagation();
                         currentStatusFilter = 'all';
@@ -2029,7 +2044,7 @@
                     const dateChip = document.createElement('div');
                     dateChip.className = 'filter-chip active';
                     dateChip.innerHTML = currentDateFilter +
-                        '<span class="remove" data-filter="date">&times;</span>';
+                            '<span class="remove" data-filter="date">&times;</span>';
                     dateChip.querySelector('.remove').addEventListener('click', (e) => {
                         e.stopPropagation();
                         currentDateFilter = '';
@@ -2065,7 +2080,7 @@
                 let detailsHTML = '';
                 if (registration.type === 'Shelter') {
                     // Generate documents HTML
-                    const documentsHTML = registration.details.documents.map(doc => 
+                    const documentsHTML = registration.details.documents.map(doc =>
                         '<span class="px-3 py-1 text-sm rounded-full bg-gray-100 text-gray-700">' + doc + '</span>'
                     ).join('');
 
@@ -2073,176 +2088,176 @@
                     let approvalDetailsHTML = '';
                     if (registration.status === 'Approved' && registration.approvalReason) {
                         approvalDetailsHTML = '<div class="mt-4 p-4 border border-green-200 rounded-lg bg-green-50">' +
-                                              '<h5 class="font-semibold mb-2" style="color: #378A5E;">Approval Details</h5>' +
-                                              '<div class="detail-row">' +
-                                                '<div class="detail-label">Reason</div>' +
-                                                '<div class="detail-value">' + registration.approvalReason + '</div>' +
-                                              '</div>' +
-                                              '<div class="detail-row">' +
-                                                '<div class="detail-label">Approved On</div>' +
-                                                '<div class="detail-value">' + registration.approvalDate + '</div>' +
-                                              '</div>' +
-                                              '<div class="detail-row">' +
-                                                '<div class="detail-label">Approved By</div>' +
-                                                '<div class="detail-value">' + registration.approvedBy + '</div>' +
-                                              '</div>' +
-                                            '</div>';
+                                '<h5 class="font-semibold mb-2" style="color: #378A5E;">Approval Details</h5>' +
+                                '<div class="detail-row">' +
+                                '<div class="detail-label">Reason</div>' +
+                                '<div class="detail-value">' + registration.approvalReason + '</div>' +
+                                '</div>' +
+                                '<div class="detail-row">' +
+                                '<div class="detail-label">Approved On</div>' +
+                                '<div class="detail-value">' + registration.approvalDate + '</div>' +
+                                '</div>' +
+                                '<div class="detail-row">' +
+                                '<div class="detail-label">Approved By</div>' +
+                                '<div class="detail-value">' + registration.approvedBy + '</div>' +
+                                '</div>' +
+                                '</div>';
                     }
 
                     // Generate rejection details HTML if rejected
                     let rejectionDetailsHTML = '';
                     if (registration.status === 'Rejected' && registration.rejectionReason) {
                         rejectionDetailsHTML = '<div class="mt-4 p-4 border border-red-200 rounded-lg bg-red-50">' +
-                                               '<h5 class="font-semibold mb-2" style="color: #B84A4A;">Rejection Details</h5>' +
-                                               '<div class="detail-row">' +
-                                                 '<div class="detail-label">Reason</div>' +
-                                                 '<div class="detail-value">' + registration.rejectionReason + '</div>' +
-                                               '</div>' +
-                                               '<div class="detail-row">' +
-                                                 '<div class="detail-label">Rejected On</div>' +
-                                                 '<div class="detail-value">' + registration.rejectionDate + '</div>' +
-                                               '</div>' +
-                                               '<div class="detail-row">' +
-                                                 '<div class="detail-label">Rejected By</div>' +
-                                                 '<div class="detail-value">' + registration.rejectedBy + '</div>' +
-                                               '</div>' +
-                                             '</div>';
+                                '<h5 class="font-semibold mb-2" style="color: #B84A4A;">Rejection Details</h5>' +
+                                '<div class="detail-row">' +
+                                '<div class="detail-label">Reason</div>' +
+                                '<div class="detail-value">' + registration.rejectionReason + '</div>' +
+                                '</div>' +
+                                '<div class="detail-row">' +
+                                '<div class="detail-label">Rejected On</div>' +
+                                '<div class="detail-value">' + registration.rejectionDate + '</div>' +
+                                '</div>' +
+                                '<div class="detail-row">' +
+                                '<div class="detail-label">Rejected By</div>' +
+                                '<div class="detail-value">' + registration.rejectedBy + '</div>' +
+                                '</div>' +
+                                '</div>';
                     }
 
                     detailsHTML = '<div class="mb-6">' +
-                                   '<div class="flex items-center justify-between mb-4">' +
-                                     '<div>' +
-                                       '<h4 class="text-lg font-bold" style="color: #2B2B2B;">' + registration.name + '</h4>' +
-                                       '<p class="text-gray-500">' + registration.email + '</p>' +
-                                     '</div>' +
-                                     '<div>' +
-                                       '<span class="status-badge ' + statusClass + '">' + registration.status + '</span>' +
-                                     '</div>' +
-                                   '</div>' +
-                                   '<div class="bg-[#F6F3E7] p-4 rounded-lg mb-4">' +
-                                     '<h5 class="font-semibold mb-2" style="color: #2F5D50;">Shelter Information</h5>' +
-                                     '<div class="detail-row">' +
-                                       '<div class="detail-label">Contact Person</div>' +
-                                       '<div class="detail-value">' + registration.details.contactPerson + '</div>' +
-                                     '</div>' +
-                                     '<div class="detail-row">' +
-                                       '<div class="detail-label">Phone</div>' +
-                                       '<div class="detail-value">' + registration.details.phone + '</div>' +
-                                     '</div>' +
-                                     '<div class="detail-row">' +
-                                       '<div class="detail-label">Address</div>' +
-                                       '<div class="detail-value">' + registration.details.address + '</div>' +
-                                     '</div>' +
-                                     '<div class="detail-row">' +
-                                       '<div class="detail-label">License Number</div>' +
-                                       '<div class="detail-value">' + registration.details.licenseNumber + '</div>' +
-                                     '</div>' +
-                                     '<div class="detail-row">' +
-                                       '<div class="detail-label">Established</div>' +
-                                       '<div class="detail-value">' + registration.details.established + '</div>' +
-                                     '</div>' +
-                                     '<div class="detail-row">' +
-                                       '<div class="detail-label">Capacity</div>' +
-                                       '<div class="detail-value">' + registration.details.capacity + ' animals</div>' +
-                                     '</div>' +
-                                   '</div>' +
-                                   '<div class="mb-4">' +
-                                     '<h5 class="font-semibold mb-2" style="color: #2F5D50;">Description</h5>' +
-                                     '<p class="text-gray-700">' + registration.details.description + '</p>' +
-                                   '</div>' +
-                                   '<div>' +
-                                     '<h5 class="font-semibold mb-2" style="color: #2F5D50;">Submitted Documents</h5>' +
-                                     '<div class="flex flex-wrap gap-2">' + documentsHTML + '</div>' +
-                                   '</div>' +
-                                   approvalDetailsHTML +
-                                   rejectionDetailsHTML +
-                                 '</div>';
+                            '<div class="flex items-center justify-between mb-4">' +
+                            '<div>' +
+                            '<h4 class="text-lg font-bold" style="color: #2B2B2B;">' + registration.name + '</h4>' +
+                            '<p class="text-gray-500">' + registration.email + '</p>' +
+                            '</div>' +
+                            '<div>' +
+                            '<span class="status-badge ' + statusClass + '">' + registration.status + '</span>' +
+                            '</div>' +
+                            '</div>' +
+                            '<div class="bg-[#F6F3E7] p-4 rounded-lg mb-4">' +
+                            '<h5 class="font-semibold mb-2" style="color: #2F5D50;">Shelter Information</h5>' +
+                            '<div class="detail-row">' +
+                            '<div class="detail-label">Contact Person</div>' +
+                            '<div class="detail-value">' + registration.details.contactPerson + '</div>' +
+                            '</div>' +
+                            '<div class="detail-row">' +
+                            '<div class="detail-label">Phone</div>' +
+                            '<div class="detail-value">' + registration.details.phone + '</div>' +
+                            '</div>' +
+                            '<div class="detail-row">' +
+                            '<div class="detail-label">Address</div>' +
+                            '<div class="detail-value">' + registration.details.address + '</div>' +
+                            '</div>' +
+                            '<div class="detail-row">' +
+                            '<div class="detail-label">License Number</div>' +
+                            '<div class="detail-value">' + registration.details.licenseNumber + '</div>' +
+                            '</div>' +
+                            '<div class="detail-row">' +
+                            '<div class="detail-label">Established</div>' +
+                            '<div class="detail-value">' + registration.details.established + '</div>' +
+                            '</div>' +
+                            '<div class="detail-row">' +
+                            '<div class="detail-label">Capacity</div>' +
+                            '<div class="detail-value">' + registration.details.capacity + ' animals</div>' +
+                            '</div>' +
+                            '</div>' +
+                            '<div class="mb-4">' +
+                            '<h5 class="font-semibold mb-2" style="color: #2F5D50;">Description</h5>' +
+                            '<p class="text-gray-700">' + registration.details.description + '</p>' +
+                            '</div>' +
+                            '<div>' +
+                            '<h5 class="font-semibold mb-2" style="color: #2F5D50;">Submitted Documents</h5>' +
+                            '<div class="flex flex-wrap gap-2">' + documentsHTML + '</div>' +
+                            '</div>' +
+                            approvalDetailsHTML +
+                            rejectionDetailsHTML +
+                            '</div>';
                 } else {
                     // Adopter registration
                     // Generate approval details HTML if approved
                     let approvalDetailsHTML = '';
                     if (registration.status === 'Approved' && registration.approvalReason) {
                         approvalDetailsHTML = '<div class="mt-4 p-4 border border-green-200 rounded-lg bg-green-50">' +
-                                              '<h5 class="font-semibold mb-2" style="color: #378A5E;">Approval Details</h5>' +
-                                              '<div class="detail-row">' +
-                                                '<div class="detail-label">Reason</div>' +
-                                                '<div class="detail-value">' + registration.approvalReason + '</div>' +
-                                              '</div>' +
-                                              '<div class="detail-row">' +
-                                                '<div class="detail-label">Approved On</div>' +
-                                                '<div class="detail-value">' + registration.approvalDate + '</div>' +
-                                              '</div>' +
-                                              '<div class="detail-row">' +
-                                                '<div class="detail-label">Approved By</div>' +
-                                                '<div class="detail-value">' + registration.approvedBy + '</div>' +
-                                              '</div>' +
-                                            '</div>';
+                                '<h5 class="font-semibold mb-2" style="color: #378A5E;">Approval Details</h5>' +
+                                '<div class="detail-row">' +
+                                '<div class="detail-label">Reason</div>' +
+                                '<div class="detail-value">' + registration.approvalReason + '</div>' +
+                                '</div>' +
+                                '<div class="detail-row">' +
+                                '<div class="detail-label">Approved On</div>' +
+                                '<div class="detail-value">' + registration.approvalDate + '</div>' +
+                                '</div>' +
+                                '<div class="detail-row">' +
+                                '<div class="detail-label">Approved By</div>' +
+                                '<div class="detail-value">' + registration.approvedBy + '</div>' +
+                                '</div>' +
+                                '</div>';
                     }
 
                     // Generate rejection details HTML if rejected
                     let rejectionDetailsHTML = '';
                     if (registration.status === 'Rejected' && registration.rejectionReason) {
                         rejectionDetailsHTML = '<div class="mt-4 p-4 border border-red-200 rounded-lg bg-red-50">' +
-                                               '<h5 class="font-semibold mb-2" style="color: #B84A4A;">Rejection Details</h5>' +
-                                               '<div class="detail-row">' +
-                                                 '<div class="detail-label">Reason</div>' +
-                                                 '<div class="detail-value">' + registration.rejectionReason + '</div>' +
-                                               '</div>' +
-                                               '<div class="detail-row">' +
-                                                 '<div class="detail-label">Rejected On</div>' +
-                                                 '<div class="detail-value">' + registration.rejectionDate + '</div>' +
-                                               '</div>' +
-                                               '<div class="detail-row">' +
-                                                 '<div class="detail-label">Rejected By</div>' +
-                                                 '<div class="detail-value">' + registration.rejectedBy + '</div>' +
-                                               '</div>' +
-                                             '</div>';
+                                '<h5 class="font-semibold mb-2" style="color: #B84A4A;">Rejection Details</h5>' +
+                                '<div class="detail-row">' +
+                                '<div class="detail-label">Reason</div>' +
+                                '<div class="detail-value">' + registration.rejectionReason + '</div>' +
+                                '</div>' +
+                                '<div class="detail-row">' +
+                                '<div class="detail-label">Rejected On</div>' +
+                                '<div class="detail-value">' + registration.rejectionDate + '</div>' +
+                                '</div>' +
+                                '<div class="detail-row">' +
+                                '<div class="detail-label">Rejected By</div>' +
+                                '<div class="detail-value">' + registration.rejectedBy + '</div>' +
+                                '</div>' +
+                                '</div>';
                     }
 
                     detailsHTML = '<div class="mb-6">' +
-                                   '<div class="flex items-center justify-between mb-4">' +
-                                     '<div>' +
-                                       '<h4 class="text-lg font-bold" style="color: #2B2B2B;">' + registration.name + '</h4>' +
-                                       '<p class="text-gray-500">' + registration.email + '</p>' +
-                                     '</div>' +
-                                     '<div>' +
-                                       '<span class="status-badge ' + statusClass + '">' + registration.status + '</span>' +
-                                     '</div>' +
-                                   '</div>' +
-                                   '<div class="bg-[#F6F3E7] p-4 rounded-lg mb-4">' +
-                                     '<h5 class="font-semibold mb-2" style="color: #2F5D50;">Adopter Information</h5>' +
-                                     '<div class="detail-row">' +
-                                       '<div class="detail-label">Phone</div>' +
-                                       '<div class="detail-value">' + registration.details.phone + '</div>' +
-                                     '</div>' +
-                                     '<div class="detail-row">' +
-                                       '<div class="detail-label">Address</div>' +
-                                       '<div class="detail-value">' + registration.details.address + '</div>' +
-                                     '</div>' +
-                                     '<div class="detail-row">' +
-                                       '<div class="detail-label">Occupation</div>' +
-                                       '<div class="detail-value">' + registration.details.occupation + '</div>' +
-                                     '</div>' +
-                                     '<div class="detail-row">' +
-                                       '<div class="detail-label">Experience with Pets</div>' +
-                                       '<div class="detail-value">' + registration.details.experience + '</div>' +
-                                     '</div>' +
-                                     '<div class="detail-row">' +
-                                       '<div class="detail-label">Home Type</div>' +
-                                       '<div class="detail-value">' + registration.details.homeType + '</div>' +
-                                     '</div>' +
-                                     '<div class="detail-row">' +
-                                       '<div class="detail-label">Other Pets</div>' +
-                                       '<div class="detail-value">' + registration.details.otherPets + '</div>' +
-                                     '</div>' +
-                                   '</div>' +
-                                   '<div>' +
-                                     '<h5 class="font-semibold mb-2" style="color: #2F5D50;">Reason for Adoption</h5>' +
-                                     '<p class="text-gray-700">' + registration.details.reason + '</p>' +
-                                   '</div>' +
-                                   approvalDetailsHTML +
-                                   rejectionDetailsHTML +
-                                 '</div>';
+                            '<div class="flex items-center justify-between mb-4">' +
+                            '<div>' +
+                            '<h4 class="text-lg font-bold" style="color: #2B2B2B;">' + registration.name + '</h4>' +
+                            '<p class="text-gray-500">' + registration.email + '</p>' +
+                            '</div>' +
+                            '<div>' +
+                            '<span class="status-badge ' + statusClass + '">' + registration.status + '</span>' +
+                            '</div>' +
+                            '</div>' +
+                            '<div class="bg-[#F6F3E7] p-4 rounded-lg mb-4">' +
+                            '<h5 class="font-semibold mb-2" style="color: #2F5D50;">Adopter Information</h5>' +
+                            '<div class="detail-row">' +
+                            '<div class="detail-label">Phone</div>' +
+                            '<div class="detail-value">' + registration.details.phone + '</div>' +
+                            '</div>' +
+                            '<div class="detail-row">' +
+                            '<div class="detail-label">Address</div>' +
+                            '<div class="detail-value">' + registration.details.address + '</div>' +
+                            '</div>' +
+                            '<div class="detail-row">' +
+                            '<div class="detail-label">Occupation</div>' +
+                            '<div class="detail-value">' + registration.details.occupation + '</div>' +
+                            '</div>' +
+                            '<div class="detail-row">' +
+                            '<div class="detail-label">Experience with Pets</div>' +
+                            '<div class="detail-value">' + registration.details.experience + '</div>' +
+                            '</div>' +
+                            '<div class="detail-row">' +
+                            '<div class="detail-label">Home Type</div>' +
+                            '<div class="detail-value">' + registration.details.homeType + '</div>' +
+                            '</div>' +
+                            '<div class="detail-row">' +
+                            '<div class="detail-label">Other Pets</div>' +
+                            '<div class="detail-value">' + registration.details.otherPets + '</div>' +
+                            '</div>' +
+                            '</div>' +
+                            '<div>' +
+                            '<h5 class="font-semibold mb-2" style="color: #2F5D50;">Reason for Adoption</h5>' +
+                            '<p class="text-gray-700">' + registration.details.reason + '</p>' +
+                            '</div>' +
+                            approvalDetailsHTML +
+                            rejectionDetailsHTML +
+                            '</div>';
                 }
 
                 modalContent.innerHTML = detailsHTML;

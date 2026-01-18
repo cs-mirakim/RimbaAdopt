@@ -1,4 +1,19 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="com.rimba.adopt.util.SessionUtil" %>
+
+<%
+    // Check if user is logged in and is admin
+    if (!SessionUtil.isLoggedIn(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+
+    if (!SessionUtil.isAdmin(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+%>
+
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -69,7 +84,7 @@
                                 Upload, organize, and manage homepage banner images
                             </p>
                         </div>
-                        <a href="dashboard_admin.html" class="flex items-center gap-2 px-4 py-2 rounded-lg text-white hover:bg-[#24483E] transition" style="background-color: #2F5D50;">
+                        <a href="dashboard_admin.jsp" class="flex items-center gap-2 px-4 py-2 rounded-lg text-white hover:bg-[#24483E] transition" style="background-color: #2F5D50;">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                             </svg>
@@ -485,258 +500,258 @@
         <script src="includes/sidebar.js"></script>
 
         <script>
-    // File Upload Handling
-    var uploadArea = document.getElementById('uploadArea');
-    var fileInput = document.getElementById('bannerUpload');
-    var filePreview = document.getElementById('filePreview');
-    var previewImage = document.getElementById('previewImage');
-    var fileName = document.getElementById('fileName');
-    var fileSize = document.getElementById('fileSize');
-    var cancelUploadBtn = document.getElementById('cancelUpload');
-    var uploadBannerBtn = document.getElementById('uploadBanner');
-    var saveOrderBtn = document.getElementById('saveOrderBtn');
+            // File Upload Handling
+            var uploadArea = document.getElementById('uploadArea');
+            var fileInput = document.getElementById('bannerUpload');
+            var filePreview = document.getElementById('filePreview');
+            var previewImage = document.getElementById('previewImage');
+            var fileName = document.getElementById('fileName');
+            var fileSize = document.getElementById('fileSize');
+            var cancelUploadBtn = document.getElementById('cancelUpload');
+            var uploadBannerBtn = document.getElementById('uploadBanner');
+            var saveOrderBtn = document.getElementById('saveOrderBtn');
 
-    // Drag and drop events
-    uploadArea.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        uploadArea.classList.add('dragover');
-    });
+            // Drag and drop events
+            uploadArea.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
 
-    uploadArea.addEventListener('dragleave', function() {
-        uploadArea.classList.remove('dragover');
-    });
+            uploadArea.addEventListener('dragleave', function () {
+                uploadArea.classList.remove('dragover');
+            });
 
-    uploadArea.addEventListener('drop', function(e) {
-        e.preventDefault();
-        uploadArea.classList.remove('dragover');
-        if (e.dataTransfer.files.length) {
-            fileInput.files = e.dataTransfer.files;
-            handleFileSelect(e.dataTransfer.files[0]);
-        }
-    });
+            uploadArea.addEventListener('drop', function (e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    handleFileSelect(e.dataTransfer.files[0]);
+                }
+            });
 
-    // Click to upload
-    uploadArea.addEventListener('click', function() {
-        fileInput.click();
-    });
+            // Click to upload
+            uploadArea.addEventListener('click', function () {
+                fileInput.click();
+            });
 
-    fileInput.addEventListener('change', function(e) {
-        if (e.target.files.length) {
-            handleFileSelect(e.target.files[0]);
-        }
-    });
+            fileInput.addEventListener('change', function (e) {
+                if (e.target.files.length) {
+                    handleFileSelect(e.target.files[0]);
+                }
+            });
 
-    // Handle file selection
-    function handleFileSelect(file) {
-        // Check file type
-        if (!file.type.match('image.*')) {
-            alert('Please select an image file');
-            return;
-        }
-
-        // Check file size (5MB max)
-        if (file.size > 5 * 1024 * 1024) {
-            alert('File size must be less than 5MB');
-            return;
-        }
-
-        // Show preview
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            previewImage.src = e.target.result;
-            fileName.textContent = file.name;
-            fileSize.textContent = formatFileSize(file.size);
-            filePreview.classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
-    }
-
-    // Format file size
-    function formatFileSize(bytes) {
-        if (bytes === 0)
-            return '0 Bytes';
-        var k = 1024;
-        var sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        var i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-
-    // Cancel upload
-    cancelUploadBtn.addEventListener('click', function() {
-        filePreview.classList.add('hidden');
-        fileInput.value = '';
-    });
-
-    // Upload banner
-    uploadBannerBtn.addEventListener('click', function() {
-        var title = document.getElementById('bannerTitle').value;
-        var caption = document.getElementById('bannerCaption').value;
-        var position = document.getElementById('bannerPosition').value;
-        var active = document.getElementById('bannerActive').checked;
-
-        if (!title.trim()) {
-            alert('Please enter a banner title');
-            return;
-        }
-
-        if (!caption.trim()) {
-            alert('Please enter a caption text');
-            return;
-        }
-
-        // Simulate upload
-        alert('Banner uploaded successfully!\nTitle: ' + title + '\nPosition: ' + position + '\nActive: ' + (active ? 'Yes' : 'No'));
-
-        // Reset form
-        filePreview.classList.add('hidden');
-        fileInput.value = '';
-        document.getElementById('bannerTitle').value = '';
-        document.getElementById('bannerCaption').value = '';
-        document.getElementById('bannerPosition').value = '1';
-        document.getElementById('bannerActive').checked = true;
-    });
-
-    // Delete banner
-    document.querySelectorAll('.delete-banner').forEach(function(button) {
-        button.addEventListener('click', function(e) {
-            e.stopPropagation();
-            var bannerId = this.getAttribute('data-id');
-            var bannerName = this.closest('.banner-item').querySelector('h3').textContent;
-
-            if (confirm('Are you sure you want to delete "' + bannerName + '"?')) {
-                this.closest('.banner-item').style.opacity = '0.5';
-                setTimeout(function() {
-                    button.closest('.banner-item').remove();
-                    updateBannerNumbers();
-                    alert('Banner "' + bannerName + '" deleted successfully.');
-                }, 300);
-            }
-        });
-    });
-
-    // Save order
-    saveOrderBtn.addEventListener('click', function() {
-        saveOrderBtn.textContent = 'Saving...';
-        saveOrderBtn.disabled = true;
-
-        setTimeout(function() {
-            alert('Banner order saved successfully!');
-            saveOrderBtn.textContent = 'Save Banner Order';
-            saveOrderBtn.disabled = false;
-        }, 1000);
-    });
-
-    // Update banner numbers after delete/reorder
-    function updateBannerNumbers() {
-        var banners = document.querySelectorAll('.banner-item');
-        banners.forEach(function(banner, index) {
-            var numberSpan = banner.querySelector('.flex-shrink-0 span');
-            numberSpan.textContent = index + 1;
-            numberSpan.style.backgroundColor = '#2F5D50';
-        });
-    }
-
-    // Simple drag and drop (without external library)
-    var draggedItem = null;
-
-    document.querySelectorAll('.banner-item').forEach(function(item) {
-        item.setAttribute('draggable', 'true');
-
-        item.addEventListener('dragstart', function(e) {
-            draggedItem = this;
-            setTimeout(function() {
-                item.style.opacity = '0.4';
-            }, 0);
-        });
-
-        item.addEventListener('dragend', function() {
-            setTimeout(function() {
-                item.style.opacity = '1';
-                draggedItem = null;
-            }, 0);
-        });
-
-        item.addEventListener('dragover', function(e) {
-            e.preventDefault();
-        });
-
-        item.addEventListener('dragenter', function(e) {
-            e.preventDefault();
-            if (this !== draggedItem) {
-                this.style.backgroundColor = '#E8F5EE';
-            }
-        });
-
-        item.addEventListener('dragleave', function() {
-            this.style.backgroundColor = '';
-        });
-
-        item.addEventListener('drop', function(e) {
-            e.preventDefault();
-            if (this !== draggedItem) {
-                var allItems = Array.prototype.slice.call(document.querySelectorAll('.banner-item'));
-                var draggedIndex = allItems.indexOf(draggedItem);
-                var targetIndex = allItems.indexOf(this);
-
-                if (draggedIndex < targetIndex) {
-                    this.parentNode.insertBefore(draggedItem, this.nextSibling);
-                } else {
-                    this.parentNode.insertBefore(draggedItem, this);
+            // Handle file selection
+            function handleFileSelect(file) {
+                // Check file type
+                if (!file.type.match('image.*')) {
+                    alert('Please select an image file');
+                    return;
                 }
 
-                updateBannerNumbers();
+                // Check file size (5MB max)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('File size must be less than 5MB');
+                    return;
+                }
+
+                // Show preview
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    previewImage.src = e.target.result;
+                    fileName.textContent = file.name;
+                    fileSize.textContent = formatFileSize(file.size);
+                    filePreview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
             }
-            this.style.backgroundColor = '';
-        });
-    });
 
-    // Banner preview navigation
-    var previewIndex = 0;
-    var previewDots = document.querySelectorAll('.preview-dot');
-    var previewSlides = [
-        {bg: 'from-[#2F5D50] to-[#57A677]', title: 'Adopt a friend, save a life'},
-        {bg: 'from-[#C49A6C] to-[#F59E0B]', title: 'Find your perfect companion'},
-        {bg: 'from-[#8B5CF6] to-[#EC4899]', title: 'Join our happy family of adopters'},
-        {bg: 'from-[#3B82F6] to-[#1D4ED8]', title: 'Help us help them'},
-        {bg: 'from-[#10B981] to-[#047857]', title: 'Join our next adoption day'}
-    ];
+            // Format file size
+            function formatFileSize(bytes) {
+                if (bytes === 0)
+                    return '0 Bytes';
+                var k = 1024;
+                var sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                var i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
 
-    function updatePreview() {
-        var previewContainer = document.getElementById('bannerPreview');
-        var currentSlide = previewSlides[previewIndex];
+            // Cancel upload
+            cancelUploadBtn.addEventListener('click', function () {
+                filePreview.classList.add('hidden');
+                fileInput.value = '';
+            });
 
-        previewContainer.innerHTML = '' +
-            '<div class="banner-preview-slide active w-full h-full">' +
-                '<div class="w-full h-full bg-gradient-to-r ' + currentSlide.bg + ' flex items-center justify-center">' +
-                    '<div class="text-center text-white p-6">' +
+            // Upload banner
+            uploadBannerBtn.addEventListener('click', function () {
+                var title = document.getElementById('bannerTitle').value;
+                var caption = document.getElementById('bannerCaption').value;
+                var position = document.getElementById('bannerPosition').value;
+                var active = document.getElementById('bannerActive').checked;
+
+                if (!title.trim()) {
+                    alert('Please enter a banner title');
+                    return;
+                }
+
+                if (!caption.trim()) {
+                    alert('Please enter a caption text');
+                    return;
+                }
+
+                // Simulate upload
+                alert('Banner uploaded successfully!\nTitle: ' + title + '\nPosition: ' + position + '\nActive: ' + (active ? 'Yes' : 'No'));
+
+                // Reset form
+                filePreview.classList.add('hidden');
+                fileInput.value = '';
+                document.getElementById('bannerTitle').value = '';
+                document.getElementById('bannerCaption').value = '';
+                document.getElementById('bannerPosition').value = '1';
+                document.getElementById('bannerActive').checked = true;
+            });
+
+            // Delete banner
+            document.querySelectorAll('.delete-banner').forEach(function (button) {
+                button.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var bannerId = this.getAttribute('data-id');
+                    var bannerName = this.closest('.banner-item').querySelector('h3').textContent;
+
+                    if (confirm('Are you sure you want to delete "' + bannerName + '"?')) {
+                        this.closest('.banner-item').style.opacity = '0.5';
+                        setTimeout(function () {
+                            button.closest('.banner-item').remove();
+                            updateBannerNumbers();
+                            alert('Banner "' + bannerName + '" deleted successfully.');
+                        }, 300);
+                    }
+                });
+            });
+
+            // Save order
+            saveOrderBtn.addEventListener('click', function () {
+                saveOrderBtn.textContent = 'Saving...';
+                saveOrderBtn.disabled = true;
+
+                setTimeout(function () {
+                    alert('Banner order saved successfully!');
+                    saveOrderBtn.textContent = 'Save Banner Order';
+                    saveOrderBtn.disabled = false;
+                }, 1000);
+            });
+
+            // Update banner numbers after delete/reorder
+            function updateBannerNumbers() {
+                var banners = document.querySelectorAll('.banner-item');
+                banners.forEach(function (banner, index) {
+                    var numberSpan = banner.querySelector('.flex-shrink-0 span');
+                    numberSpan.textContent = index + 1;
+                    numberSpan.style.backgroundColor = '#2F5D50';
+                });
+            }
+
+            // Simple drag and drop (without external library)
+            var draggedItem = null;
+
+            document.querySelectorAll('.banner-item').forEach(function (item) {
+                item.setAttribute('draggable', 'true');
+
+                item.addEventListener('dragstart', function (e) {
+                    draggedItem = this;
+                    setTimeout(function () {
+                        item.style.opacity = '0.4';
+                    }, 0);
+                });
+
+                item.addEventListener('dragend', function () {
+                    setTimeout(function () {
+                        item.style.opacity = '1';
+                        draggedItem = null;
+                    }, 0);
+                });
+
+                item.addEventListener('dragover', function (e) {
+                    e.preventDefault();
+                });
+
+                item.addEventListener('dragenter', function (e) {
+                    e.preventDefault();
+                    if (this !== draggedItem) {
+                        this.style.backgroundColor = '#E8F5EE';
+                    }
+                });
+
+                item.addEventListener('dragleave', function () {
+                    this.style.backgroundColor = '';
+                });
+
+                item.addEventListener('drop', function (e) {
+                    e.preventDefault();
+                    if (this !== draggedItem) {
+                        var allItems = Array.prototype.slice.call(document.querySelectorAll('.banner-item'));
+                        var draggedIndex = allItems.indexOf(draggedItem);
+                        var targetIndex = allItems.indexOf(this);
+
+                        if (draggedIndex < targetIndex) {
+                            this.parentNode.insertBefore(draggedItem, this.nextSibling);
+                        } else {
+                            this.parentNode.insertBefore(draggedItem, this);
+                        }
+
+                        updateBannerNumbers();
+                    }
+                    this.style.backgroundColor = '';
+                });
+            });
+
+            // Banner preview navigation
+            var previewIndex = 0;
+            var previewDots = document.querySelectorAll('.preview-dot');
+            var previewSlides = [
+                {bg: 'from-[#2F5D50] to-[#57A677]', title: 'Adopt a friend, save a life'},
+                {bg: 'from-[#C49A6C] to-[#F59E0B]', title: 'Find your perfect companion'},
+                {bg: 'from-[#8B5CF6] to-[#EC4899]', title: 'Join our happy family of adopters'},
+                {bg: 'from-[#3B82F6] to-[#1D4ED8]', title: 'Help us help them'},
+                {bg: 'from-[#10B981] to-[#047857]', title: 'Join our next adoption day'}
+            ];
+
+            function updatePreview() {
+                var previewContainer = document.getElementById('bannerPreview');
+                var currentSlide = previewSlides[previewIndex];
+
+                previewContainer.innerHTML = '' +
+                        '<div class="banner-preview-slide active w-full h-full">' +
+                        '<div class="w-full h-full bg-gradient-to-r ' + currentSlide.bg + ' flex items-center justify-center">' +
+                        '<div class="text-center text-white p-6">' +
                         '<h3 class="text-2xl font-bold mb-2">' + currentSlide.title + '</h3>' +
                         '<p class="opacity-90">Preview of banner ' + (previewIndex + 1) + '</p>' +
-                    '</div>' +
-                '</div>' +
-            '</div>';
+                        '</div>' +
+                        '</div>' +
+                        '</div>';
 
-        previewDots.forEach(function(dot, index) {
-            dot.classList.toggle('active', index === previewIndex);
-            dot.classList.toggle('opacity-50', index !== previewIndex);
-        });
-    }
+                previewDots.forEach(function (dot, index) {
+                    dot.classList.toggle('active', index === previewIndex);
+                    dot.classList.toggle('opacity-50', index !== previewIndex);
+                });
+            }
 
-    previewDots.forEach(function(dot, index) {
-        dot.addEventListener('click', function() {
-            previewIndex = index;
+            previewDots.forEach(function (dot, index) {
+                dot.addEventListener('click', function () {
+                    previewIndex = index;
+                    updatePreview();
+                });
+            });
+
+            // Auto rotate preview
+            setInterval(function () {
+                previewIndex = (previewIndex + 1) % previewSlides.length;
+                updatePreview();
+            }, 3000);
+
+            // Initialize preview
             updatePreview();
-        });
-    });
-
-    // Auto rotate preview
-    setInterval(function() {
-        previewIndex = (previewIndex + 1) % previewSlides.length;
-        updatePreview();
-    }, 3000);
-
-    // Initialize preview
-    updatePreview();
-</script>
+        </script>
 
     </body>
 </html>

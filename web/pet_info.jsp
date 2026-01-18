@@ -1,4 +1,19 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="com.rimba.adopt.util.SessionUtil" %>
+
+<%
+    // Check if user is logged in and is admin
+    if (!SessionUtil.isLoggedIn(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+
+    if (!SessionUtil.isAdopter(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+%>
+
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -77,7 +92,7 @@
 
         <!-- Header container -->
         <!-- Header container -->
-<jsp:include page="includes/header.jsp" />
+        <jsp:include page="includes/header.jsp" />
 
         <!-- Main Content -->
         <main class="flex-1 p-4 pt-6 relative z-10 flex justify-center items-start mb-2">
@@ -400,9 +415,9 @@
 
         <!-- Footer container -->
         <!-- Footer container -->
-<jsp:include page="includes/footer.jsp" />
-<!-- Sidebar container -->
-<jsp:include page="includes/sidebar.jsp" />
+        <jsp:include page="includes/footer.jsp" />
+        <!-- Sidebar container -->
+        <jsp:include page="includes/sidebar.jsp" />
 
         <!-- Load sidebar.js -->
         <script src="includes/sidebar.js"></script>

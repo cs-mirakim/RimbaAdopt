@@ -8,16 +8,15 @@ public class AdoptionRecord implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private Integer recordId;
-    private Integer requestId;           // ID adoption request sahaja
-    private Integer adopterId;           // ID adopter sahaja
-    private Integer petId;               // ID pet sahaja
+    private Integer requestId;
+    private Integer adopterId;
+    private Integer petId;
     private Date adoptionDate;
     private String remarks;
 
     public AdoptionRecord() {
     }
 
-    // Getters and Setters
     public Integer getRecordId() {
         return recordId;
     }

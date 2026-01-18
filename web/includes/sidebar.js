@@ -42,9 +42,24 @@ function initSidebar() {
         return;
     }
 
+    // Get user role from data attribute
+    const userRole = menuContainer.getAttribute('data-user-role') || 'adopter';
+
+    console.log('Current user role:', userRole);
+
     // Function untuk show logout modal
     function showLogoutModal() {
         logoutModal.classList.remove('hidden');
+
+        // Check if page actually has scrollbar
+        const hasScrollbar = document.body.scrollHeight > window.innerHeight;
+
+        if (hasScrollbar) {
+            // Only add padding if page has scrollbar
+            const scrollbarWidth = getScrollbarWidth();
+            document.body.style.paddingRight = scrollbarWidth + 'px';
+        }
+
         // Prevent body scrolling when modal is open
         document.body.style.overflow = 'hidden';
     }
@@ -54,6 +69,20 @@ function initSidebar() {
         logoutModal.classList.add('hidden');
         // Restore body scrolling
         document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+    }
+
+    // Get scrollbar width to prevent layout shift
+    function getScrollbarWidth() {
+        const outer = document.createElement('div');
+        outer.style.visibility = 'hidden';
+        outer.style.overflow = 'scroll';
+        document.body.appendChild(outer);
+        const inner = document.createElement('div');
+        outer.appendChild(inner);
+        const scrollbarWidth = outer.offsetWidth - inner.offsetWidth;
+        outer.parentNode.removeChild(outer);
+        return scrollbarWidth;
     }
 
     // Render menu untuk role tertentu
@@ -61,39 +90,91 @@ function initSidebar() {
         menuContainer.innerHTML = '';
         const items = menus[role] || [];
 
+        if (items.length === 0) {
+            const noItems = document.createElement('p');
+            noItems.className = 'text-white/50 text-sm text-center py-4';
+            noItems.textContent = 'No menu items available';
+            menuContainer.appendChild(noItems);
+            return;
+        }
+
         items.forEach((item, idx) => {
             let el;
             if (item.href) {
-                // Anchor navigation untuk adopter pages
+                // Anchor navigation
                 el = document.createElement('a');
                 el.href = item.href;
                 el.setAttribute('role', 'menuitem');
-                el.className = 'w-full block text-left px-3 py-2 rounded hover:bg-[#24483E] transition-colors';
-                el.textContent = item.label;
+                el.className = 'w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-[#24483E] transition-all duration-200 group';
+
+                // Text container
+                const textSpan = document.createElement('span');
+                textSpan.textContent = item.label;
+                textSpan.className = 'text-sm font-medium';
+                el.appendChild(textSpan);
+
+                // Arrow icon
+                const arrowSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                arrowSvg.setAttribute('class', 'w-4 h-4 text-white/60 group-hover:text-white group-hover:translate-x-1 transition-all duration-200');
+                arrowSvg.setAttribute('fill', 'none');
+                arrowSvg.setAttribute('stroke', 'currentColor');
+                arrowSvg.setAttribute('stroke-width', '2');
+                arrowSvg.setAttribute('viewBox', '0 0 24 24');
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('stroke-linecap', 'round');
+                path.setAttribute('stroke-linejoin', 'round');
+                path.setAttribute('d', 'M9 5l7 7-7 7');
+                arrowSvg.appendChild(path);
+                el.appendChild(arrowSvg);
+
+                // Highlight current page
+                const currentPath = window.location.pathname.split('/').pop() || '';
+                if (item.href.includes(currentPath)) {
+                    el.className += ' bg-[#24483E] border-l-4 border-[#6DBF89]';
+                }
             } else {
                 // Fallback button yang call action
                 el = document.createElement('button');
                 el.type = 'button';
-                el.className = 'w-full text-left px-3 py-2 rounded hover:bg-[#24483E] transition-colors';
-                el.textContent = item.label;
-                el.addEventListener('click', () => {
-                    try {
-                        item.action();
-                    } catch (e) {
-                        console.log(e);
-                    }
-                    closeSidebar();
-                });
+                el.className = 'w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-[#24483E] transition-all duration-200 group';
+
+                const textSpan = document.createElement('span');
+                textSpan.textContent = item.label;
+                textSpan.className = 'text-sm font-medium';
+                el.appendChild(textSpan);
+
+                // Arrow icon
+                const arrowSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                arrowSvg.setAttribute('class', 'w-4 h-4 text-white/60 group-hover:text-white group-hover:translate-x-1 transition-all duration-200');
+                arrowSvg.setAttribute('fill', 'none');
+                arrowSvg.setAttribute('stroke', 'currentColor');
+                arrowSvg.setAttribute('stroke-width', '2');
+                arrowSvg.setAttribute('viewBox', '0 0 24 24');
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('stroke-linecap', 'round');
+                path.setAttribute('stroke-linejoin', 'round');
+                path.setAttribute('d', 'M9 5l7 7-7 7');
+                arrowSvg.appendChild(path);
+                el.appendChild(arrowSvg);
+
+                if (item.action) {
+                    el.addEventListener('click', () => {
+                        try {
+                            item.action();
+                        } catch (e) {
+                            console.log(e);
+                        }
+                        closeSidebar();
+                    });
+                }
             }
 
             menuContainer.appendChild(el);
 
-            // Divider line
-            if (idx < items.length - 1) {
-                const hr = document.createElement('div');
-                hr.className = 'border-t border-slate-500/30 my-1';
-                menuContainer.appendChild(hr);
-            }
+            // Divider line - IMPROVED (lebih jelas dan terang)
+            const hr = document.createElement('div');
+            hr.className = 'border-t border-[#6DBF89]/40 my-2';
+            menuContainer.appendChild(hr);
         });
     }
 
@@ -138,19 +219,11 @@ function initSidebar() {
     // Escape key tutup sidebar
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            if (!logoutModal.classList.contains('hidden')) {
+            if (logoutModal && !logoutModal.classList.contains('hidden')) {
                 hideLogoutModal();
             } else {
                 closeSidebar();
             }
-        }
-    });
-
-    // Radio change untuk tukar menu content
-    document.addEventListener('change', (e) => {
-        const r = e.target;
-        if (r.name === 'sidebar_role') {
-            renderMenu(r.value);
         }
     });
 
@@ -170,11 +243,12 @@ function initSidebar() {
         });
     }
 
-    // Logout modal confirm button - ensure sidebar closes
+    // Logout modal confirm button
     if (logoutConfirm) {
         logoutConfirm.addEventListener('click', () => {
             closeSidebar();
             hideLogoutModal();
+            // Redirect handled by href
         });
     }
 
@@ -187,16 +261,14 @@ function initSidebar() {
         });
     }
 
-    // Initial render (default checked radio)
-    const initial = document.querySelector('input[name="sidebar_role"]:checked');
-    renderMenu(initial ? initial.value : 'admin');
+    // Initial render berdasarkan role user
+    renderMenu(userRole);
 
-    // Overlay click juga tutup sidebar (tapi bukan modal)
+    // Overlay click tutup sidebar
     overlay.addEventListener('click', closeSidebar);
 }
 
 // ✅ PANGGIL initSidebar bila DOM ready
-// Sekarang tak perlu fetch header/footer/sidebar sebab dah guna JSP include
 document.addEventListener('DOMContentLoaded', function () {
     initSidebar();
 });

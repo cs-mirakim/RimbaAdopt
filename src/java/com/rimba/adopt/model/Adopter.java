@@ -1,4 +1,3 @@
-// 3. ADOPTER MODEL  
 package com.rimba.adopt.model;
 
 import java.io.Serializable;
@@ -11,7 +10,7 @@ public class Adopter implements Serializable {
     private String address;
     private String occupation;
     private String householdType;
-    private Integer hasOtherPets;  // Derby pakai SMALLINT/INTEGER, bukan boolean
+    private Integer hasOtherPets;
     private String notes;
 
     public Adopter() {

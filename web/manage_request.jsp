@@ -1,4 +1,19 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="com.rimba.adopt.util.SessionUtil" %>
+
+<%
+    // Check if user is logged in and is admin
+    if (!SessionUtil.isLoggedIn(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+
+    if (!SessionUtil.isShelter(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+%>
+
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -308,7 +323,7 @@
             ];
 
             // ES5 compatible code - no arrow functions, no template literals
-            var REQUESTS = RAW_DATA.map(function(item, index) {
+            var REQUESTS = RAW_DATA.map(function (item, index) {
                 var imgNum = (index % 3) + 1;
                 var newItem = {};
                 // Copy semua property
@@ -350,7 +365,7 @@
                 // Filter Tabs
                 var filterButtons = document.querySelectorAll('.filter-btn');
                 for (var i = 0; i < filterButtons.length; i++) {
-                    filterButtons[i].addEventListener('click', function(e) {
+                    filterButtons[i].addEventListener('click', function (e) {
                         state.filter = e.currentTarget.dataset.status;
                         state.page = 1;
                         applyFilter();
@@ -359,7 +374,7 @@
                 }
 
                 // Search
-                document.getElementById('search-input').addEventListener('input', function(e) {
+                document.getElementById('search-input').addEventListener('input', function (e) {
                     state.search = e.target.value.toLowerCase().trim();
                     state.page = 1;
                     applyFilter();
@@ -402,7 +417,7 @@
             }
 
             function applyFilter() {
-                state.filtered = state.data.filter(function(item) {
+                state.filtered = state.data.filter(function (item) {
                     var matchStatus = state.filter === 'all' || item.status === state.filter;
                     var matchSearch = !state.search || item.pet.toLowerCase().indexOf(state.search) !== -1 || item.adopter.toLowerCase().indexOf(state.search) !== -1;
                     return matchStatus && matchSearch;
@@ -412,8 +427,8 @@
             }
 
             function updateCounts() {
-                var pendingCount = state.data.filter(function(i) { 
-                    return i.status === 'pending'; 
+                var pendingCount = state.data.filter(function (i) {
+                    return i.status === 'pending';
                 }).length;
                 els.counts.displayPending.innerText = pendingCount;
                 document.getElementById('total-items').innerText = state.filtered.length;
@@ -432,7 +447,7 @@
                 for (var i = 0; i < displayData.length; i++) {
                     var item = displayData[i];
                     var statusBadge = '';
-                    
+
                     if (item.status === 'pending')
                         statusBadge = '<span class="px-3 py-1 rounded-full text-xs font-bold bg-chip-pending text-white capitalize">' + item.status + '</span>';
                     else if (item.status === 'approved')
@@ -450,30 +465,30 @@
                         btnHtml = '<button onclick="openReviewModal(' + item.id + ')" class="px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-600 text-xs font-bold uppercase tracking-wide hover:bg-gray-50 transition shadow-sm">View</button>';
                     }
 
-                    tableHTML += 
-                        '<tr class="hover:bg-gray-50 transition">' +
+                    tableHTML +=
+                            '<tr class="hover:bg-gray-50 transition">' +
                             '<td class="px-6 py-4 text-sm font-medium text-gray-400">#' + item.id + '</td>' +
                             '<td class="px-6 py-4">' +
-                                '<div class="flex items-center gap-3">' +
-                                    '<img class="h-10 w-10 rounded-lg object-cover bg-gray-100" src="' + item.pet_img + '">' +
-                                    '<div>' +
-                                        '<div class="text-sm font-bold text-text-main">' + item.pet + '</div>' +
-                                        '<div class="text-xs text-gray-500">' + item.breed + '</div>' +
-                                    '</div>' +
-                                '</div>' +
+                            '<div class="flex items-center gap-3">' +
+                            '<img class="h-10 w-10 rounded-lg object-cover bg-gray-100" src="' + item.pet_img + '">' +
+                            '<div>' +
+                            '<div class="text-sm font-bold text-text-main">' + item.pet + '</div>' +
+                            '<div class="text-xs text-gray-500">' + item.breed + '</div>' +
+                            '</div>' +
+                            '</div>' +
                             '</td>' +
                             '<td class="px-6 py-4">' +
-                                '<div class="flex items-center gap-3">' +
-                                    '<img class="h-8 w-8 rounded-full object-cover border border-divider" src="' + item.adopter_img + '">' +
-                                    '<div class="text-sm font-medium">' + item.adopter + '</div>' +
-                                '</div>' +
+                            '<div class="flex items-center gap-3">' +
+                            '<img class="h-8 w-8 rounded-full object-cover border border-divider" src="' + item.adopter_img + '">' +
+                            '<div class="text-sm font-medium">' + item.adopter + '</div>' +
+                            '</div>' +
                             '</td>' +
                             '<td class="px-6 py-4 text-sm text-gray-500">' + item.date.split(' ')[0] + '</td>' +
                             '<td class="px-6 py-4">' + statusBadge + '</td>' +
                             '<td class="px-6 py-4 text-center">' + btnHtml + '</td>' +
-                        '</tr>';
+                            '</tr>';
                 }
-                
+
                 els.table.innerHTML = tableHTML;
             }
 
@@ -487,11 +502,12 @@
                         break;
                     }
                 }
-                if (!item) return;
+                if (!item)
+                    return;
                 state.currentId = id;
 
-                function set(id, val) { 
-                    document.getElementById(id).innerText = val || '-'; 
+                function set(id, val) {
+                    document.getElementById(id).innerText = val || '-';
                 }
 
                 // Basic Info
@@ -650,8 +666,8 @@
                     icon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
                 }
                 toast.classList.remove('translate-x-full', 'opacity-0');
-                setTimeout(function() { 
-                    toast.classList.add('translate-x-full', 'opacity-0'); 
+                setTimeout(function () {
+                    toast.classList.add('translate-x-full', 'opacity-0');
                 }, 3000);
             }
 

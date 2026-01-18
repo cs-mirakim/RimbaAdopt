@@ -8,8 +8,8 @@ public class Feedback implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private Integer feedbackId;
-    private Integer adopterId;           // ID adopter sahaja
-    private Integer shelterId;           // ID shelter sahaja
+    private Integer adopterId;
+    private Integer shelterId;
     private Integer rating;
     private String comment;
     private Timestamp createdAt;
@@ -17,7 +17,6 @@ public class Feedback implements Serializable {
     public Feedback() {
     }
 
-    // Getters and Setters
     public Integer getFeedbackId() {
         return feedbackId;
     }

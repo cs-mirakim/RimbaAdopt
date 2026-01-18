@@ -1,4 +1,18 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" isELIgnored="true"%>
+<%@ page import="com.rimba.adopt.util.SessionUtil" %>
+
+<%
+    // Check if user is logged in and is admin
+    if (!SessionUtil.isLoggedIn(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+
+    if (!SessionUtil.isAdopter(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+%>
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -104,7 +118,7 @@
                 <!-- Back Button and Title - UPDATED LAYOUT -->
                 <div class="mb-8">
                     <div class="flex items-center justify-between mb-2">
-                        <a href="shelter_list.jsp" class="flex items-center text-[#2F5D50] hover:text-[#24483E]">
+                        <a href="shelter_list.html" class="flex items-center text-[#2F5D50] hover:text-[#24483E]">
                             <i class="fas fa-arrow-left mr-2"></i> Back to Shelters
                         </a>
                         <div class="bg-[#6DBF89] text-[#06321F] px-4 py-2 rounded-full text-sm font-medium">
@@ -379,7 +393,7 @@
 
         <!-- Sidebar container -->
         <jsp:include page="includes/sidebar.jsp" />
-        
+
         <!-- Load sidebar.js -->
         <script src="includes/sidebar.js"></script>
 
@@ -653,7 +667,7 @@
                     </div>
                     <p class="text-[#666] text-sm mb-4 line-clamp-2">${pet.description}</p>
                     <div class="text-center">
-                        <a href="pet_info.jsp" class="inline-block w-full px-4 py-2 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300 text-sm">
+                        <a href="pet_info.html" class="inline-block w-full px-4 py-2 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300 text-sm">
                             <i class="fas fa-heart mr-1"></i> Adopt ${pet.name}
                         </a>
                     </div>
@@ -676,8 +690,7 @@
                 petPageNumbers.innerHTML = '';
                 for (let i = 1; i <= totalPetPages; i++) {
                     const pageBtn = document.createElement('button');
-                    pageBtn.className = 'w-10 h-10 rounded-lg border ' + 
-                        (i === currentPetPage ? 'border-[#2F5D50] bg-[#2F5D50] text-white' : 'border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]');
+                    pageBtn.className = `w-10 h-10 rounded-lg border ${i === currentPetPage ? 'border-[#2F5D50] bg-[#2F5D50] text-white' : 'border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]'}`;
                     pageBtn.textContent = i;
                     pageBtn.addEventListener('click', () => {
                         currentPetPage = i;
@@ -686,6 +699,7 @@
                     });
                     petPageNumbers.appendChild(pageBtn);
                 }
+            }
 
             // Next pet page
             function nextPetPage() {
@@ -786,8 +800,7 @@
 
                 for (let i = startPage; i <= endPage; i++) {
                     const pageBtn = document.createElement('button');
-                    pageBtn.className = 'review-page-btn w-10 h-10 rounded-lg border ' + 
-                        (i === currentReviewPage ? 'border-[#2F5D50] bg-[#2F5D50] text-white' : 'border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]');
+                    pageBtn.className = `review-page-btn w-10 h-10 rounded-lg border ${i === currentReviewPage ? 'border-[#2F5D50] bg-[#2F5D50] text-white' : 'border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]'}`;
                     pageBtn.textContent = i;
                     pageBtn.addEventListener('click', () => {
                         currentReviewPage = i;
@@ -796,6 +809,7 @@
                     });
                     reviewPageNumbers.appendChild(pageBtn);
                 }
+            }
 
             // Next review page
             function nextReviewPage() {
