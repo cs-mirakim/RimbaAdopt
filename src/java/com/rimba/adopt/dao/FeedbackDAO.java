@@ -42,7 +42,7 @@ public class FeedbackDAO {
         }
     }
 
-    // Get feedback by shelter ID
+    // Dalam FeedbackDAO.java - Update getFeedbackByShelterId method:
     public List<Feedback> getFeedbackByShelterId(int shelterId, int page, int pageSize) {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -51,9 +51,9 @@ public class FeedbackDAO {
 
         try {
             conn = DatabaseConnection.getConnection();
-            int offset = (page - 1) * pageSize;
 
-            // GUNA LIMIT instead of OFFSET...FETCH (lebih universal)
+            // TAMBAH PAGINATION dengan LIMIT dan OFFSET
+            int offset = (page - 1) * pageSize;
             String sql = "SELECT f.* FROM feedback f "
                     + "WHERE f.shelter_id = ? "
                     + "ORDER BY f.created_at DESC "
@@ -138,7 +138,6 @@ public class FeedbackDAO {
         return count;
     }
 
-    // Get average rating for a shelter
     public double getAverageRatingByShelterId(int shelterId) {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -147,7 +146,8 @@ public class FeedbackDAO {
 
         try {
             conn = DatabaseConnection.getConnection();
-            String sql = "SELECT AVG(CAST(rating AS DOUBLE)) as average FROM feedback WHERE shelter_id = ?";
+            // GUNA AVG() sahaja tanpa CAST
+            String sql = "SELECT AVG(rating) as average FROM feedback WHERE shelter_id = ?";
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, shelterId);
 

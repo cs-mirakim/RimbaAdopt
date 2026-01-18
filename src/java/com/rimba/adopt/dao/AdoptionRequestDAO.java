@@ -476,24 +476,8 @@ public class AdoptionRequestDAO {
         return counts;
     }
 
-// Get monthly request statistics - NEW METHOD
     public Map<String, Object> getMonthlyRequestStats(int shelterId) throws SQLException {
         Map<String, Object> stats = new HashMap<>();
-
-        // Try PostgreSQL syntax first
-        String query = "SELECT "
-                + "    TO_CHAR(ar.request_date, 'Mon') as month_short, "
-                + "    EXTRACT(MONTH FROM ar.request_date) as month_num, "
-                + "    ar.status, "
-                + "    COUNT(*) as count "
-                + "FROM adoption_request ar "
-                + "JOIN pets p ON ar.pet_id = p.pet_id "
-                + "WHERE p.shelter_id = ? "
-                + "    AND EXTRACT(YEAR FROM ar.request_date) = EXTRACT(YEAR FROM CURRENT_DATE) "
-                + "GROUP BY TO_CHAR(ar.request_date, 'Mon'), "
-                + "         EXTRACT(MONTH FROM ar.request_date), "
-                + "         ar.status "
-                + "ORDER BY month_num, ar.status";
 
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -501,10 +485,6 @@ public class AdoptionRequestDAO {
 
         try {
             conn = DatabaseConnection.getConnection();
-            pstmt = conn.prepareStatement(query);
-            pstmt.setInt(1, shelterId);
-
-            rs = pstmt.executeQuery();
 
             // Initialize data structures
             List<String> months = Arrays.asList("Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -519,91 +499,79 @@ public class AdoptionRequestDAO {
 
             // Initialize all counts to 0
             for (String status : monthlyData.keySet()) {
-                for (int i = 0; i < 12; i++) {
-                    monthlyData.get(status)[i] = 0;
-                }
+                Arrays.fill(monthlyData.get(status), 0);
             }
 
-            // DALAM method getMonthlyRequestStats(), TAMBAH null check:
+            System.out.println("DEBUG DAO: Getting monthly stats for shelter ID: " + shelterId);
+
+            // Simple approach - get all requests for this year and process manually
+            String query = "SELECT ar.request_date, ar.status "
+                    + "FROM adoption_request ar "
+                    + "JOIN pets p ON ar.pet_id = p.pet_id "
+                    + "WHERE p.shelter_id = ?";
+
+            pstmt = conn.prepareStatement(query);
+            pstmt.setInt(1, shelterId);
+
+            rs = pstmt.executeQuery();
+
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            int currentYear = cal.get(java.util.Calendar.YEAR);
+
+            int totalRecords = 0;
+            int currentYearRecords = 0;
+
             while (rs.next()) {
-                String monthShort = rs.getString("month_short");
-                int monthNum = rs.getInt("month_num") - 1;
+                totalRecords++;
+                Timestamp requestDate = rs.getTimestamp("request_date");
                 String status = rs.getString("status");
-                int count = rs.getInt("count");
 
-                // TAMBAH null check
-                if (status != null && monthlyData.containsKey(status.toLowerCase())
-                        && monthNum >= 0 && monthNum < 12) {
-                    monthlyData.get(status.toLowerCase())[monthNum] = count;
+                if (requestDate != null && status != null) {
+                    cal.setTime(requestDate);
+                    int year = cal.get(java.util.Calendar.YEAR);
+                    int month = cal.get(java.util.Calendar.MONTH); // 0-indexed (0=Jan, 11=Dec)
+
+                    // Only process current year data
+                    if (year == currentYear && month >= 0 && month < 12) {
+                        currentYearRecords++;
+                        String statusLower = status.toLowerCase();
+
+                        if (monthlyData.containsKey(statusLower)) {
+                            monthlyData.get(statusLower)[month]++;
+                            System.out.println("DEBUG DAO: Added " + statusLower + " for month " + month);
+                        }
+                    }
                 }
             }
+
+            System.out.println("DEBUG DAO: Total records found: " + totalRecords);
+            System.out.println("DEBUG DAO: Current year records: " + currentYearRecords);
+            System.out.println("DEBUG DAO: Approved array: " + Arrays.toString(monthlyData.get("approved")));
+            System.out.println("DEBUG DAO: Pending array: " + Arrays.toString(monthlyData.get("pending")));
 
             stats.put("months", months);
             stats.put("monthlyData", monthlyData);
 
+            return stats;
+
         } catch (SQLException e) {
-            // Try MySQL syntax
-            try {
-                if (rs != null) {
-                    rs.close();
-                }
-                if (pstmt != null) {
-                    pstmt.close();
-                }
+            System.err.println("ERROR in getMonthlyRequestStats: " + e.getMessage());
+            e.printStackTrace();
 
-                query = "SELECT "
-                        + "    DATE_FORMAT(ar.request_date, '%b') as month_short, "
-                        + "    MONTH(ar.request_date) as month_num, "
-                        + "    ar.status, "
-                        + "    COUNT(*) as count "
-                        + "FROM adoption_request ar "
-                        + "JOIN pets p ON ar.pet_id = p.pet_id "
-                        + "WHERE p.shelter_id = ? "
-                        + "    AND YEAR(ar.request_date) = YEAR(CURRENT_DATE()) "
-                        + "GROUP BY DATE_FORMAT(ar.request_date, '%b'), "
-                        + "         MONTH(ar.request_date), "
-                        + "         ar.status "
-                        + "ORDER BY month_num, ar.status";
+            // Return empty but valid structure instead of null
+            List<String> months = Arrays.asList("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
+            Map<String, int[]> monthlyData = new HashMap<>();
+            monthlyData.put("approved", new int[12]);
+            monthlyData.put("pending", new int[12]);
+            monthlyData.put("rejected", new int[12]);
+            monthlyData.put("cancelled", new int[12]);
 
-                pstmt = conn.prepareStatement(query);
-                pstmt.setInt(1, shelterId);
+            stats.put("months", months);
+            stats.put("monthlyData", monthlyData);
 
-                rs = pstmt.executeQuery();
+            return stats;
 
-                // Re-initialize
-                List<String> months = Arrays.asList("Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
-                Map<String, int[]> monthlyData = new HashMap<>();
-
-                monthlyData.put("approved", new int[12]);
-                monthlyData.put("pending", new int[12]);
-                monthlyData.put("rejected", new int[12]);
-                monthlyData.put("cancelled", new int[12]);
-
-                for (String status : monthlyData.keySet()) {
-                    for (int i = 0; i < 12; i++) {
-                        monthlyData.get(status)[i] = 0;
-                    }
-                }
-
-                while (rs.next()) {
-                    String monthShort = rs.getString("month_short");
-                    int monthNum = rs.getInt("month_num") - 1;
-                    String status = rs.getString("status");
-                    int count = rs.getInt("count");
-
-                    if (monthlyData.containsKey(status) && monthNum >= 0 && monthNum < 12) {
-                        monthlyData.get(status)[monthNum] = count;
-                    }
-                }
-
-                stats.put("months", months);
-                stats.put("monthlyData", monthlyData);
-
-            } catch (SQLException e2) {
-                e2.printStackTrace();
-                throw e2;
-            }
         } finally {
             if (rs != null) {
                 try {
@@ -619,11 +587,8 @@ public class AdoptionRequestDAO {
             }
             DatabaseConnection.closeConnection(conn);
         }
-
-        return stats;
     }
 
-// Get recent requests for dashboard - NEW METHOD (optional)
     public List<Map<String, Object>> getRecentRequests(int shelterId, int limit) throws SQLException {
         List<Map<String, Object>> requests = new ArrayList<>();
 

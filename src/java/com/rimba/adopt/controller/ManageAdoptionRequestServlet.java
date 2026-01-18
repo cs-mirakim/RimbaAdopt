@@ -52,28 +52,49 @@ public class ManageAdoptionRequestServlet extends HttpServlet {
 
             // ========== NEW: ADD DASHBOARD ACTION ==========
             // GANTI bahagian ini dalam doGet():
-            if ("dashboard".equals(action)) {
-                // Get all dashboard data
-                DashboardData dashboardData = getDashboardData(conn, shelterId);
+            if ("view".equals(action)) {
+                String requestIdStr = request.getParameter("id");
+                if (requestIdStr != null) {
+                    // Get request details AND set the full list
+                    AdoptionRequestDAO requestDAO = new AdoptionRequestDAO();
 
-                // Set all attributes for JSP
-                request.setAttribute("totalPets", dashboardData.getTotalPets());
-                request.setAttribute("pendingRequests", dashboardData.getPendingRequests());
-                request.setAttribute("approvedRequests", dashboardData.getApprovedRequests());
-                request.setAttribute("rejectedRequests", dashboardData.getRejectedRequests());
-                request.setAttribute("cancelledRequests", dashboardData.getCancelledRequests());
-                request.setAttribute("averageRating", dashboardData.getAverageRating());
-                request.setAttribute("monthlyStats", dashboardData.getMonthlyStats());
-                request.setAttribute("monthlyFeedbackStats", dashboardData.getMonthlyFeedbackStats());
+                    // MUST load full list also
+                    List<Map<String, Object>> requests = requestDAO.getRequestsWithDetails(shelterId, "all", "");
+                    request.setAttribute("requests", requests);
+                    request.setAttribute("filter", "all");
 
-                // Forward to dashboard JSP
-                request.getRequestDispatcher("dashboard_shelter.jsp").forward(request, response);
-                return;
-            } // TAMBAH ELSE untuk handle bila tiada action atau action lain
-            else {
-                // Default: redirect ke dashboard
-                response.sendRedirect("ManageAdoptionRequest?action=dashboard");
-                return;
+                    // Forward instead of redirect
+                    request.getRequestDispatcher("manage_request.jsp").forward(request, response);
+                    return;  // IMPORTANT
+                }
+            } else {
+                // List all requests for the shelter
+                String filter = request.getParameter("filter");
+                String search = request.getParameter("search");
+
+                if (filter == null) {
+                    filter = "all";
+                }
+                if (search == null) {
+                    search = "";
+                }
+
+                // Get requests
+                AdoptionRequestDAO requestDAO = new AdoptionRequestDAO();
+                List<Map<String, Object>> requests = requestDAO.getRequestsWithDetails(shelterId, filter, search);
+
+                // Get pending count
+                int pendingCount = requestDAO.countPendingRequests(shelterId);
+
+                // Set attributes for JSP
+                request.setAttribute("requests", requests);
+                request.setAttribute("filter", filter);
+                request.setAttribute("search", search);
+                request.setAttribute("pendingCount", pendingCount);
+                request.setAttribute("shelterId", shelterId);
+
+                // Forward to JSP
+                request.getRequestDispatcher("manage_request.jsp").forward(request, response);
             }
 
         } catch (SQLException | NumberFormatException e) {

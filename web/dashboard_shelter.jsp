@@ -1,3 +1,5 @@
+<%@page import="com.rimba.adopt.util.DatabaseConnection"%>
+<%@page import="java.sql.Connection"%>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="com.rimba.adopt.util.SessionUtil" %>
 <%@ page import="com.rimba.adopt.dao.AdoptionRequestDAO" %>
@@ -26,12 +28,15 @@
         return;
     }
 
+    // Get shelter name from session
+    String shelterName = SessionUtil.getUserName(session);
+
     // Initialize DAOs
     AdoptionRequestDAO adoptionRequestDAO = new AdoptionRequestDAO();
     FeedbackDAO feedbackDAO = new FeedbackDAO();
     PetsDAO petsDAO = new PetsDAO();
 
-    // Get data directly from DAOs
+    // Initialize all variables with default values
     Integer totalPets = 0;
     Integer pendingRequests = 0;
     Integer approvedRequests = 0;
@@ -41,27 +46,68 @@
     Map<String, Object> monthlyStats = null;
     Map<String, Object> monthlyFeedbackStats = null;
 
+    // Debug logging
+    System.out.println("=== SHELTER DASHBOARD DEBUG ===");
+    System.out.println("Shelter ID: " + shelterId);
+    System.out.println("Shelter Name: " + shelterName);
+
     try {
         // Get pet count
+        System.out.println("Getting pet count...");
         totalPets = petsDAO.getPetCountByShelter(shelterId);
+        System.out.println("Total pets: " + totalPets);
 
         // Get request counts by status
+        System.out.println("Getting request counts...");
         Map<String, Integer> requestCounts = adoptionRequestDAO.countRequestsByStatus(shelterId);
         if (requestCounts != null) {
             pendingRequests = requestCounts.get("pending");
             approvedRequests = requestCounts.get("approved");
             rejectedRequests = requestCounts.get("rejected");
             cancelledRequests = requestCounts.get("cancelled");
+            System.out.println("Request counts - Pending: " + pendingRequests + ", Approved: " + approvedRequests);
+        } else {
+            System.out.println("WARNING: requestCounts is null!");
         }
 
         // Get average rating
+        System.out.println("Getting average rating...");
         averageRating = feedbackDAO.getAverageRatingByShelterId(shelterId);
+        System.out.println("Average rating: " + averageRating);
 
-        // Get monthly statistics
-        monthlyStats = adoptionRequestDAO.getMonthlyRequestStats(shelterId);
-        monthlyFeedbackStats = feedbackDAO.getMonthlyFeedbackStats(shelterId);
+        // Get monthly statistics - WITH DETAILED ERROR LOGGING
+        System.out.println("Getting monthly request stats...");
+        try {
+            monthlyStats = adoptionRequestDAO.getMonthlyRequestStats(shelterId);
+            if (monthlyStats == null) {
+                System.out.println("ERROR: monthlyStats returned null!");
+            } else {
+                System.out.println("monthlyStats received successfully");
+                System.out.println("monthlyStats keys: " + monthlyStats.keySet());
+            }
+        } catch (Exception e) {
+            System.out.println("ERROR in getMonthlyRequestStats: " + e.getMessage());
+            e.printStackTrace();
+            monthlyStats = null;
+        }
+
+        System.out.println("Getting monthly feedback stats...");
+        try {
+            monthlyFeedbackStats = feedbackDAO.getMonthlyFeedbackStats(shelterId);
+            if (monthlyFeedbackStats == null) {
+                System.out.println("ERROR: monthlyFeedbackStats returned null!");
+            } else {
+                System.out.println("monthlyFeedbackStats received successfully");
+                System.out.println("monthlyFeedbackStats keys: " + monthlyFeedbackStats.keySet());
+            }
+        } catch (Exception e) {
+            System.out.println("ERROR in getMonthlyFeedbackStats: " + e.getMessage());
+            e.printStackTrace();
+            monthlyFeedbackStats = null;
+        }
 
     } catch (Exception e) {
+        System.out.println("ERROR in shelter dashboard data retrieval: " + e.getMessage());
         e.printStackTrace();
         // Set default values on error
         totalPets = 0;
@@ -72,8 +118,7 @@
         averageRating = 0.0;
     }
 
-    // Get shelter name from session
-    String shelterName = SessionUtil.getUserName(session);
+    System.out.println("=== END DEBUG ===");
 
     // Prepare chart data with better null handling
     List<String> months = Arrays.asList("Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -94,36 +139,55 @@
 
     // Extract data dari monthlyStats jika ada
     if (monthlyStats != null) {
-        Map<String, int[]> monthlyData = (Map<String, int[]>) monthlyStats.get("monthlyData");
-        if (monthlyData != null) {
-            approvedData = monthlyData.get("approved");
-            if (approvedData == null) {
-                approvedData = new int[12];
-            }
+        try {
+            Map<String, int[]> monthlyData = (Map<String, int[]>) monthlyStats.get("monthlyData");
+            if (monthlyData != null) {
+                System.out.println("Processing monthlyData...");
 
-            pendingData = monthlyData.get("pending");
-            if (pendingData == null) {
-                pendingData = new int[12];
-            }
+                if (monthlyData.containsKey("approved") && monthlyData.get("approved") != null) {
+                    approvedData = monthlyData.get("approved");
+                    System.out.println("Approved data: " + Arrays.toString(approvedData));
+                }
 
-            rejectedData = monthlyData.get("rejected");
-            if (rejectedData == null) {
-                rejectedData = new int[12];
-            }
+                if (monthlyData.containsKey("pending") && monthlyData.get("pending") != null) {
+                    pendingData = monthlyData.get("pending");
+                    System.out.println("Pending data: " + Arrays.toString(pendingData));
+                }
 
-            cancelledData = monthlyData.get("cancelled");
-            if (cancelledData == null) {
-                cancelledData = new int[12];
+                if (monthlyData.containsKey("rejected") && monthlyData.get("rejected") != null) {
+                    rejectedData = monthlyData.get("rejected");
+                }
+
+                if (monthlyData.containsKey("cancelled") && monthlyData.get("cancelled") != null) {
+                    cancelledData = monthlyData.get("cancelled");
+                }
+            } else {
+                System.out.println("monthlyData is null inside monthlyStats");
             }
+        } catch (Exception e) {
+            System.out.println("Error extracting monthlyData: " + e.getMessage());
+            e.printStackTrace();
         }
+    } else {
+        System.out.println("monthlyStats is null, using default zeros");
     }
 
     // Extract data dari monthlyFeedbackStats jika ada
     if (monthlyFeedbackStats != null) {
-        double[] tempRatings = (double[]) monthlyFeedbackStats.get("monthlyRatings");
-        if (tempRatings != null && tempRatings.length == 12) {
-            ratingData = tempRatings;
+        try {
+            double[] tempRatings = (double[]) monthlyFeedbackStats.get("monthlyRatings");
+            if (tempRatings != null && tempRatings.length == 12) {
+                ratingData = tempRatings;
+                System.out.println("Rating data: " + Arrays.toString(ratingData));
+            } else {
+                System.out.println("monthlyRatings is null or wrong length");
+            }
+        } catch (Exception e) {
+            System.out.println("Error extracting ratingData: " + e.getMessage());
+            e.printStackTrace();
         }
+    } else {
+        System.out.println("monthlyFeedbackStats is null, using default zeros");
     }
 %>
 
@@ -184,8 +248,34 @@
         <div class="p-4 pt-6 relative z-10 flex justify-center items-start">
             <div class="w-full" style="max-width: 1450px;">
                 <div class="relative overflow-hidden rounded-xl shadow-lg">
-                    <!-- Banner Images -->
+                    <!-- Banner Images - Get from database -->
                     <div class="banner-container relative" style="height: 400px;">
+                        <%
+                            Connection bannerConn = null;
+                            java.sql.PreparedStatement bannerPstmt = null;
+                            java.sql.ResultSet bannerRs = null;
+                            try {
+                                bannerConn = DatabaseConnection.getConnection();
+                                String bannerSql = "SELECT image_path FROM awareness_banner WHERE status = 'visible' ORDER BY COALESCE(display_order, 999) ASC";
+                                bannerPstmt = bannerConn.prepareStatement(bannerSql);
+                                bannerRs = bannerPstmt.executeQuery();
+
+                                int bannerIndex = 0;
+                                while (bannerRs.next()) {
+                                    String imagePath = bannerRs.getString("image_path");
+                                    if (imagePath != null && !imagePath.isEmpty()) {
+                        %>
+                        <div class="banner-slide <%= bannerIndex == 0 ? "active" : ""%>">
+                            <img src="<%= imagePath%>" alt="Banner <%= bannerIndex + 1%>" class="w-full h-full object-cover">
+                        </div>
+                        <%
+                                    bannerIndex++;
+                                }
+                            }
+
+                            // If no banners in database, use static defaults
+                            if (bannerIndex == 0) {
+                        %>
                         <div class="banner-slide active">
                             <img src="banner/banner1.jpg" alt="Banner 1" class="w-full h-full object-cover">
                         </div>
@@ -201,6 +291,48 @@
                         <div class="banner-slide">
                             <img src="banner/banner5.jpg" alt="Banner 5" class="w-full h-full object-cover">
                         </div>
+                        <%
+                            }
+                        } catch (Exception e) {
+                            // Fallback to static banners if error
+                        %>
+                        <div class="banner-slide active">
+                            <img src="banner/banner1.jpg" alt="Banner 1" class="w-full h-full object-cover">
+                        </div>
+                        <div class="banner-slide">
+                            <img src="banner/banner2.jpg" alt="Banner 2" class="w-full h-full object-cover">
+                        </div>
+                        <div class="banner-slide">
+                            <img src="banner/banner3.jpg" alt="Banner 3" class="w-full h-full object-cover">
+                        </div>
+                        <div class="banner-slide">
+                            <img src="banner/banner4.jpg" alt="Banner 4" class="w-full h-full object-cover">
+                        </div>
+                        <div class="banner-slide">
+                            <img src="banner/banner5.jpg" alt="Banner 5" class="w-full h-full object-cover">
+                        </div>
+                        <%
+                            } finally {
+                                try {
+                                    if (bannerRs != null) {
+                                        bannerRs.close();
+                                    }
+                                } catch (Exception e) {
+                                }
+                                try {
+                                    if (bannerPstmt != null) {
+                                        bannerPstmt.close();
+                                    }
+                                } catch (Exception e) {
+                                }
+                                try {
+                                    if (bannerConn != null) {
+                                        bannerConn.close();
+                                    }
+                                } catch (Exception e) {
+                                }
+                            }
+                        %>
 
                         <!-- Navigation Arrows -->
                         <button onclick="changeSlide(-1)" class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-3 rounded-full transition">
@@ -216,12 +348,8 @@
                     </div>
 
                     <!-- Dots Indicator -->
-                    <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center justify-center">
-                        <span class="dot active" onclick="currentSlide(1)"></span>
-                        <span class="dot" onclick="currentSlide(2)"></span>
-                        <span class="dot" onclick="currentSlide(3)"></span>
-                        <span class="dot" onclick="currentSlide(4)"></span>
-                        <span class="dot" onclick="currentSlide(5)"></span>
+                    <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center justify-center" id="dotsContainer">
+                        <!-- Dots will be generated by JavaScript -->
                     </div>
                 </div>
             </div>
@@ -300,7 +428,7 @@
                         <h2 class="text-xl font-semibold text-[#2B2B2B] mb-4">Quick Links</h2>
 
                         <div class="space-y-4">
-                            <a href="ManageAdoptionRequest?action=managePets" class="flex items-center gap-3 p-4 rounded-lg bg-[#2F5D50] text-white hover:bg-[#24483E] transition group w-full">
+                            <a href="manage-pets" class="flex items-center gap-3 p-4 rounded-lg bg-[#2F5D50] text-white hover:bg-[#24483E] transition group w-full">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                       d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -314,14 +442,6 @@
                                       d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                 </svg>
                                 <span class="text-sm font-medium">Manage Requests</span>
-                            </a>
-
-                            <a href="FeedbackServlet?action=getFeedback" class="flex items-center gap-3 p-4 rounded-lg bg-[#2F5D50] text-white hover:bg-[#24483E] transition group w-full">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                                </svg>
-                                <span class="text-sm font-medium">View Feedback</span>
                             </a>
                         </div>
 
@@ -371,7 +491,7 @@
                 </div>
 
             </div>
-        </main>
+        </main>                 
 
         <!-- Footer container -->
         <jsp:include page="includes/footer.jsp" />
@@ -433,81 +553,43 @@
                             }
 
                             // Initialize slideshow
-                            showSlides(slideIndex);
-                            startAutoSlide();
+                            document.addEventListener('DOMContentLoaded', function () {
+                                generateDots();
+                                showSlides(slideIndex);
+                                startAutoSlide();
+                            });
 
-                            // Prepare chart data - GUNA cara manual tanpa lambda
-                            const months = [
-            <%
-                for (int i = 0; i < months.size(); i++) {
-                    if (i > 0) {
-                        out.print(", ");
-                    }
-                    out.print("'" + months.get(i) + "'");
-                }
-            %>
-                            ];
+                            // ========== PREPARE CHART DATA - GUNA CARA YANG SAMA MACAM ADMIN DASHBOARD ==========
 
-                            const approvedData = [
-            <%
-                for (int i = 0; i < approvedData.length; i++) {
-                    if (i > 0) {
-                        out.print(", ");
-                    }
-                    out.print(approvedData[i]);
-                }
-            %>
-                            ];
+                            // Month labels
+                            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-                            const pendingData = [
-            <%
-                for (int i = 0; i < pendingData.length; i++) {
-                    if (i > 0) {
-                        out.print(", ");
-                    }
-                    out.print(pendingData[i]);
-                }
-            %>
-                            ];
+                            // Approved data - output terus dari JSP
+                            const approvedData = [<%= approvedData[0]%>, <%= approvedData[1]%>, <%= approvedData[2]%>, <%= approvedData[3]%>, <%= approvedData[4]%>, <%= approvedData[5]%>, <%= approvedData[6]%>, <%= approvedData[7]%>, <%= approvedData[8]%>, <%= approvedData[9]%>, <%= approvedData[10]%>, <%= approvedData[11]%>];
 
-                            const rejectedData = [
-            <%
-                for (int i = 0; i < rejectedData.length; i++) {
-                    if (i > 0) {
-                        out.print(", ");
-                    }
-                    out.print(rejectedData[i]);
-                }
-            %>
-                            ];
+                            // Pending data
+                            const pendingData = [<%= pendingData[0]%>, <%= pendingData[1]%>, <%= pendingData[2]%>, <%= pendingData[3]%>, <%= pendingData[4]%>, <%= pendingData[5]%>, <%= pendingData[6]%>, <%= pendingData[7]%>, <%= pendingData[8]%>, <%= pendingData[9]%>, <%= pendingData[10]%>, <%= pendingData[11]%>];
 
-                            const cancelledData = [
-            <%
-                for (int i = 0; i < cancelledData.length; i++) {
-                    if (i > 0) {
-                        out.print(", ");
-                    }
-                    out.print(cancelledData[i]);
-                }
-            %>
-                            ];
+                            // Rejected data
+                            const rejectedData = [<%= rejectedData[0]%>, <%= rejectedData[1]%>, <%= rejectedData[2]%>, <%= rejectedData[3]%>, <%= rejectedData[4]%>, <%= rejectedData[5]%>, <%= rejectedData[6]%>, <%= rejectedData[7]%>, <%= rejectedData[8]%>, <%= rejectedData[9]%>, <%= rejectedData[10]%>, <%= rejectedData[11]%>];
 
+                            // Cancelled data
+                            const cancelledData = [<%= cancelledData[0]%>, <%= cancelledData[1]%>, <%= cancelledData[2]%>, <%= cancelledData[3]%>, <%= cancelledData[4]%>, <%= cancelledData[5]%>, <%= cancelledData[6]%>, <%= cancelledData[7]%>, <%= cancelledData[8]%>, <%= cancelledData[9]%>, <%= cancelledData[10]%>, <%= cancelledData[11]%>];
+
+                            // Rating data - dengan format 2 decimal
                             const ratingData = [
-            <%
-                for (int i = 0; i < ratingData.length; i++) {
-                    if (i > 0) {
-                        out.print(", ");
-                    }
-                    // Format to 2 decimal places
-                    String formattedValue;
-                    try {
-                        formattedValue = String.format("%.2f", ratingData[i]);
-                    } catch (Exception e) {
-                        formattedValue = "0.00";
-                    }
-                    out.print(formattedValue);
-                }
-            %>
+            <%= String.format("%.2f", ratingData[0])%>,
+            <%= String.format("%.2f", ratingData[1])%>,
+            <%= String.format("%.2f", ratingData[2])%>,
+            <%= String.format("%.2f", ratingData[3])%>,
+            <%= String.format("%.2f", ratingData[4])%>,
+            <%= String.format("%.2f", ratingData[5])%>,
+            <%= String.format("%.2f", ratingData[6])%>,
+            <%= String.format("%.2f", ratingData[7])%>,
+            <%= String.format("%.2f", ratingData[8])%>,
+            <%= String.format("%.2f", ratingData[9])%>,
+            <%= String.format("%.2f", ratingData[10])%>,
+            <%= String.format("%.2f", ratingData[11])%>
                             ];
 
                             // Debug console
@@ -518,7 +600,7 @@
                             console.log("Cancelled:", cancelledData);
                             console.log("Ratings:", ratingData);
 
-                            // Request Overview Chart (Grouped Bar Chart)
+                            // ========== REQUEST OVERVIEW CHART (GROUPED BAR CHART) ==========
                             const reqCtx = document.getElementById('requestChart').getContext('2d');
                             const requestChart = new Chart(reqCtx, {
                                 type: 'bar',
@@ -574,7 +656,6 @@
                                                 stepSize: 1,
                                                 precision: 0,
                                                 callback: function (value) {
-                                                    // Check if value is integer
                                                     if (value % 1 === 0) {
                                                         return value;
                                                     }
@@ -604,7 +685,7 @@
                                 }
                             });
 
-                            // Feedback Overview Chart
+                            // ========== FEEDBACK OVERVIEW CHART (LINE CHART) ==========
                             const feedbackCtx = document.getElementById('feedbackChart').getContext('2d');
                             const feedbackChart = new Chart(feedbackCtx, {
                                 type: 'line',
@@ -673,6 +754,23 @@
                                 requestChart.resize();
                                 feedbackChart.resize();
                             });
+
+                            // Generate dots based on number of slides
+                            function generateDots() {
+                                let slides = document.getElementsByClassName("banner-slide");
+                                let dotsContainer = document.getElementById("dotsContainer");
+                                if (slides.length > 0 && dotsContainer) {
+                                    dotsContainer.innerHTML = '';
+                                    for (let i = 1; i <= slides.length; i++) {
+                                        let dot = document.createElement("span");
+                                        dot.className = i === 1 ? "dot active" : "dot";
+                                        dot.onclick = function () {
+                                            currentSlide(i);
+                                        };
+                                        dotsContainer.appendChild(dot);
+                                    }
+                                }
+                            }
         </script>
 
     </body>
