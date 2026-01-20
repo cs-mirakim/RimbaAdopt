@@ -61,9 +61,9 @@ public class FeedbackServlet extends HttpServlet {
                 double averageRating = feedbackDAO.getAverageRatingByShelterId(shelterId);
                 int[] ratingDistribution = feedbackDAO.getRatingDistributionByShelterId(shelterId);
 
-                System.out.println("DEBUG: Feedback stats - total: " + totalCount + 
-                                  ", avg: " + averageRating + 
-                                  ", current page: " + page);
+                System.out.println("DEBUG: Feedback stats - total: " + totalCount
+                        + ", avg: " + averageRating
+                        + ", current page: " + page);
 
                 // Build JSON response manually
                 StringBuilder json = new StringBuilder();
@@ -175,17 +175,17 @@ public class FeedbackServlet extends HttpServlet {
         try {
             String action = request.getParameter("action");
 
+            // Dalam doPost() - bahagian "submitFeedback":
             if ("submitFeedback".equals(action)) {
                 String shelterIdParam = request.getParameter("shelterId");
                 String ratingParam = request.getParameter("rating");
                 String comment = request.getParameter("comment");
-                String title = request.getParameter("title"); // Optional
-                String forceSubmit = request.getParameter("forceSubmit"); // New parameter
+                String forceSubmit = request.getParameter("forceSubmit");
 
-                System.out.println("DEBUG: Submitting feedback - shelterId: " + shelterIdParam + 
-                                  ", rating: " + ratingParam + 
-                                  ", comment length: " + (comment != null ? comment.length() : 0) +
-                                  ", forceSubmit: " + forceSubmit);
+                System.out.println("DEBUG: Submitting feedback - shelterId: " + shelterIdParam
+                        + ", rating: " + ratingParam
+                        + ", comment length: " + (comment != null ? comment.length() : 0)
+                        + ", forceSubmit: " + forceSubmit);
 
                 if (shelterIdParam == null || shelterIdParam.isEmpty()) {
                     sendJsonResponse(out, false, "Shelter ID is required", null);
@@ -212,13 +212,10 @@ public class FeedbackServlet extends HttpServlet {
                     return;
                 }
 
-                // Check if forceSubmit is requested or if user wants to allow multiple reviews
-                boolean allowMultiple = "true".equalsIgnoreCase(forceSubmit);
-                
-                if (!allowMultiple) {
-                    // OPTIONAL: Only check if forceSubmit is not requested
-                    // You can remove this entire block if you always want to allow multiple reviews
-                    boolean hasReviewed = feedbackDAO.hasAdopterReviewedShelter(adopterId, shelterId);
+                // Skip duplicate check jika forceSubmit=true
+                boolean hasReviewed = false;
+                if (!"true".equalsIgnoreCase(forceSubmit)) {
+                    hasReviewed = feedbackDAO.hasAdopterReviewedShelter(adopterId, shelterId);
                     if (hasReviewed) {
                         sendJsonResponse(out, false, "You have already reviewed this shelter", null);
                         return;
@@ -241,7 +238,68 @@ public class FeedbackServlet extends HttpServlet {
                 } else {
                     sendJsonResponse(out, false, "Failed to submit feedback. Please try again.", null);
                 }
+                return; // FIX: Add return statement
+            }// Dalam doPost() method - TAMBAH case ini:
+            if ("updateFeedback".equals(action)) {
+                System.out.println("DEBUG: Updating feedback...");
 
+                String feedbackIdParam = request.getParameter("feedbackId");
+                String ratingParam = request.getParameter("rating");
+                String comment = request.getParameter("comment");
+
+                System.out.println("DEBUG: feedbackId=" + feedbackIdParam
+                        + ", rating=" + ratingParam
+                        + ", comment=" + (comment != null ? comment.substring(0, Math.min(50, comment.length())) + "..." : "null"));
+
+                if (feedbackIdParam == null || ratingParam == null || comment == null) {
+                    sendJsonResponse(out, false, "All fields are required", null);
+                    return;
+                }
+
+                try {
+                    int feedbackId = Integer.parseInt(feedbackIdParam);
+                    int rating = Integer.parseInt(ratingParam);
+                    int adopterId = SessionUtil.getUserId(session);
+
+                    // Validate rating
+                    if (rating < 1 || rating > 5) {
+                        sendJsonResponse(out, false, "Rating must be between 1 and 5", null);
+                        return;
+                    }
+
+                    // Validate comment
+                    if (comment.trim().isEmpty()) {
+                        sendJsonResponse(out, false, "Comment cannot be empty", null);
+                        return;
+                    }
+
+                    // Check if feedback belongs to this adopter
+                    Map<String, Object> feedbackDetails = feedbackDAO.getFeedbackDetailsForAdopter(feedbackId, adopterId);
+                    if (feedbackDetails.isEmpty()) {
+                        sendJsonResponse(out, false, "Feedback not found or you don't have permission to edit it", null);
+                        return;
+                    }
+
+                    // Update feedback
+                    boolean success = feedbackDAO.updateFeedback(feedbackId, rating, comment);
+
+                    if (success) {
+                        // Redirect back to feedback page dengan success message
+                        session.setAttribute("message", "✓ Feedback updated successfully!");
+                        session.setAttribute("messageType", "success");
+
+                        // Return success response
+                        response.sendRedirect("feedback_list.jsp");
+                    } else {
+                        sendJsonResponse(out, false, "Failed to update feedback", null);
+                    }
+
+                } catch (NumberFormatException e) {
+                    sendJsonResponse(out, false, "Invalid parameter format", null);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    sendJsonResponse(out, false, "Error: " + e.getMessage(), null);
+                }
             } else {
                 sendJsonResponse(out, false, "Invalid action", null);
             }
@@ -272,48 +330,64 @@ public class FeedbackServlet extends HttpServlet {
         try {
             String action = request.getParameter("action");
 
+            // Dalam FeedbackServlet.doPost() - betulkan bahagian "updateFeedback":
             if ("updateFeedback".equals(action)) {
+                System.out.println("DEBUG: Updating feedback...");
+
                 String feedbackIdParam = request.getParameter("feedbackId");
                 String ratingParam = request.getParameter("rating");
                 String comment = request.getParameter("comment");
+
+                System.out.println("DEBUG: feedbackId=" + feedbackIdParam
+                        + ", rating=" + ratingParam
+                        + ", comment=" + (comment != null ? comment.substring(0, Math.min(50, comment.length())) + "..." : "null"));
 
                 if (feedbackIdParam == null || ratingParam == null || comment == null) {
                     sendJsonResponse(out, false, "All fields are required", null);
                     return;
                 }
 
-                int feedbackId = Integer.parseInt(feedbackIdParam);
-                int rating = Integer.parseInt(ratingParam);
-                int adopterId = SessionUtil.getUserId(session);
+                try {
+                    int feedbackId = Integer.parseInt(feedbackIdParam);
+                    int rating = Integer.parseInt(ratingParam);
+                    int adopterId = SessionUtil.getUserId(session);
 
-                // Validate rating
-                if (rating < 1 || rating > 5) {
-                    sendJsonResponse(out, false, "Rating must be between 1 and 5", null);
-                    return;
+                    // Validate rating
+                    if (rating < 1 || rating > 5) {
+                        sendJsonResponse(out, false, "Rating must be between 1 and 5", null);
+                        return;
+                    }
+
+                    // Validate comment
+                    if (comment.trim().isEmpty()) {
+                        sendJsonResponse(out, false, "Comment cannot be empty", null);
+                        return;
+                    }
+
+                    // Check if feedback belongs to this adopter
+                    Map<String, Object> feedbackDetails = feedbackDAO.getFeedbackDetailsForAdopter(feedbackId, adopterId);
+                    if (feedbackDetails.isEmpty()) {
+                        sendJsonResponse(out, false, "Feedback not found or you don't have permission to edit it", null);
+                        return;
+                    }
+
+                    // Update feedback
+                    boolean success = feedbackDAO.updateFeedback(feedbackId, rating, comment);
+
+                    if (success) {
+                        // SUCCESS: Return proper JSON response
+                        sendJsonResponse(out, true, "✓ Feedback updated successfully!", null);
+                    } else {
+                        sendJsonResponse(out, false, "✗ Failed to update feedback", null);
+                    }
+
+                } catch (NumberFormatException e) {
+                    sendJsonResponse(out, false, "Invalid parameter format", null);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    sendJsonResponse(out, false, "Error: " + e.getMessage(), null);
                 }
-
-                // Validate comment
-                if (comment.trim().isEmpty()) {
-                    sendJsonResponse(out, false, "Comment cannot be empty", null);
-                    return;
-                }
-
-                // Check if feedback belongs to this adopter
-                Map<String, Object> feedbackDetails = feedbackDAO.getFeedbackDetailsForAdopter(feedbackId, adopterId);
-                if (feedbackDetails.isEmpty()) {
-                    sendJsonResponse(out, false, "Feedback not found or you don't have permission to edit it", null);
-                    return;
-                }
-
-                // Update feedback
-                boolean success = feedbackDAO.updateFeedback(feedbackId, rating, comment);
-
-                if (success) {
-                    sendJsonResponse(out, true, "Feedback updated successfully", null);
-                } else {
-                    sendJsonResponse(out, false, "Failed to update feedback", null);
-                }
-
+                return; // FIX: Add return statement
             } else {
                 sendJsonResponse(out, false, "Invalid action", null);
             }
@@ -342,16 +416,16 @@ public class FeedbackServlet extends HttpServlet {
 
         try {
             String feedbackIdParam = request.getParameter("feedbackId");
-            
+
             if (feedbackIdParam == null || feedbackIdParam.isEmpty()) {
                 sendJsonResponse(out, false, "Feedback ID is required", null);
                 return;
             }
-            
+
             int feedbackId = Integer.parseInt(feedbackIdParam);
             int userId = SessionUtil.getUserId(session);
             boolean success = false;
-            
+
             if (SessionUtil.isAdopter(session)) {
                 // Adopter deleting their own feedback
                 success = feedbackDAO.deleteFeedbackByAdopter(feedbackId, userId);

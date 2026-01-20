@@ -701,7 +701,7 @@
                 }
             }
 
-            // Handle adoption form submission - ES5 COMPATIBLE
+            // Handle adoption form submission - FIXED VERSION
             function handleAdoptionSubmit(e) {
                 e.preventDefault();
 
@@ -733,23 +733,18 @@
                 var shelterId = document.getElementById('shelterId').value;
                 var message = adopterMessage.value.trim();
 
-                // ADD DEBUG
-                console.log('DEBUG JS: petId =', petId);
-                console.log('DEBUG JS: shelterId =', shelterId);
-                console.log('DEBUG JS: message =', message);
-
-// VALIDATE shelterId
+                // VALIDATE shelterId
                 if (!shelterId || shelterId === '0' || shelterId === 'null') {
                     alert('Error: Shelter ID is missing. Please refresh the page and try again.');
                     return;
                 }
 
-                // Create form data
-                var formData = new FormData();
-                formData.append('action', 'applyAdoption');
-                formData.append('petId', petId);
-                formData.append('shelterId', shelterId);
-                formData.append('adopterMessage', message);
+                // **FIX: Use URL encoded parameters instead of FormData**
+                var params = new URLSearchParams();
+                params.append('action', 'applyAdoption');
+                params.append('petId', petId);
+                params.append('shelterId', shelterId);
+                params.append('adopterMessage', message);
 
                 // Show loading
                 var submitBtn = adoptionForm.querySelector('button[type="submit"]');
@@ -757,10 +752,13 @@
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...';
                 submitBtn.disabled = true;
 
-                // Send request
+                // **FIX: Send as application/x-www-form-urlencoded**
                 fetch('ManageAdoptionRequest', {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: params.toString()
                 })
                         .then(function (response) {
                             return response.json();
@@ -771,7 +769,9 @@
                                 // Close modal and reload page
                                 closeAdoptionModal();
                                 // Reload page to update status
-                                location.reload();
+                                setTimeout(function () {
+                                    location.reload();
+                                }, 1000);
                             } else {
                                 alert('Application failed: ' + data.message);
                                 submitBtn.innerHTML = originalText;

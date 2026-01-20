@@ -15,7 +15,7 @@
         response.sendRedirect("index.jsp");
         return;
     }
-    
+
     int adopterId = SessionUtil.getUserId(session);
 %>
 <!DOCTYPE html>
@@ -69,7 +69,7 @@
         <!-- Header container -->
         <jsp:include page="includes/header.jsp" />
 
-        <main class="flex-1 p-4 pt-6 relative z-10 flex justify-center items-start mb-2" style="background-color: #F6F3E7;">
+        <main class="flex-1 p-4 pt-6 relative z-10 flex justify-center items-start" style="background-color: #F6F3E7;">
             <div class="w-full bg-white py-8 px-6 rounded-3xl shadow-xl border" style="max-width: 1450px; border-color: #E5E5E5;">
 
                 <div class="mb-8">
@@ -195,7 +195,7 @@
                         <div class="p-3 rounded-lg border" style="background-color: #F6F3E7; border-color: #E5E5E5;">
                             <p class="text-sm italic text-gray-600" id="modalShelterResponse">No response yet</p>
                         </div>
-                        
+
                         <div id="cancellationReasonSection" class="hidden">
                             <h4 class="font-bold pt-2 border-t text-lg" style="border-color: #E5E5E5; color: #B84A4A;">Cancellation Reason</h4>
                             <div class="p-3 rounded-lg border" style="background-color: #FFE5E5; border-color: #B84A4A;">
@@ -258,414 +258,424 @@
         <script src="includes/sidebar.js"></script>
 
         <script>
-            // =======================================================
-            // 1. Global Variables
-            // =======================================================
-            var ITEMS_PER_PAGE = 10;
-            var currentPage = 1;
-            var filteredData = [];
-            var currentStatusFilter = 'all';
-            var currentApplicationId = null;
-            var allApplications = [];
+                        // =======================================================
+                        // 1. Global Variables
+                        // =======================================================
+                        var ITEMS_PER_PAGE = 10;
+                        var currentPage = 1;
+                        var filteredData = [];
+                        var currentStatusFilter = 'all';
+                        var currentApplicationId = null;
+                        var allApplications = [];
 
-            // =======================================================
-            // 2. MODAL FUNCTIONS - FIXED
-            // =======================================================
-            function openModal(modalId, appId) {
-                console.log('Opening modal:', modalId, 'for app ID:', appId);
-                
-                var modal = document.getElementById(modalId);
-                var application = null;
+                        // =======================================================
+                        // 2. MODAL FUNCTIONS - FIXED
+                        // =======================================================
+                        function openModal(modalId, appId) {
+                            console.log('Opening modal:', modalId, 'for app ID:', appId);
 
-                // Find application by ID
-                for (var i = 0; i < allApplications.length; i++) {
-                    if (allApplications[i].request_id == appId) {
-                        application = allApplications[i];
-                        console.log('Found application:', application);
-                        break;
-                    }
-                }
+                            var modal = document.getElementById(modalId);
+                            var application = null;
 
-                if (!application) {
-                    console.error('Application not found for ID:', appId);
-                    return;
-                }
+                            // Find application by ID
+                            for (var i = 0; i < allApplications.length; i++) {
+                                if (allApplications[i].request_id == appId) {
+                                    application = allApplications[i];
+                                    console.log('Found application:', application);
+                                    break;
+                                }
+                            }
 
-                currentApplicationId = appId;
+                            if (!application) {
+                                console.error('Application not found for ID:', appId);
+                                return;
+                            }
 
-                if (modalId === 'editModal') {
-                    // Populate View Details modal
-                    document.getElementById('modalPetName').textContent = application.pet_name || 'Unknown Pet';
-                    document.getElementById('modalShelterName').textContent = application.shelter_name || 'Unknown Shelter';
-                    document.getElementById('modalRequestDate').textContent = formatDate(application.request_date);
-                    document.getElementById('modalAdopterMessage').value = application.adopter_message || '';
-                    document.getElementById('modalHouseholdType').textContent = application.household_type || 'Not specified';
-                    document.getElementById('modalHasOtherPets').checked = application.has_other_pets === 1 || application.has_other_pets === true;
-                    document.getElementById('modalAdopterNotes').value = application.notes || '';
-                    document.getElementById('modalShelterResponse').textContent = application.shelter_response || 'No response yet';
-                    document.getElementById('modalCancellationReason').textContent = application.cancellation_reason || '';
-                    
-                    // Set status with appropriate styling
-                    var statusElement = document.getElementById('modalStatus');
-                    statusElement.textContent = application.status ? application.status.charAt(0).toUpperCase() + application.status.slice(1) : 'Unknown';
-                    statusElement.className = 'px-2 py-1 rounded-full text-xs ' + getStatusChipClass(application.status);
-                    
-                    // Show/hide cancellation reason section
-                    var cancellationSection = document.getElementById('cancellationReasonSection');
-                    if (application.cancellation_reason) {
-                        cancellationSection.classList.remove('hidden');
-                    } else {
-                        cancellationSection.classList.add('hidden');
-                    }
-                    
-                } else if (modalId === 'cancelModal') {
-                    // Populate Cancel modal
-                    document.getElementById('cancelPetName').textContent = application.pet_name || 'Pet';
-                    document.getElementById('cancelShelterName').textContent = application.shelter_name || 'Shelter';
-                    
-                    // Set up confirmation button
-                    var confirmBtn = document.getElementById('confirmCancelBtn');
-                    confirmBtn.onclick = function() {
-                        confirmCancellation(application.request_id);
-                    };
-                }
+                            currentApplicationId = appId;
 
-                // Show modal with animation
-                modal.classList.remove('hidden');
-                setTimeout(function () {
-                    modal.classList.remove('opacity-0');
-                    modal.querySelector('div:nth-child(1)').classList.remove('scale-95');
-                }, 10);
-            }
+                            if (modalId === 'editModal') {
+                                // Populate View Details modal
+                                document.getElementById('modalPetName').textContent = application.pet_name || 'Unknown Pet';
+                                document.getElementById('modalShelterName').textContent = application.shelter_name || 'Unknown Shelter';
+                                document.getElementById('modalRequestDate').textContent = formatDate(application.request_date);
+                                document.getElementById('modalAdopterMessage').value = application.adopter_message || '';
+                                document.getElementById('modalHouseholdType').textContent = application.household_type || 'Not specified';
+                                document.getElementById('modalHasOtherPets').checked = application.has_other_pets === 1 || application.has_other_pets === true;
+                                document.getElementById('modalAdopterNotes').value = application.notes || '';
+                                document.getElementById('modalShelterResponse').textContent = application.shelter_response || 'No response yet';
+                                document.getElementById('modalCancellationReason').textContent = application.cancellation_reason || '';
 
-            function closeModal(modalId) {
-                var modal = document.getElementById(modalId);
-                modal.classList.add('opacity-0');
-                modal.querySelector('div:nth-child(1)').classList.add('scale-95');
-                setTimeout(function () {
-                    modal.classList.add('hidden');
-                    if (modalId === 'cancelModal') {
-                        document.getElementById('cancellationReason').value = '';
-                    }
-                }, 300);
-            }
+                                // Set status with appropriate styling
+                                var statusElement = document.getElementById('modalStatus');
+                                statusElement.textContent = application.status ? application.status.charAt(0).toUpperCase() + application.status.slice(1) : 'Unknown';
+                                statusElement.className = 'px-2 py-1 rounded-full text-xs ' + getStatusChipClass(application.status);
 
-            function confirmCancellation(appId) {
-                var reason = document.getElementById('cancellationReason').value;
+                                // Show/hide cancellation reason section
+                                var cancellationSection = document.getElementById('cancellationReasonSection');
+                                if (application.cancellation_reason) {
+                                    cancellationSection.classList.remove('hidden');
+                                } else {
+                                    cancellationSection.classList.add('hidden');
+                                }
 
-                // Send cancellation request to server
-                var formData = new FormData();
-                formData.append('action', 'cancelAdopterRequest');
-                formData.append('requestId', appId);
-                formData.append('cancellationReason', reason);
+                            } else if (modalId === 'cancelModal') {
+                                // Populate Cancel modal
+                                document.getElementById('cancelPetName').textContent = application.pet_name || 'Pet';
+                                document.getElementById('cancelShelterName').textContent = application.shelter_name || 'Shelter';
 
-                fetch('ManageAdoptionRequest', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        alert('Application cancelled successfully!');
-                        closeModal('cancelModal');
-                        loadApplications(); // Reload data
-                    } else {
-                        alert('Failed to cancel application: ' + (data.message || 'Unknown error'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error cancelling application. Please try again.');
-                });
-            }
+                                // Set up confirmation button
+                                var confirmBtn = document.getElementById('confirmCancelBtn');
+                                confirmBtn.onclick = function () {
+                                    confirmCancellation(application.request_id);
+                                };
+                            }
 
-            // =======================================================
-            // 3. Data Loading Functions
-            // =======================================================
-            function loadApplications() {
-                console.log('Loading applications for adopter ID:', <%= adopterId %>);
-                
-                fetch('ManageAdoptionRequest?action=getAdopterApplications&adopterId=<%= adopterId %>')
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok: ' + response.status);
+                            // Show modal with animation
+                            modal.classList.remove('hidden');
+                            setTimeout(function () {
+                                modal.classList.remove('opacity-0');
+                                modal.querySelector('div:nth-child(1)').classList.remove('scale-95');
+                            }, 10);
                         }
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('Applications loaded:', data);
-                        allApplications = data;
-                        filterAndRender();
-                        updateFilterButtonCounts();
-                    })
-                    .catch(error => {
-                        console.error('Error loading applications:', error);
-                        showNoDataMessage();
-                        // Show error to user
-                        alert('Failed to load applications. Please refresh the page.');
-                    });
-            }
 
-            function getStatusChipClass(status) {
-                switch (status) {
-                    case 'pending':
-                        return 'chip-pending';
-                    case 'approved':
-                        return 'chip-approved';
-                    case 'rejected':
-                        return 'chip-rejected';
-                    case 'cancelled':
-                        return 'chip-cancelled';
-                    default:
-                        return 'bg-gray-200 text-gray-800';
-                }
-            }
-
-            function formatDate(dateString) {
-                if (!dateString) return '';
-                try {
-                    var date = new Date(dateString);
-                    return date.toLocaleDateString('en-GB', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric'
-                    });
-                } catch (e) {
-                    console.error('Error formatting date:', dateString, e);
-                    return dateString;
-                }
-            }
-
-            function renderTable(data, page) {
-                var tableBody = document.getElementById('application-list');
-                var noDataMessage = document.getElementById('no-data-message');
-                var paginationControls = document.getElementById('pagination-controls');
-
-                if (data.length === 0) {
-                    tableBody.innerHTML = '';
-                    noDataMessage.classList.remove('hidden');
-                    paginationControls.classList.add('hidden');
-                    return;
-                }
-
-                noDataMessage.classList.add('hidden');
-                paginationControls.classList.remove('hidden');
-
-                tableBody.innerHTML = '';
-
-                var start = (page - 1) * ITEMS_PER_PAGE;
-                var end = start + ITEMS_PER_PAGE;
-                var paginatedItems = data.slice(start, end);
-
-                for (var i = 0; i < paginatedItems.length; i++) {
-                    var item = paginatedItems[i];
-                    var statusChipClass = getStatusChipClass(item.status);
-                    var itemNumber = start + i + 1;
-
-                    // Action Buttons
-                    var actionButtons;
-                    if (item.status === 'pending') {
-                        actionButtons = '<div class="flex flex-col items-center space-y-2">' +
-                                '<button onclick="openModal(\'editModal\', ' + item.request_id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View Details</button>' +
-                                '<button onclick="openModal(\'cancelModal\', ' + item.request_id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-red-700" style="background-color: #B84A4A;">Cancel</button>' +
-                                '</div>';
-                    } else {
-                        actionButtons = '<button onclick="openModal(\'editModal\', ' + item.request_id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View Details</button>';
-                    }
-
-                    var row = '<tr class="hover:bg-gray-50 transition duration-100">' +
-                            '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color: #2B2B2B;">' + itemNumber + '</td>' +
-                            '<td class="px-6 py-4 whitespace-nowrap">' +
-                            '<div class="flex items-center">' +
-                            '<div class="flex-shrink-0 h-10 w-10">' +
-                            '<img class="h-10 w-10 rounded-full object-cover" src="' + (item.pet_photo || 'https://via.placeholder.com/40x40?text=Pet') + '" alt="' + (item.pet_name || 'Pet') + '" onerror="this.src=\'https://via.placeholder.com/40x40?text=Pet\'">' +
-                            '</div>' +
-                            '<div class="ml-4">' +
-                            '<div class="text-sm font-medium" style="color: #2B2B2B;">' + (item.pet_name || 'Unknown Pet') + '</div>' +
-                            '</div>' +
-                            '</div>' +
-                            '</td>' +
-                            '<td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">' + (item.shelter_name || 'Unknown Shelter') + '</td>' +
-                            '<td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">' + formatDate(item.request_date) + '</td>' +
-                            '<td class="px-6 py-4 whitespace-nowrap">' +
-                            '<span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full text-white ' + statusChipClass + '">' +
-                            (item.status ? item.status.charAt(0).toUpperCase() + item.status.slice(1) : 'Unknown') +
-                            '</span>' +
-                            '</td>' +
-                            '<td class="px-6 py-4 text-sm truncate max-w-xs" style="color: #2B2B2B;" title="' + (item.shelter_response || 'No response yet') + '">' +
-                            (item.shelter_response || 'No response yet') +
-                            '</td>' +
-                            '<td class="px-6 py-4 whitespace-nowrap text-center">' +
-                            actionButtons +
-                            '</td>' +
-                            '</tr>';
-
-                    tableBody.innerHTML += row;
-                }
-
-                renderPaginationControls(data.length);
-            }
-
-            function renderPaginationControls(totalItems) {
-                var totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-
-                document.getElementById('total-items').textContent = totalItems;
-                document.getElementById('start-index').textContent = Math.min(totalItems, (currentPage - 1) * ITEMS_PER_PAGE + 1);
-                document.getElementById('end-index').textContent = Math.min(totalItems, currentPage * ITEMS_PER_PAGE);
-
-                document.getElementById('prev-btn').disabled = currentPage === 1;
-                document.getElementById('next-btn').disabled = currentPage === totalPages || totalItems === 0;
-            }
-
-            // =======================================================
-            // 4. Filtering and Search Functions
-            // =======================================================
-            function filterAndRender() {
-                // Apply filter based on currentStatusFilter
-                if (currentStatusFilter === 'all') {
-                    filteredData = allApplications;
-                } else {
-                    filteredData = allApplications.filter(function(app) {
-                        return app.status === currentStatusFilter;
-                    });
-                }
-                
-                currentPage = 1;
-                renderTable(filteredData, currentPage);
-            }
-
-            function updateFilterButtonCounts() {
-                var counts = {
-                    'all': allApplications.length,
-                    'pending': 0,
-                    'approved': 0,
-                    'rejected': 0,
-                    'cancelled': 0
-                };
-
-                // Count each status
-                allApplications.forEach(function(app) {
-                    if (counts[app.status] !== undefined) {
-                        counts[app.status]++;
-                    }
-                });
-
-                var filterButtons = document.querySelectorAll('.filter-btn');
-                filterButtons.forEach(function(btn) {
-                    var status = btn.getAttribute('data-status');
-                    var count = counts[status] || 0;
-
-                    // Update button text while preserving the label
-                    var btnText = btn.textContent || btn.innerText;
-                    var baseText = btnText.replace(/\(\d+\)/, '').trim();
-                    btn.textContent = baseText + ' (' + count + ')';
-                });
-            }
-
-            function updateFilterButtonStyles() {
-                var filterButtons = document.querySelectorAll('.filter-btn');
-
-                filterButtons.forEach(function(btn) {
-                    var btnStatus = btn.getAttribute('data-status');
-
-                    // Reset semua classes
-                    btn.className = 'px-5 py-2 rounded-full text-sm font-medium transition duration-150 filter-btn';
-
-                    // Set active button
-                    if (btnStatus === currentStatusFilter) {
-                        if (btnStatus === 'all') {
-                            btn.classList.add('bg-primary', 'text-white', 'shadow-md');
-                        } else if (btnStatus === 'pending' || btnStatus === 'cancelled') {
-                            btn.classList.add('bg-[#C49A6C]', 'text-white', 'border-[#C49A6C]');
-                        } else if (btnStatus === 'approved') {
-                            btn.classList.add('bg-[#A8E6CF]', 'text-[#06321F]', 'border-[#6DBF89]');
-                        } else if (btnStatus === 'rejected') {
-                            btn.classList.add('bg-[#B84A4A]', 'text-white', 'border-[#B84A4A]');
+                        function closeModal(modalId) {
+                            var modal = document.getElementById(modalId);
+                            modal.classList.add('opacity-0');
+                            modal.querySelector('div:nth-child(1)').classList.add('scale-95');
+                            setTimeout(function () {
+                                modal.classList.add('hidden');
+                                if (modalId === 'cancelModal') {
+                                    document.getElementById('cancellationReason').value = '';
+                                }
+                            }, 300);
                         }
-                    } else {
-                        // Inactive button styles
-                        btn.classList.add('border', 'hover:bg-[#F6F3E7]');
-                        if (btnStatus === 'all') {
-                            btn.classList.add('border-[#2F5D50]', 'text-[#2F5D50]');
-                        } else if (btnStatus === 'pending' || btnStatus === 'cancelled') {
-                            btn.classList.add('border-[#C49A6C]', 'text-[#C49A6C]');
-                        } else if (btnStatus === 'approved') {
-                            btn.classList.add('border-[#6DBF89]', 'text-[#57A677]');
-                        } else if (btnStatus === 'rejected') {
-                            btn.classList.add('border-[#B84A4A]', 'text-[#B84A4A]');
+
+                        function confirmCancellation(appId) {
+                            var reason = document.getElementById('cancellationReason').value;
+
+                            console.log('DEBUG: Cancelling application ID:', appId);
+                            console.log('DEBUG: Reason:', reason);
+
+                            // FIX: Use URL encoded parameters
+                            var params = new URLSearchParams();
+                            params.append('action', 'cancelAdopterRequest');
+                            params.append('requestId', appId);
+                            params.append('cancellationReason', reason);
+
+                            // FIX: Send with proper headers
+                            fetch('ManageAdoptionRequest', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                },
+                                body: params.toString()
+                            })
+                                    .then(response => {
+                                        console.log('DEBUG: Response status:', response.status);
+                                        if (!response.ok) {
+                                            throw new Error('Network response was not ok: ' + response.status);
+                                        }
+                                        return response.json();
+                                    })
+                                    .then(data => {
+                                        console.log('DEBUG: Server response:', data);
+                                        if (data.success) {
+                                            alert('Application cancelled successfully!');
+                                            closeModal('cancelModal');
+                                            loadApplications(); // Reload data
+                                        } else {
+                                            alert('Failed to cancel application: ' + (data.message || 'Unknown error'));
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('Error:', error);
+                                        alert('Error cancelling application. Please try again.');
+                                    });
                         }
-                    }
-                });
-            }
 
-            // =======================================================
-            // 5. Event Listeners and Initialization
-            // =======================================================
-            document.addEventListener('DOMContentLoaded', function() {
-                console.log('DOM loaded, initializing...');
-                
-                // Load applications on page load
-                loadApplications();
+                        // =======================================================
+                        // 3. Data Loading Functions
+                        // =======================================================
+                        function loadApplications() {
+                            console.log('Loading applications for adopter ID:', <%= adopterId%>);
 
-                // Initialize filter buttons
-                document.querySelectorAll('.filter-btn').forEach(function(button) {
-                    button.addEventListener('click', function(e) {
-                        currentStatusFilter = e.target.getAttribute('data-status');
-                        updateFilterButtonStyles();
-                        filterAndRender();
-                    });
-                });
+                            // FIX: Remove adopterId parameter since it's already in session
+                            fetch('ManageAdoptionRequest?action=getAdopterApplications')
+                                    .then(response => {
+                                        if (!response.ok) {
+                                            throw new Error('Network response was not ok: ' + response.status);
+                                        }
+                                        return response.json();
+                                    })
+                                    .then(data => {
+                                        console.log('Applications loaded:', data);
+                                        allApplications = data;
+                                        filterAndRender();
+                                        updateFilterButtonCounts();
+                                    })
+                                    .catch(error => {
+                                        console.error('Error loading applications:', error);
+                                        showNoDataMessage();
+                                        alert('Failed to load applications. Please refresh the page.');
+                                    });
+                        }
 
-                // Pagination buttons
-                document.getElementById('prev-btn').addEventListener('click', function() {
-                    if (currentPage > 1) {
-                        currentPage--;
-                        renderTable(filteredData, currentPage);
-                    }
-                });
+                        function getStatusChipClass(status) {
+                            switch (status) {
+                                case 'pending':
+                                    return 'chip-pending';
+                                case 'approved':
+                                    return 'chip-approved';
+                                case 'rejected':
+                                    return 'chip-rejected';
+                                case 'cancelled':
+                                    return 'chip-cancelled';
+                                default:
+                                    return 'bg-gray-200 text-gray-800';
+                            }
+                        }
 
-                document.getElementById('next-btn').addEventListener('click', function() {
-                    var totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
-                    if (currentPage < totalPages) {
-                        currentPage++;
-                        renderTable(filteredData, currentPage);
-                    }
-                });
+                        function formatDate(dateString) {
+                            if (!dateString)
+                                return '';
+                            try {
+                                var date = new Date(dateString);
+                                return date.toLocaleDateString('en-GB', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric'
+                                });
+                            } catch (e) {
+                                console.error('Error formatting date:', dateString, e);
+                                return dateString;
+                            }
+                        }
 
-                // Search functionality
-                document.getElementById('search-input').addEventListener('input', function(e) {
-                    var searchTerm = e.target.value.toLowerCase();
+                        function renderTable(data, page) {
+                            var tableBody = document.getElementById('application-list');
+                            var noDataMessage = document.getElementById('no-data-message');
+                            var paginationControls = document.getElementById('pagination-controls');
 
-                    if (searchTerm.trim() === '') {
-                        filterAndRender();
-                        return;
-                    }
+                            if (data.length === 0) {
+                                tableBody.innerHTML = '';
+                                noDataMessage.classList.remove('hidden');
+                                paginationControls.classList.add('hidden');
+                                return;
+                            }
 
-                    filteredData = allApplications.filter(function(item) {
-                        var petName = (item.pet_name || '').toLowerCase();
-                        var shelterName = (item.shelter_name || '').toLowerCase();
-                        return petName.indexOf(searchTerm) !== -1 ||
-                               shelterName.indexOf(searchTerm) !== -1;
-                    });
+                            noDataMessage.classList.add('hidden');
+                            paginationControls.classList.remove('hidden');
 
-                    currentPage = 1;
-                    renderTable(filteredData, currentPage);
-                });
+                            tableBody.innerHTML = '';
 
-                // Initial filter button styling
-                updateFilterButtonStyles();
-            });
+                            var start = (page - 1) * ITEMS_PER_PAGE;
+                            var end = start + ITEMS_PER_PAGE;
+                            var paginatedItems = data.slice(start, end);
 
-            function showNoDataMessage() {
-                document.getElementById('application-list').innerHTML = '';
-                document.getElementById('no-data-message').classList.remove('hidden');
-                document.getElementById('pagination-controls').classList.add('hidden');
-            }
+                            for (var i = 0; i < paginatedItems.length; i++) {
+                                var item = paginatedItems[i];
+                                var statusChipClass = getStatusChipClass(item.status);
+                                var itemNumber = start + i + 1;
+
+                                // Action Buttons
+                                var actionButtons;
+                                if (item.status === 'pending') {
+                                    actionButtons = '<div class="flex flex-col items-center space-y-2">' +
+                                            '<button onclick="openModal(\'editModal\', ' + item.request_id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View Details</button>' +
+                                            '<button onclick="openModal(\'cancelModal\', ' + item.request_id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-red-700" style="background-color: #B84A4A;">Cancel</button>' +
+                                            '</div>';
+                                } else {
+                                    actionButtons = '<button onclick="openModal(\'editModal\', ' + item.request_id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View Details</button>';
+                                }
+
+                                var row = '<tr class="hover:bg-gray-50 transition duration-100">' +
+                                        '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color: #2B2B2B;">' + itemNumber + '</td>' +
+                                        '<td class="px-6 py-4 whitespace-nowrap">' +
+                                        '<div class="flex items-center">' +
+                                        '<div class="flex-shrink-0 h-10 w-10">' +
+                                        '<img class="h-10 w-10 rounded-full object-cover" src="' + (item.pet_photo || 'https://via.placeholder.com/40x40?text=Pet') + '" alt="' + (item.pet_name || 'Pet') + '" onerror="this.src=\'https://via.placeholder.com/40x40?text=Pet\'">' +
+                                        '</div>' +
+                                        '<div class="ml-4">' +
+                                        '<div class="text-sm font-medium" style="color: #2B2B2B;">' + (item.pet_name || 'Unknown Pet') + '</div>' +
+                                        '</div>' +
+                                        '</div>' +
+                                        '</td>' +
+                                        '<td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">' + (item.shelter_name || 'Unknown Shelter') + '</td>' +
+                                        '<td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;">' + formatDate(item.request_date) + '</td>' +
+                                        '<td class="px-6 py-4 whitespace-nowrap">' +
+                                        '<span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full text-white ' + statusChipClass + '">' +
+                                        (item.status ? item.status.charAt(0).toUpperCase() + item.status.slice(1) : 'Unknown') +
+                                        '</span>' +
+                                        '</td>' +
+                                        '<td class="px-6 py-4 text-sm truncate max-w-xs" style="color: #2B2B2B;" title="' + (item.shelter_response || 'No response yet') + '">' +
+                                        (item.shelter_response || 'No response yet') +
+                                        '</td>' +
+                                        '<td class="px-6 py-4 whitespace-nowrap text-center">' +
+                                        actionButtons +
+                                        '</td>' +
+                                        '</tr>';
+
+                                tableBody.innerHTML += row;
+                            }
+
+                            renderPaginationControls(data.length);
+                        }
+
+                        function renderPaginationControls(totalItems) {
+                            var totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+                            document.getElementById('total-items').textContent = totalItems;
+                            document.getElementById('start-index').textContent = Math.min(totalItems, (currentPage - 1) * ITEMS_PER_PAGE + 1);
+                            document.getElementById('end-index').textContent = Math.min(totalItems, currentPage * ITEMS_PER_PAGE);
+
+                            document.getElementById('prev-btn').disabled = currentPage === 1;
+                            document.getElementById('next-btn').disabled = currentPage === totalPages || totalItems === 0;
+                        }
+
+                        // =======================================================
+                        // 4. Filtering and Search Functions
+                        // =======================================================
+                        function filterAndRender() {
+                            // Apply filter based on currentStatusFilter
+                            if (currentStatusFilter === 'all') {
+                                filteredData = allApplications;
+                            } else {
+                                filteredData = allApplications.filter(function (app) {
+                                    return app.status === currentStatusFilter;
+                                });
+                            }
+
+                            currentPage = 1;
+                            renderTable(filteredData, currentPage);
+                        }
+
+                        function updateFilterButtonCounts() {
+                            var counts = {
+                                'all': allApplications.length,
+                                'pending': 0,
+                                'approved': 0,
+                                'rejected': 0,
+                                'cancelled': 0
+                            };
+
+                            // Count each status
+                            allApplications.forEach(function (app) {
+                                if (counts[app.status] !== undefined) {
+                                    counts[app.status]++;
+                                }
+                            });
+
+                            var filterButtons = document.querySelectorAll('.filter-btn');
+                            filterButtons.forEach(function (btn) {
+                                var status = btn.getAttribute('data-status');
+                                var count = counts[status] || 0;
+
+                                // Update button text while preserving the label
+                                var btnText = btn.textContent || btn.innerText;
+                                var baseText = btnText.replace(/\(\d+\)/, '').trim();
+                                btn.textContent = baseText + ' (' + count + ')';
+                            });
+                        }
+
+                        function updateFilterButtonStyles() {
+                            var filterButtons = document.querySelectorAll('.filter-btn');
+
+                            filterButtons.forEach(function (btn) {
+                                var btnStatus = btn.getAttribute('data-status');
+
+                                // Reset semua classes
+                                btn.className = 'px-5 py-2 rounded-full text-sm font-medium transition duration-150 filter-btn';
+
+                                // Set active button
+                                if (btnStatus === currentStatusFilter) {
+                                    if (btnStatus === 'all') {
+                                        btn.classList.add('bg-primary', 'text-white', 'shadow-md');
+                                    } else if (btnStatus === 'pending' || btnStatus === 'cancelled') {
+                                        btn.classList.add('bg-[#C49A6C]', 'text-white', 'border-[#C49A6C]');
+                                    } else if (btnStatus === 'approved') {
+                                        btn.classList.add('bg-[#A8E6CF]', 'text-[#06321F]', 'border-[#6DBF89]');
+                                    } else if (btnStatus === 'rejected') {
+                                        btn.classList.add('bg-[#B84A4A]', 'text-white', 'border-[#B84A4A]');
+                                    }
+                                } else {
+                                    // Inactive button styles
+                                    btn.classList.add('border', 'hover:bg-[#F6F3E7]');
+                                    if (btnStatus === 'all') {
+                                        btn.classList.add('border-[#2F5D50]', 'text-[#2F5D50]');
+                                    } else if (btnStatus === 'pending' || btnStatus === 'cancelled') {
+                                        btn.classList.add('border-[#C49A6C]', 'text-[#C49A6C]');
+                                    } else if (btnStatus === 'approved') {
+                                        btn.classList.add('border-[#6DBF89]', 'text-[#57A677]');
+                                    } else if (btnStatus === 'rejected') {
+                                        btn.classList.add('border-[#B84A4A]', 'text-[#B84A4A]');
+                                    }
+                                }
+                            });
+                        }
+
+                        // =======================================================
+                        // 5. Event Listeners and Initialization
+                        // =======================================================
+                        document.addEventListener('DOMContentLoaded', function () {
+                            console.log('DOM loaded, initializing...');
+
+                            // Load applications on page load
+                            loadApplications();
+
+                            // Initialize filter buttons
+                            document.querySelectorAll('.filter-btn').forEach(function (button) {
+                                button.addEventListener('click', function (e) {
+                                    currentStatusFilter = e.target.getAttribute('data-status');
+                                    updateFilterButtonStyles();
+                                    filterAndRender();
+                                });
+                            });
+
+                            // Pagination buttons
+                            document.getElementById('prev-btn').addEventListener('click', function () {
+                                if (currentPage > 1) {
+                                    currentPage--;
+                                    renderTable(filteredData, currentPage);
+                                }
+                            });
+
+                            document.getElementById('next-btn').addEventListener('click', function () {
+                                var totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+                                if (currentPage < totalPages) {
+                                    currentPage++;
+                                    renderTable(filteredData, currentPage);
+                                }
+                            });
+
+                            // Search functionality
+                            document.getElementById('search-input').addEventListener('input', function (e) {
+                                var searchTerm = e.target.value.toLowerCase();
+
+                                if (searchTerm.trim() === '') {
+                                    filterAndRender();
+                                    return;
+                                }
+
+                                filteredData = allApplications.filter(function (item) {
+                                    var petName = (item.pet_name || '').toLowerCase();
+                                    var shelterName = (item.shelter_name || '').toLowerCase();
+                                    return petName.indexOf(searchTerm) !== -1 ||
+                                            shelterName.indexOf(searchTerm) !== -1;
+                                });
+
+                                currentPage = 1;
+                                renderTable(filteredData, currentPage);
+                            });
+
+                            // Initial filter button styling
+                            updateFilterButtonStyles();
+                        });
+
+                        function showNoDataMessage() {
+                            document.getElementById('application-list').innerHTML = '';
+                            document.getElementById('no-data-message').classList.remove('hidden');
+                            document.getElementById('pagination-controls').classList.add('hidden');
+                        }
         </script>
     </body>
 </html>

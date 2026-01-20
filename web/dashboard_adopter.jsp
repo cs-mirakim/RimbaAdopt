@@ -2,6 +2,8 @@
 <%@ page import="com.rimba.adopt.util.SessionUtil" %>
 <%@ page import="com.rimba.adopt.dao.AdoptionRequestDAO" %>
 <%@ page import="com.rimba.adopt.dao.LostReportDAO" %>
+<%@page import="com.rimba.adopt.util.DatabaseConnection"%>
+<%@page import="java.sql.Connection"%>
 <%@ page import="java.sql.*" %>
 <%@ page import="java.util.*" %>
 
@@ -16,47 +18,46 @@
         response.sendRedirect("index.jsp");
         return;
     }
-    
+
     // Get adopter ID from session
     Integer adopterId = (Integer) session.getAttribute("userId");
-    
+
     // Initialize DAOs
     AdoptionRequestDAO adoptionDAO = new AdoptionRequestDAO();
     LostReportDAO lostReportDAO = new LostReportDAO();
-    
+
     // Variables for statistics
     int totalApplications = 0;
     int pendingApplications = 0;
     int approvedApplications = 0;
     int rejectedApplications = 0;
     int cancelledApplications = 0;
-    
+
     int totalLostReports = 0;
     int totalFound = 0;
     int stillLost = 0;
-    
+
     // Monthly data for charts
     List<Integer> monthlyApproved = new ArrayList<Integer>();
     List<Integer> monthlyPending = new ArrayList<Integer>();
     List<Integer> monthlyRejected = new ArrayList<Integer>();
     List<Integer> monthlyCancelled = new ArrayList<Integer>();
-    
+
     List<Integer> monthlyLost = new ArrayList<Integer>();
     List<Integer> monthlyFound = new ArrayList<Integer>();
-    
+
     try {
         // Get adoption statistics for this adopter
         // Since we don't have getAdoptionStatsByAdopter method, we'll create temporary stats
-        
+
         // For Lost Reports
-        totalLostReports = lostReportDAO.countLostReportsByStatus("lost") + 
-                          lostReportDAO.countLostReportsByStatus("found");
+        totalLostReports = lostReportDAO.countLostReportsByStatus("lost")
+                + lostReportDAO.countLostReportsByStatus("found");
         totalFound = lostReportDAO.countLostReportsByStatus("found");
         stillLost = lostReportDAO.countLostReportsByStatus("lost");
-        
+
         // Generate monthly data with simple logic
         // In real implementation, you should create proper methods in DAO
-        
         // Initialize lists with 12 months of zeros
         for (int i = 0; i < 12; i++) {
             monthlyApproved.add(0);
@@ -66,30 +67,30 @@
             monthlyLost.add(0);
             monthlyFound.add(0);
         }
-        
+
         // Simple calculation for demo (you should replace with actual DAO calls)
         // Example: put some sample data
         monthlyApproved.set(0, 1); // Jan
         monthlyApproved.set(1, 2); // Feb
         monthlyApproved.set(2, 1); // Mar
-        
+
         monthlyPending.set(0, 1);
         monthlyPending.set(1, 1);
         monthlyPending.set(2, 0);
-        
+
         monthlyRejected.set(2, 1);
-        
+
         monthlyLost.set(0, 2);
         monthlyLost.set(1, 3);
         monthlyFound.set(0, 1);
         monthlyFound.set(1, 2);
-        
+
         // Calculate totals manually (old Java way)
         int approvedSum = 0;
         int pendingSum = 0;
         int rejectedSum = 0;
         int cancelledSum = 0;
-        
+
         for (Integer num : monthlyApproved) {
             approvedSum += num;
         }
@@ -102,15 +103,15 @@
         for (Integer num : monthlyCancelled) {
             cancelledSum += num;
         }
-        
+
         approvedApplications = approvedSum;
         pendingApplications = pendingSum;
         rejectedApplications = rejectedSum;
         cancelledApplications = cancelledSum;
-        
-        totalApplications = approvedApplications + pendingApplications + 
-                           rejectedApplications + cancelledApplications;
-        
+
+        totalApplications = approvedApplications + pendingApplications
+                + rejectedApplications + cancelledApplications;
+
     } catch (Exception e) {
         e.printStackTrace();
     }
@@ -166,8 +167,34 @@
         <div class="p-4 pt-6 relative z-10 flex justify-center items-start">
             <div class="w-full" style="max-width: 1450px;">
                 <div class="relative overflow-hidden rounded-xl shadow-lg">
-                    <!-- Banner Images -->
+                    <!-- Banner Images - Get from database -->
                     <div class="banner-container relative" style="height: 400px;">
+                        <%
+                            Connection bannerConn = null;
+                            java.sql.PreparedStatement bannerPstmt = null;
+                            java.sql.ResultSet bannerRs = null;
+                            try {
+                                bannerConn = DatabaseConnection.getConnection();
+                                String bannerSql = "SELECT image_path FROM awareness_banner WHERE status = 'visible' ORDER BY COALESCE(display_order, 999) ASC";
+                                bannerPstmt = bannerConn.prepareStatement(bannerSql);
+                                bannerRs = bannerPstmt.executeQuery();
+
+                                int bannerIndex = 0;
+                                while (bannerRs.next()) {
+                                    String imagePath = bannerRs.getString("image_path");
+                                    if (imagePath != null && !imagePath.isEmpty()) {
+                        %>
+                        <div class="banner-slide <%= bannerIndex == 0 ? "active" : ""%>">
+                            <img src="<%= imagePath%>" alt="Banner <%= bannerIndex + 1%>" class="w-full h-full object-cover">
+                        </div>
+                        <%
+                                    bannerIndex++;
+                                }
+                            }
+
+                            // If no banners in database, use static defaults
+                            if (bannerIndex == 0) {
+                        %>
                         <div class="banner-slide active">
                             <img src="banner/banner1.jpg" alt="Banner 1" class="w-full h-full object-cover">
                         </div>
@@ -183,6 +210,48 @@
                         <div class="banner-slide">
                             <img src="banner/banner5.jpg" alt="Banner 5" class="w-full h-full object-cover">
                         </div>
+                        <%
+                            }
+                        } catch (Exception e) {
+                            // Fallback to static banners if error
+                        %>
+                        <div class="banner-slide active">
+                            <img src="banner/banner1.jpg" alt="Banner 1" class="w-full h-full object-cover">
+                        </div>
+                        <div class="banner-slide">
+                            <img src="banner/banner2.jpg" alt="Banner 2" class="w-full h-full object-cover">
+                        </div>
+                        <div class="banner-slide">
+                            <img src="banner/banner3.jpg" alt="Banner 3" class="w-full h-full object-cover">
+                        </div>
+                        <div class="banner-slide">
+                            <img src="banner/banner4.jpg" alt="Banner 4" class="w-full h-full object-cover">
+                        </div>
+                        <div class="banner-slide">
+                            <img src="banner/banner5.jpg" alt="Banner 5" class="w-full h-full object-cover">
+                        </div>
+                        <%
+                            } finally {
+                                try {
+                                    if (bannerRs != null) {
+                                        bannerRs.close();
+                                    }
+                                } catch (Exception e) {
+                                }
+                                try {
+                                    if (bannerPstmt != null) {
+                                        bannerPstmt.close();
+                                    }
+                                } catch (Exception e) {
+                                }
+                                try {
+                                    if (bannerConn != null) {
+                                        bannerConn.close();
+                                    }
+                                } catch (Exception e) {
+                                }
+                            }
+                        %>
 
                         <!-- Navigation Arrows -->
                         <button onclick="changeSlide(-1)" class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-3 rounded-full transition">
@@ -198,12 +267,8 @@
                     </div>
 
                     <!-- Dots Indicator -->
-                    <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center justify-center">
-                        <span class="dot active" onclick="currentSlide(1)"></span>
-                        <span class="dot" onclick="currentSlide(2)"></span>
-                        <span class="dot" onclick="currentSlide(3)"></span>
-                        <span class="dot" onclick="currentSlide(4)"></span>
-                        <span class="dot" onclick="currentSlide(5)"></span>
+                    <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center justify-center" id="dotsContainer">
+                        <!-- Dots will be generated by JavaScript -->
                     </div>
                 </div>
             </div>
@@ -226,31 +291,31 @@
                     <!-- Total Applications -->
                     <div class="bg-[#F6F3E7] p-5 rounded-lg shadow-sm border-l-4 border-[#2F5D50]">
                         <p class="text-sm font-medium text-[#2F5D50] mb-1">Total Applications</p>
-                        <p class="text-3xl font-bold text-[#2B2B2B]"><%= totalApplications %></p>
+                        <p class="text-3xl font-bold text-[#2B2B2B]"><%= totalApplications%></p>
                     </div>
 
                     <!-- Pending -->
                     <div class="bg-[#F6F3E7] p-5 rounded-lg shadow-sm border-l-4 border-gray-400">
                         <p class="text-sm font-medium text-gray-700 mb-1">Pending</p>
-                        <p class="text-3xl font-bold text-[#2B2B2B]"><%= pendingApplications %></p>
+                        <p class="text-3xl font-bold text-[#2B2B2B]"><%= pendingApplications%></p>
                     </div>
 
                     <!-- Approved -->
                     <div class="bg-[#F6F3E7] p-5 rounded-lg shadow-sm border-l-4 border-[#6DBF89]">
                         <p class="text-sm font-medium text-[#57A677] mb-1">Approved</p>
-                        <p class="text-3xl font-bold text-[#2B2B2B]"><%= approvedApplications %></p>
+                        <p class="text-3xl font-bold text-[#2B2B2B]"><%= approvedApplications%></p>
                     </div>
 
                     <!-- Rejected -->
                     <div class="bg-[#F6F3E7] p-5 rounded-lg shadow-sm border-l-4 border-[#B84A4A]">
                         <p class="text-sm font-medium text-[#B84A4A] mb-1">Rejected</p>
-                        <p class="text-3xl font-bold text-[#2B2B2B]"><%= rejectedApplications %></p>
+                        <p class="text-3xl font-bold text-[#2B2B2B]"><%= rejectedApplications%></p>
                     </div>
 
                     <!-- Cancelled -->
                     <div class="bg-[#F6F3E7] p-5 rounded-lg shadow-sm border-l-4 border-[#C49A6C]">
                         <p class="text-sm font-medium text-[#C49A6C] mb-1">Cancelled</p>
-                        <p class="text-3xl font-bold text-[#2B2B2B]"><%= cancelledApplications %></p>
+                        <p class="text-3xl font-bold text-[#2B2B2B]"><%= cancelledApplications%></p>
                     </div>
                 </div>
 
@@ -270,12 +335,12 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div class="bg-red-50 p-5 rounded-lg shadow-sm border-l-4 border-[#B84A4A]">
                                 <p class="text-sm font-medium text-[#B84A4A] mb-1">Total Lost Reports</p>
-                                <p class="text-3xl font-bold text-[#2B2B2B]"><%= totalLostReports %></p>
+                                <p class="text-3xl font-bold text-[#2B2B2B]"><%= totalLostReports%></p>
                             </div>
 
                             <div class="bg-green-50 p-5 rounded-lg shadow-sm border-l-4 border-[#6DBF89]">
                                 <p class="text-sm font-medium text-[#57A677] mb-1">Total Found</p>
-                                <p class="text-3xl font-bold text-[#2B2B2B]"><%= totalFound %></p>
+                                <p class="text-3xl font-bold text-[#2B2B2B]"><%= totalFound%></p>
                             </div>
                         </div>
 
@@ -367,196 +432,223 @@
         <script src="includes/sidebar.js"></script>
 
         <script>
-            // Banner Slideshow
-            let slideIndex = 1;
-            let slideTimer;
+                            // Banner Slideshow
+                            let slideIndex = 1;
+                            let slideTimer;
 
-            function showSlides(n) {
-                let slides = document.getElementsByClassName("banner-slide");
-                let dots = document.getElementsByClassName("dot");
+                            function showSlides(n) {
+                                let slides = document.getElementsByClassName("banner-slide");
+                                let dots = document.getElementsByClassName("dot");
 
-                if (n > slides.length) {
-                    slideIndex = 1
-                }
-                if (n < 1) {
-                    slideIndex = slides.length
-                }
+                                if (n > slides.length) {
+                                    slideIndex = 1;
+                                }
+                                if (n < 1) {
+                                    slideIndex = slides.length;
+                                }
 
-                for (let i = 0; i < slides.length; i++) {
-                    slides[i].classList.remove("active");
-                }
-                for (let i = 0; i < dots.length; i++) {
-                    dots[i].classList.remove("active");
-                }
+                                for (let i = 0; i < slides.length; i++) {
+                                    slides[i].classList.remove("active");
+                                }
+                                for (let i = 0; i < dots.length; i++) {
+                                    dots[i].classList.remove("active");
+                                }
 
-                slides[slideIndex - 1].classList.add("active");
-                dots[slideIndex - 1].classList.add("active");
-            }
-
-            function changeSlide(n) {
-                clearInterval(slideTimer);
-                showSlides(slideIndex += n);
-                startAutoSlide();
-            }
-
-            function currentSlide(n) {
-                clearInterval(slideTimer);
-                showSlides(slideIndex = n);
-                startAutoSlide();
-            }
-
-            function startAutoSlide() {
-                slideTimer = setInterval(() => {
-                    slideIndex++;
-                    showSlides(slideIndex);
-                }, 5000);
-            }
-
-            // Initialize slideshow
-            showSlides(slideIndex);
-            startAutoSlide();
-
-            // Application Overview Chart (Stacked Bar)
-            const appCtx = document.getElementById('applicationChart').getContext('2d');
-            const applicationChart = new Chart(appCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                    datasets: [
-                        {
-                            label: 'Approved',
-                            data: <%= monthlyApproved %>,
-                            backgroundColor: '#6DBF89',
-                            stack: 'stack0'
-                        },
-                        {
-                            label: 'Pending',
-                            data: <%= monthlyPending %>,
-                            backgroundColor: '#A3A3A3',
-                            stack: 'stack0'
-                        },
-                        {
-                            label: 'Rejected',
-                            data: <%= monthlyRejected %>,
-                            backgroundColor: '#B84A4A',
-                            stack: 'stack0'
-                        },
-                        {
-                            label: 'Cancelled',
-                            data: <%= monthlyCancelled %>,
-                            backgroundColor: '#C49A6C',
-                            stack: 'stack0'
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            stacked: true,
-                            grid: {
-                                display: false
-                            },
-                            title: {
-                                display: true,
-                                text: 'Month'
+                                if (slides[slideIndex - 1]) {
+                                    slides[slideIndex - 1].classList.add("active");
+                                }
+                                if (dots[slideIndex - 1]) {
+                                    dots[slideIndex - 1].classList.add("active");
+                                }
                             }
-                        },
-                        y: {
-                            stacked: true,
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1,
-                                precision: 0
-                            },
-                            title: {
-                                display: true,
-                                text: 'Number of Applications'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'top'
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false
-                        }
-                    }
-                }
-            });
 
-            // Lost Animal Overview Chart (Line Chart)
-            const lostCtx = document.getElementById('lostAnimalChart').getContext('2d');
-            const lostAnimalChart = new Chart(lostCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                    datasets: [
-                        {
-                            label: 'Still Lost',
-                            data: <%= monthlyLost %>,
-                            borderColor: '#B84A4A',
-                            backgroundColor: 'rgba(184, 74, 74, 0.1)',
-                            borderWidth: 2,
-                            borderDash: [5, 5],
-                            tension: 0.4,
-                            pointRadius: 4,
-                            pointBackgroundColor: '#B84A6A',
-                            fill: true
-                        },
-                        {
-                            label: 'Found',
-                            data: <%= monthlyFound %>,
-                            borderColor: '#6DBF89',
-                            backgroundColor: 'rgba(109, 191, 137, 0.1)',
-                            borderWidth: 2,
-                            borderDash: [5, 5],
-                            tension: 0.4,
-                            pointRadius: 4,
-                            pointBackgroundColor: '#6DBF89',
-                            fill: true
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            grid: {
-                                display: false
-                            },
-                            title: {
-                                display: true,
-                                text: 'Month'
+                            function changeSlide(n) {
+                                clearInterval(slideTimer);
+                                showSlides(slideIndex += n);
+                                startAutoSlide();
                             }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1,
-                                precision: 0
-                            },
-                            title: {
-                                display: true,
-                                text: 'Number of Reports'
+
+                            function currentSlide(n) {
+                                clearInterval(slideTimer);
+                                showSlides(slideIndex = n);
+                                startAutoSlide();
                             }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'top'
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false
-                        }
-                    }
-                }
-            });
+
+                            function startAutoSlide() {
+                                let slides = document.getElementsByClassName("banner-slide");
+                                if (slides.length > 0) {
+                                    slideTimer = setInterval(() => {
+                                        slideIndex++;
+                                        showSlides(slideIndex);
+                                    }, 5000);
+                                }
+                            }
+
+                            // Generate dots based on number of slides
+                            function generateDots() {
+                                let slides = document.getElementsByClassName("banner-slide");
+                                let dotsContainer = document.getElementById("dotsContainer");
+                                if (slides.length > 0 && dotsContainer) {
+                                    dotsContainer.innerHTML = '';
+                                    for (let i = 1; i <= slides.length; i++) {
+                                        let dot = document.createElement("span");
+                                        dot.className = i === 1 ? "dot active" : "dot";
+                                        dot.onclick = function () {
+                                            currentSlide(i);
+                                        };
+                                        dotsContainer.appendChild(dot);
+                                    }
+                                }
+                            }
+
+                            // Initialize slideshow
+                            document.addEventListener('DOMContentLoaded', function () {
+                                generateDots();
+                                showSlides(slideIndex);
+                                startAutoSlide();
+                            });
+
+                            // Application Overview Chart (Stacked Bar)
+                            const appCtx = document.getElementById('applicationChart').getContext('2d');
+                            const applicationChart = new Chart(appCtx, {
+                                type: 'bar',
+                                data: {
+                                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                                    datasets: [
+                                        {
+                                            label: 'Approved',
+                                            data: <%= monthlyApproved%>,
+                                            backgroundColor: '#6DBF89',
+                                            stack: 'stack0'
+                                        },
+                                        {
+                                            label: 'Pending',
+                                            data: <%= monthlyPending%>,
+                                            backgroundColor: '#A3A3A3',
+                                            stack: 'stack0'
+                                        },
+                                        {
+                                            label: 'Rejected',
+                                            data: <%= monthlyRejected%>,
+                                            backgroundColor: '#B84A4A',
+                                            stack: 'stack0'
+                                        },
+                                        {
+                                            label: 'Cancelled',
+                                            data: <%= monthlyCancelled%>,
+                                            backgroundColor: '#C49A6C',
+                                            stack: 'stack0'
+                                        }
+                                    ]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    scales: {
+                                        x: {
+                                            stacked: true,
+                                            grid: {
+                                                display: false
+                                            },
+                                            title: {
+                                                display: true,
+                                                text: 'Month'
+                                            }
+                                        },
+                                        y: {
+                                            stacked: true,
+                                            beginAtZero: true,
+                                            ticks: {
+                                                stepSize: 1,
+                                                precision: 0
+                                            },
+                                            title: {
+                                                display: true,
+                                                text: 'Number of Applications'
+                                            }
+                                        }
+                                    },
+                                    plugins: {
+                                        legend: {
+                                            position: 'top'
+                                        },
+                                        tooltip: {
+                                            mode: 'index',
+                                            intersect: false
+                                        }
+                                    }
+                                }
+                            });
+
+                            // Lost Animal Overview Chart (Line Chart)
+                            const lostCtx = document.getElementById('lostAnimalChart').getContext('2d');
+                            const lostAnimalChart = new Chart(lostCtx, {
+                                type: 'line',
+                                data: {
+                                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                                    datasets: [
+                                        {
+                                            label: 'Still Lost',
+                                            data: <%= monthlyLost%>,
+                                            borderColor: '#B84A4A',
+                                            backgroundColor: 'rgba(184, 74, 74, 0.1)',
+                                            borderWidth: 2,
+                                            borderDash: [5, 5],
+                                            tension: 0.4,
+                                            pointRadius: 4,
+                                            pointBackgroundColor: '#B84A6A',
+                                            fill: true
+                                        },
+                                        {
+                                            label: 'Found',
+                                            data: <%= monthlyFound%>,
+                                            borderColor: '#6DBF89',
+                                            backgroundColor: 'rgba(109, 191, 137, 0.1)',
+                                            borderWidth: 2,
+                                            borderDash: [5, 5],
+                                            tension: 0.4,
+                                            pointRadius: 4,
+                                            pointBackgroundColor: '#6DBF89',
+                                            fill: true
+                                        }
+                                    ]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    scales: {
+                                        x: {
+                                            grid: {
+                                                display: false
+                                            },
+                                            title: {
+                                                display: true,
+                                                text: 'Month'
+                                            }
+                                        },
+                                        y: {
+                                            beginAtZero: true,
+                                            ticks: {
+                                                stepSize: 1,
+                                                precision: 0
+                                            },
+                                            title: {
+                                                display: true,
+                                                text: 'Number of Reports'
+                                            }
+                                        }
+                                    },
+                                    plugins: {
+                                        legend: {
+                                            position: 'top'
+                                        },
+                                        tooltip: {
+                                            mode: 'index',
+                                            intersect: false
+                                        }
+                                    }
+                                }
+                            });
         </script>
 
     </body>

@@ -23,22 +23,22 @@
     // Get adopter ID
     int adopterId = SessionUtil.getUserId(session);
     FeedbackDAO feedbackDAO = new FeedbackDAO();
-    
+
     // Initialize variables - GUNA SYNTAX JAVA 5
     List feedbackList = new ArrayList();
     int totalCount = 0;
     int[] ratingCounts = new int[6]; // index 0 not used, 1-5 for ratings
-    
+
     // Get feedback data for this adopter
     try {
         feedbackList = feedbackDAO.getFeedbackByAdopterId(adopterId);
         totalCount = feedbackList.size();
-        
+
         // Calculate rating distribution
         for (int i = 0; i < ratingCounts.length; i++) {
             ratingCounts[i] = 0;
         }
-        
+
         for (int i = 0; i < feedbackList.size(); i++) {
             Object[] feedback = (Object[]) feedbackList.get(i);
             Integer rating = (Integer) feedback[2];
@@ -114,12 +114,12 @@
                 <hr style="border-top: 1px solid #E5E5E5; margin-bottom: 1.5rem; margin-top: 1.5rem;" />
                 <div class="flex flex-col md:flex-row justify-between items-center mb-6 space-y-4 md:space-y-0">
                     <div class="flex flex-wrap gap-2 text-sm font-medium">
-                        <button class="px-5 py-2 rounded-full text-white hover:bg-[#24483E] transition duration-150 shadow-md filter-btn bg-primary" data-rating="all">All (<%= totalCount %>)</button>
-                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#FFD700] text-[#2B2B2B]" data-rating="5">⭐ 5 Stars (<%= ratingCounts[5] %>)</button>
-                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#FFD700] text-[#2B2B2B]" data-rating="4">⭐ 4 Stars (<%= ratingCounts[4] %>)</button>
-                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#FFD700] text-[#2B2B2B]" data-rating="3">⭐ 3 Stars (<%= ratingCounts[3] %>)</button>
-                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#FFD700] text-[#2B2B2B]" data-rating="2">⭐ 2 Stars (<%= ratingCounts[2] %>)</button>
-                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#FFD700] text-[#2B2B2B]" data-rating="1">⭐ 1 Star (<%= ratingCounts[1] %>)</button>
+                        <button class="px-5 py-2 rounded-full text-white hover:bg-[#24483E] transition duration-150 shadow-md filter-btn bg-primary" data-rating="all">All (<%= totalCount%>)</button>
+                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#FFD700] text-[#2B2B2B]" data-rating="5">⭐ 5 Stars (<%= ratingCounts[5]%>)</button>
+                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#FFD700] text-[#2B2B2B]" data-rating="4">⭐ 4 Stars (<%= ratingCounts[4]%>)</button>
+                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#FFD700] text-[#2B2B2B]" data-rating="3">⭐ 3 Stars (<%= ratingCounts[3]%>)</button>
+                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#FFD700] text-[#2B2B2B]" data-rating="2">⭐ 2 Stars (<%= ratingCounts[2]%>)</button>
+                        <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#FFD700] text-[#2B2B2B]" data-rating="1">⭐ 1 Star (<%= ratingCounts[1]%>)</button>
                     </div>
                     <div class="relative w-full md:w-80">
                         <input type="text" id="searchInput" placeholder="Search Shelter..." class="w-full py-2.5 pl-10 pr-4 border rounded-xl transition duration-150 shadow-sm text-base custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;">
@@ -139,7 +139,7 @@
                             </tr>
                         </thead>
                         <tbody id="feedback-list" class="bg-white divide-y" style="border-color: #E5E5E5;">
-                            <% 
+                            <%
                                 int counter = 0;
                                 for (int i = 0; i < feedbackList.size(); i++) {
                                     counter++;
@@ -150,11 +150,11 @@
                                     String comment = (String) feedback[3];
                                     Timestamp createdAt = (Timestamp) feedback[4];
                                     String shelterLogo = (String) feedback[5];
-                                    
+
                                     // Format date
                                     String formattedDate = createdAt.toString().split(" ")[0];
                                     String truncatedComment = comment.length() > 80 ? comment.substring(0, 80) + "..." : comment;
-                                    
+
                                     // Generate stars HTML
                                     StringBuffer starsHtml = new StringBuffer();
                                     for (int j = 1; j <= 5; j++) {
@@ -165,36 +165,36 @@
                                         }
                                     }
                             %>
-                            <tr class="hover:bg-gray-50 transition duration-100" data-rating="<%= rating %>">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color: #2B2B2B;"><%= counter %></td>
+                            <tr class="hover:bg-gray-50 transition duration-100" data-rating="<%= rating%>">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color: #2B2B2B;"><%= counter%></td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
                                         <div class="flex-shrink-0 h-10 w-10">
-                                            <img class="h-10 w-10 rounded-full object-cover" src="<%= shelterLogo != null ? shelterLogo : "https://via.placeholder.com/40x40?text=Shelter" %>" alt="<%= shelterName %>" onerror="this.src='https://via.placeholder.com/40x40?text=Shelter'">
+                                            <img class="h-10 w-10 rounded-full object-cover" src="<%= shelterLogo != null ? shelterLogo : "https://via.placeholder.com/40x40?text=Shelter"%>" alt="<%= shelterName%>" onerror="this.src='https://via.placeholder.com/40x40?text=Shelter'">
                                         </div>
                                         <div class="ml-4">
-                                            <div class="text-sm font-medium" style="color: #2B2B2B;"><%= shelterName %></div>
+                                            <div class="text-sm font-medium" style="color: #2B2B2B;"><%= shelterName%></div>
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center space-x-1">
-                                        <%= starsHtml.toString() %>
+                                        <%= starsHtml.toString()%>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 text-sm max-w-xs" style="color: #2B2B2B;">
-                                    <%= truncatedComment %>
+                                    <%= truncatedComment%>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;"><%= formattedDate %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;"><%= formattedDate%></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
                                     <div class="flex flex-col items-center space-y-2">
-                                        <button onclick="openModal('editModal', <%= feedbackId %>)" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View/Edit</button>
-                                        <button onclick="openModal('deleteModal', <%= feedbackId %>)" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-red-700" style="background-color: #B84A4A;">Delete</button>
+                                        <button onclick="openEditModal(<%= feedbackId%>)" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View/Edit</button>
+                                        <button onclick="openDeleteModal(<%= feedbackId%>)" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-red-700" style="background-color: #B84A4A;">Delete</button>
                                     </div>
                                 </td>
                             </tr>
                             <% } %>
-                            
+
                             <% if (feedbackList.isEmpty()) { %>
                             <tr>
                                 <td colspan="6" class="px-6 py-8 text-center text-gray-500">
@@ -203,13 +203,13 @@
                                     <p class="text-sm">You haven't submitted any feedback to shelters yet.</p>
                                 </td>
                             </tr>
-                            <% } %>
+                            <% }%>
                         </tbody>
                     </table>
                 </div>
                 <div id="pagination-controls" class="flex justify-between items-center mt-6">
                     <div class="text-sm" style="color: #2B2B2B;">
-                        Showing <span id="start-index" class="font-semibold">1</span> to <span id="end-index" class="font-semibold"><%= Math.min(totalCount, 10) %></span> of <span id="total-items" class="font-semibold"><%= totalCount %></span> feedback
+                        Showing <span id="start-index" class="font-semibold">1</span> to <span id="end-index" class="font-semibold"><%= Math.min(totalCount, 10)%></span> of <span id="total-items" class="font-semibold"><%= totalCount%></span> feedback
                     </div>
                     <div class="flex space-x-2">
                         <button id="prev-btn" class="px-4 py-2 text-sm rounded-xl border text-[#2B2B2B] hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150" style="border-color: #E5E5E5;">
@@ -233,9 +233,12 @@
                     </button>
                 </div>
                 <div class="max-h-[70vh] overflow-y-auto pr-2">
-                    <form id="editForm" class="space-y-4" onsubmit="return false;">
-                        <input type="hidden" id="editFeedbackId">
-                        <input type="hidden" id="editRating" name="rating" value="5"> <!-- TAMBAH INI -->
+                    <!-- FORM YANG BETUL - SUBMIT DIRECT KE SERVLET -->
+                    <form id="editForm" method="POST" action="FeedbackServlet" class="space-y-4">
+                        <!-- HIDDEN INPUTS -->
+                        <input type="hidden" name="action" value="updateFeedback">
+                        <input type="hidden" id="editFeedbackId" name="feedbackId">
+                        <input type="hidden" id="editRating" name="rating" value="5">
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -251,25 +254,30 @@
                         <div>
                             <label class="block text-sm font-medium mb-2" style="color: #2B2B2B;">Rating:</label>
                             <div class="flex space-x-2" id="ratingStars">
-                                <i class="fas fa-star rating-star text-3xl" data-rating="1"></i>
-                                <i class="fas fa-star rating-star text-3xl" data-rating="2"></i>
-                                <i class="fas fa-star rating-star text-3xl" data-rating="3"></i>
-                                <i class="fas fa-star rating-star text-3xl" data-rating="4"></i>
-                                <i class="fas fa-star rating-star text-3xl" data-rating="5"></i>
+                                <i class="fas fa-star rating-star text-3xl" data-rating="1" onclick="updateFormRating(1)"></i>
+                                <i class="fas fa-star rating-star text-3xl" data-rating="2" onclick="updateFormRating(2)"></i>
+                                <i class="fas fa-star rating-star text-3xl" data-rating="3" onclick="updateFormRating(3)"></i>
+                                <i class="fas fa-star rating-star text-3xl" data-rating="4" onclick="updateFormRating(4)"></i>
+                                <i class="fas fa-star rating-star text-3xl" data-rating="5" onclick="updateFormRating(5)"></i>
                             </div>
                             <p class="text-xs text-gray-500 mt-1">Click on stars to change your rating</p>
                         </div>
                         <div>
                             <label for="feedbackComment" class="block text-sm font-medium" style="color: #2B2B2B;">Comment:</label>
-                            <textarea id="feedbackComment" name="comment" rows="5" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="Share your experience with this shelter..."></textarea>
+                            <textarea id="feedbackComment" name="comment" rows="5" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="Share your experience with this shelter..." required></textarea>
                             <p class="text-xs text-gray-500 mt-1">Your feedback helps other adopters make informed decisions.</p>
                         </div>
+
+                        <!-- BUTTONS -->
+                        <div class="flex justify-end pt-4 space-x-3">
+                            <button type="button" onclick="closeModal('editModal')" class="px-5 py-2 rounded-xl border text-[#2B2B2B] hover:bg-gray-100 transition duration-150 font-medium" style="border-color: #E5E5E5;">
+                                Cancel
+                            </button>
+                            <button type="submit" class="px-6 py-2 rounded-xl text-white font-medium hover:bg-[#24483E] transition duration-150 shadow-md" style="background-color: #2F5D50;">
+                                Save Changes
+                            </button>
+                        </div>
                     </form>
-                </div>
-                <div class="flex justify-end pt-4">
-                    <button type="button" onclick="saveFeedbackChanges()" class="px-6 py-2 rounded-xl text-white font-medium hover:bg-[#24483E] transition duration-150 shadow-md" style="background-color: #2F5D50;">
-                        Save Changes
-                    </button>
                 </div>
             </div>
         </div>
@@ -310,421 +318,339 @@
         <script src="includes/sidebar.js"></script>
 
         <script>
-    // =======================================================
-    // Configuration
-    // =======================================================
-    var ITEMS_PER_PAGE = 10;
-    var currentPage = 1;
-    var currentRatingFilter = 'all';
-    var currentFeedbackId = null;
-    
-    // Debug flag
-    var DEBUG = true;
+                        // =======================================================
+                        // Configuration
+                        // =======================================================
+                        var ITEMS_PER_PAGE = 10;
+                        var currentPage = 1;
+                        var currentRatingFilter = 'all';
+                        var currentFeedbackId = null;
 
-    // =======================================================
-    // 1. MODAL FUNCTIONS
-    // =======================================================
-    function openModal(modalId, feedbackId) {
-        if (DEBUG) console.log('openModal called:', modalId, feedbackId);
-        
-        var modal = document.getElementById(modalId);
-        
-        currentFeedbackId = feedbackId;
-        
-        if (modalId === 'editModal') {
-            // Set hidden input value
-            document.getElementById('editFeedbackId').value = feedbackId;
-            
-            // Get data from table row
-            var feedbackRow = findFeedbackRow(feedbackId);
-            if (feedbackRow) {
-                var shelterName = feedbackRow.cells[1].querySelector('.text-sm').textContent;
-                var date = feedbackRow.cells[4].textContent;
-                var commentCell = feedbackRow.cells[3];
-                var comment = commentCell.textContent;
-                
-                // Remove "..." if truncated
-                if (comment.indexOf('...') !== -1) {
-                    comment = comment.replace('...', '');
-                }
-                
-                document.getElementById('formShelterName').textContent = shelterName;
-                document.getElementById('formSubmittedDate').textContent = date;
-                document.getElementById('feedbackComment').value = comment;
-                
-                // Get rating from data attribute
-                var rating = parseInt(feedbackRow.getAttribute('data-rating'));
-                if (DEBUG) console.log('Rating from table:', rating);
-                
-                // Update hidden input and display
-                updateRatingStars(rating);
-            }
-        } else if (modalId === 'deleteModal') {
-            // Get shelter name from table
-            var feedbackRow = findFeedbackRow(feedbackId);
-            if (feedbackRow) {
-                var shelterName = feedbackRow.cells[1].querySelector('.text-sm').textContent;
-                document.getElementById('deleteShelterName').textContent = shelterName;
-            }
-            
-            // Set delete button action - remove any existing listener first
-            var deleteBtn = document.getElementById('confirmDeleteBtn');
-            var newDeleteBtn = deleteBtn.cloneNode(true);
-            deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
-            
-            newDeleteBtn.onclick = function() {
-                deleteFeedback(feedbackId);
-            };
-        }
-        
-        modal.classList.remove('hidden');
-        setTimeout(function() {
-            modal.classList.remove('opacity-0');
-            modal.querySelector('div:nth-child(1)').classList.remove('scale-95');
-        }, 10);
-    }
-    
-    function findFeedbackRow(feedbackId) {
-        var rows = document.querySelectorAll('#feedback-list tr');
-        for (var i = 0; i < rows.length; i++) {
-            var row = rows[i];
-            if (row.cells.length <= 1) continue; // Skip empty row
-            
-            // Check if any button in this row has this feedbackId
-            var buttons = row.querySelectorAll('button');
-            for (var j = 0; j < buttons.length; j++) {
-                var button = buttons[j];
-                var onclickAttr = button.getAttribute('onclick');
-                if (onclickAttr && onclickAttr.indexOf(feedbackId.toString()) !== -1) {
-                    return row;
-                }
-            }
-        }
-        return null;
-    }
-    
-    function closeModal(modalId) {
-        var modal = document.getElementById(modalId);
-        modal.classList.add('opacity-0');
-        modal.querySelector('div:nth-child(1)').classList.add('scale-95');
-        setTimeout(function() {
-            modal.classList.add('hidden');
-        }, 300);
-    }
-    
-    function updateRatingStars(rating) {
-        if (DEBUG) console.log('updateRatingStars called with rating:', rating);
-        
-        // Update hidden input
-        document.getElementById('editRating').value = rating;
-        
-        // Update stars display
-        var stars = document.querySelectorAll('#ratingStars .rating-star');
-        for (var i = 0; i < stars.length; i++) {
-            var star = stars[i];
-            var starRating = parseInt(star.getAttribute('data-rating'));
-            
-            // Remove all classes
-            star.classList.remove('fas', 'far', 'filled', 'empty');
-            
-            if (starRating <= rating) {
-                star.classList.add('fas', 'filled');
-            } else {
-                star.classList.add('far', 'empty');
-            }
-        }
-    }
+                        // Debug flag
+                        var DEBUG = true;
 
-    // =======================================================
-    // 2. AJAX Functions
-    // =======================================================
-    function saveFeedbackChanges() {
-        if (!currentFeedbackId) {
-            alert('No feedback selected');
-            return;
-        }
-        
-        var feedbackId = document.getElementById('editFeedbackId').value;
-        var rating = document.getElementById('editRating').value; // Dapatkan dari hidden input
-        var comment = document.getElementById('feedbackComment').value;
-        
-        if (DEBUG) {
-            console.log('=== saveFeedbackChanges ===');
-            console.log('Feedback ID:', feedbackId);
-            console.log('Rating:', rating);
-            console.log('Comment:', comment);
-        }
-        
-        if (!comment.trim()) {
-            alert('Comment cannot be empty');
-            return;
-        }
-        
-        if (!rating || rating < 1 || rating > 5) {
-            alert('Please select a rating between 1-5');
-            return;
-        }
-        
-        // Show loading
-        var saveBtn = document.querySelector('#editModal button[onclick="saveFeedbackChanges()"]');
-        var originalText = saveBtn.textContent;
-        saveBtn.textContent = 'Saving...';
-        saveBtn.disabled = true;
-        
-        // Create parameters
-        var params = 'action=updateFeedback' +
-                    '&feedbackId=' + encodeURIComponent(feedbackId) +
-                    '&rating=' + encodeURIComponent(rating) +
-                    '&comment=' + encodeURIComponent(comment);
-        
-        if (DEBUG) console.log('Params:', params);
-        
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', 'FeedbackServlet', true);
-        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-                // Restore button
-                saveBtn.textContent = originalText;
-                saveBtn.disabled = false;
-                
-                if (DEBUG) {
-                    console.log('Response status:', xhr.status);
-                    console.log('Response:', xhr.responseText);
-                }
-                
-                if (xhr.status === 200) {
-                    try {
-                        var response = JSON.parse(xhr.responseText);
-                        if (response.success) {
-                            alert('✓ Feedback updated successfully!');
-                            location.reload(); // Reload page
-                        } else {
-                            alert('✗ Error: ' + response.message);
+                        // =======================================================
+                        // 1. MODAL FUNCTIONS
+                        // =======================================================
+                        function openEditModal(feedbackId) {
+                            if (DEBUG)
+                                console.log('openEditModal called:', feedbackId);
+
+                            currentFeedbackId = feedbackId;
+
+                            // Get data from table row
+                            var feedbackRow = findFeedbackRow(feedbackId);
+                            if (feedbackRow) {
+                                var shelterName = feedbackRow.cells[1].querySelector('.text-sm').textContent;
+                                var date = feedbackRow.cells[4].textContent;
+
+                                // Get full comment from original data (not truncated)
+                                var commentCell = feedbackRow.cells[3];
+                                var comment = commentCell.textContent;
+
+                                // If comment was truncated, we need to get the full version
+                                // Since we only have truncated version in table, we'll use what we have
+                                if (comment.indexOf('...') !== -1) {
+                                    comment = comment.replace('...', '');
+                                }
+
+                                // Get rating from data attribute
+                                var rating = parseInt(feedbackRow.getAttribute('data-rating'));
+                                if (DEBUG)
+                                    console.log('Rating from table:', rating);
+
+                                // Populate form
+                                document.getElementById('formShelterName').textContent = shelterName;
+                                document.getElementById('formSubmittedDate').textContent = date;
+                                document.getElementById('feedbackComment').value = comment;
+                                document.getElementById('editFeedbackId').value = feedbackId;
+
+                                // Update stars
+                                updateFormRating(rating);
+
+                                // Show modal
+                                openModal('editModal');
+                            }
                         }
-                    } catch (e) {
-                        console.error('JSON parse error:', e);
-                        alert('Server returned invalid response. Please try again.');
-                    }
-                } else if (xhr.status === 0) {
-                    alert('Network error. Please check your connection.');
-                } else {
-                    alert('Server error (' + xhr.status + '). Please try again.');
-                }
-            }
-        };
-        
-        xhr.onerror = function() {
-            saveBtn.textContent = originalText;
-            saveBtn.disabled = false;
-            alert('Network error occurred.');
-        };
-        
-        xhr.send(params);
-    }
-    
-    function deleteFeedback(feedbackId) {
-        if (DEBUG) console.log('deleteFeedback called:', feedbackId);
-        
-        if (!confirm('Are you sure you want to delete this feedback?')) {
-            return;
-        }
-        
-        var xhr = new XMLHttpRequest();
-        xhr.open('DELETE', 'FeedbackServlet?feedbackId=' + feedbackId, true);
-        
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-                if (DEBUG) console.log('Delete response:', xhr.status, xhr.responseText);
-                
-                if (xhr.status === 200) {
-                    try {
-                        var response = JSON.parse(xhr.responseText);
-                        if (response.success) {
-                            alert('✓ Feedback deleted successfully!');
-                            location.reload();
-                        } else {
-                            alert('✗ Error: ' + response.message);
+
+                        function openDeleteModal(feedbackId) {
+                            if (DEBUG)
+                                console.log('openDeleteModal called:', feedbackId);
+
+                            currentFeedbackId = feedbackId;
+
+                            // Get shelter name from table
+                            var feedbackRow = findFeedbackRow(feedbackId);
+                            if (feedbackRow) {
+                                var shelterName = feedbackRow.cells[1].querySelector('.text-sm').textContent;
+                                document.getElementById('deleteShelterName').textContent = shelterName;
+                            }
+
+                            // Set delete button action
+                            document.getElementById('confirmDeleteBtn').onclick = function () {
+                                deleteFeedback(feedbackId);
+                            };
+
+                            // Show modal
+                            openModal('deleteModal');
                         }
-                    } catch (e) {
-                        console.error('JSON Parse Error:', e);
-                        alert('Server returned invalid response.');
-                    }
-                } else {
-                    alert('Network error. Status: ' + xhr.status);
-                }
-            }
-        };
-        
-        xhr.onerror = function() {
-            alert('Network error occurred.');
-        };
-        
-        xhr.send();
-    }
 
-    // =======================================================
-    // 3. Filtering and Pagination Functions
-    // =======================================================
-    function filterTable() {
-        var searchTerm = document.getElementById('searchInput').value.toLowerCase();
-        var rows = document.querySelectorAll('#feedback-list tr');
-        var visibleCount = 0;
-        
-        for (var i = 0; i < rows.length; i++) {
-            var row = rows[i];
-            if (row.cells.length <= 1) continue; // Skip empty message row
-            
-            var shelterName = row.cells[1].querySelector('.text-sm').textContent.toLowerCase();
-            var rating = row.getAttribute('data-rating');
-            var shouldShow = true;
-            
-            // Apply search filter
-            if (searchTerm && shelterName.indexOf(searchTerm) === -1) {
-                shouldShow = false;
-            }
-            
-            // Apply rating filter
-            if (currentRatingFilter !== 'all' && rating !== currentRatingFilter) {
-                shouldShow = false;
-            }
-            
-            if (shouldShow) {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
-        }
-        
-        updatePaginationInfo(visibleCount);
-    }
-    
-    function updatePaginationInfo(visibleCount) {
-        var start = Math.min(visibleCount, (currentPage - 1) * ITEMS_PER_PAGE + 1);
-        var end = Math.min(visibleCount, currentPage * ITEMS_PER_PAGE);
-        
-        document.getElementById('total-items').textContent = visibleCount;
-        document.getElementById('start-index').textContent = start;
-        document.getElementById('end-index').textContent = end;
-        
-        // Update button states
-        document.getElementById('prev-btn').disabled = currentPage === 1;
-        document.getElementById('next-btn').disabled = currentPage * ITEMS_PER_PAGE >= visibleCount;
-        
-        // Show/hide empty message
-        var emptyRow = document.querySelector('#feedback-list tr:only-child');
-        if (visibleCount === 0) {
-            if (!emptyRow || emptyRow.cells.length > 1) {
-                var tbody = document.getElementById('feedback-list');
-                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-comment-slash text-4xl mb-2"></i><p class="text-lg">No matching feedback found.</p><p class="text-sm">Try adjusting your filters.</p></td></tr>';
-            }
-        }
-    }
-    
-    function updateFilterButtonStyles() {
-        var filterButtons = document.querySelectorAll('.filter-btn');
-        
-        for (var i = 0; i < filterButtons.length; i++) {
-            var btn = filterButtons[i];
-            var btnRating = btn.getAttribute('data-rating');
-            
-            btn.className = 'px-5 py-2 rounded-full text-sm font-medium transition duration-150 filter-btn';
-            
-            if (btnRating === currentRatingFilter) {
-                if (btnRating === 'all') {
-                    btn.classList.add('bg-primary', 'text-white', 'shadow-md');
-                } else {
-                    btn.classList.add('star-filter', 'shadow-md');
-                }
-            } else {
-                btn.classList.add('border', 'hover:bg-[#F6F3E7]');
-                if (btnRating === 'all') {
-                    btn.classList.add('border-[#2F5D50]', 'text-[#2F5D50]');
-                } else {
-                    btn.classList.add('border-[#FFD700]', 'text-[#2B2B2B]');
-                }
-            }
-        }
-    }
+                        function openModal(modalId) {
+                            var modal = document.getElementById(modalId);
+                            modal.classList.remove('hidden');
+                            setTimeout(function () {
+                                modal.classList.remove('opacity-0');
+                                modal.querySelector('div:nth-child(1)').classList.remove('scale-95');
+                            }, 10);
+                        }
 
-    // =======================================================
-    // 4. Event Listeners Setup
-    // =======================================================
-    document.addEventListener('DOMContentLoaded', function() {
-        if (DEBUG) console.log('DOM loaded, setting up event listeners');
-        
-        // Rating stars click handlers in modal
-        var ratingStars = document.querySelectorAll('#ratingStars .rating-star');
-        for (var i = 0; i < ratingStars.length; i++) {
-            ratingStars[i].addEventListener('click', function() {
-                var newRating = parseInt(this.getAttribute('data-rating'));
-                if (DEBUG) console.log('Star clicked, new rating:', newRating);
-                updateRatingStars(newRating);
-            });
-        }
-        
-        // Search input
-        document.getElementById('searchInput').addEventListener('input', function() {
-            currentPage = 1;
-            filterTable();
-        });
-        
-        // Filter buttons
-        var filterButtons = document.querySelectorAll('.filter-btn');
-        for (var i = 0; i < filterButtons.length; i++) {
-            filterButtons[i].addEventListener('click', function(e) {
-                currentRatingFilter = e.target.getAttribute('data-rating');
-                currentPage = 1;
-                updateFilterButtonStyles();
-                filterTable();
-            });
-        }
-        
-        // Pagination buttons
-        document.getElementById('prev-btn').addEventListener('click', function() {
-            if (currentPage > 1) {
-                currentPage--;
-                filterTable();
-            }
-        });
-        
-        document.getElementById('next-btn').addEventListener('click', function() {
-            var rows = document.querySelectorAll('#feedback-list tr');
-            var visibleCount = 0;
-            for (var i = 0; i < rows.length; i++) {
-                if (rows[i].style.display !== 'none' && rows[i].cells.length > 1) {
-                    visibleCount++;
-                }
-            }
-            
-            var totalPages = Math.ceil(visibleCount / ITEMS_PER_PAGE);
-            if (currentPage < totalPages) {
-                currentPage++;
-                filterTable();
-            }
-        });
-        
-        // Also add event listener for Enter key in comment textarea
-        document.getElementById('feedbackComment').addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'Enter') {
-                saveFeedbackChanges();
-            }
-        });
-        
-        // Initial setup
-        updateFilterButtonStyles();
-        filterTable();
-        
-        if (DEBUG) console.log('Event listeners setup complete');
-    });
-    
-    // Make functions available globally for onclick attributes
-    window.openModal = openModal;
-    window.closeModal = closeModal;
-    window.saveFeedbackChanges = saveFeedbackChanges;
-    window.updateRatingStars = updateRatingStars;
-</script>
+                        function closeModal(modalId) {
+                            var modal = document.getElementById(modalId);
+                            modal.classList.add('opacity-0');
+                            modal.querySelector('div:nth-child(1)').classList.add('scale-95');
+                            setTimeout(function () {
+                                modal.classList.add('hidden');
+                            }, 300);
+                        }
+
+                        function updateFormRating(rating) {
+                            if (DEBUG)
+                                console.log('updateFormRating called with rating:', rating);
+
+                            // Update hidden input
+                            document.getElementById('editRating').value = rating;
+
+                            // Update stars display
+                            var stars = document.querySelectorAll('#ratingStars .rating-star');
+                            for (var i = 0; i < stars.length; i++) {
+                                var star = stars[i];
+                                var starRating = parseInt(star.getAttribute('data-rating'));
+
+                                if (starRating <= rating) {
+                                    star.style.color = '#FFD700'; // Gold for filled stars
+                                    star.classList.add('filled');
+                                    star.classList.remove('empty');
+                                } else {
+                                    star.style.color = '#E5E5E5'; // Light gray for empty stars
+                                    star.classList.add('empty');
+                                    star.classList.remove('filled');
+                                }
+                            }
+                        }
+
+                        function findFeedbackRow(feedbackId) {
+                            var rows = document.querySelectorAll('#feedback-list tr');
+                            for (var i = 0; i < rows.length; i++) {
+                                var row = rows[i];
+                                if (row.cells.length <= 1)
+                                    continue; // Skip empty row
+
+                                // Check if any button in this row has this feedbackId
+                                var buttons = row.querySelectorAll('button');
+                                for (var j = 0; j < buttons.length; j++) {
+                                    var button = buttons[j];
+                                    var onclickAttr = button.getAttribute('onclick');
+                                    if (onclickAttr && onclickAttr.indexOf(feedbackId.toString()) !== -1) {
+                                        return row;
+                                    }
+                                }
+                            }
+                            return null;
+                        }
+
+                        // =======================================================
+                        // 2. AJAX Functions (for delete only)
+                        // =======================================================
+                        function deleteFeedback(feedbackId) {
+                            if (DEBUG)
+                                console.log('deleteFeedback called:', feedbackId);
+
+                            if (!confirm('Are you sure you want to delete this feedback?')) {
+                                return;
+                            }
+
+                            var xhr = new XMLHttpRequest();
+                            xhr.open('DELETE', 'FeedbackServlet?feedbackId=' + feedbackId, true);
+
+                            xhr.onreadystatechange = function () {
+                                if (xhr.readyState === 4) {
+                                    if (DEBUG)
+                                        console.log('Delete response:', xhr.status, xhr.responseText);
+
+                                    if (xhr.status === 200) {
+                                        try {
+                                            var response = JSON.parse(xhr.responseText);
+                                            if (response.success) {
+                                                alert('✓ Feedback deleted successfully!');
+                                                closeModal('deleteModal');
+                                                location.reload();
+                                            } else {
+                                                alert('✗ Error: ' + response.message);
+                                            }
+                                        } catch (e) {
+                                            console.error('JSON Parse Error:', e);
+                                            alert('Server returned invalid response.');
+                                        }
+                                    } else {
+                                        alert('Network error. Status: ' + xhr.status);
+                                    }
+                                }
+                            };
+
+                            xhr.onerror = function () {
+                                alert('Network error occurred.');
+                            };
+
+                            xhr.send();
+                        }
+
+                        // =======================================================
+                        // 3. Filtering and Pagination Functions
+                        // =======================================================
+                        function filterTable() {
+                            var searchTerm = document.getElementById('searchInput').value.toLowerCase();
+                            var rows = document.querySelectorAll('#feedback-list tr');
+                            var visibleCount = 0;
+
+                            for (var i = 0; i < rows.length; i++) {
+                                var row = rows[i];
+                                if (row.cells.length <= 1)
+                                    continue; // Skip empty message row
+
+                                var shelterName = row.cells[1].querySelector('.text-sm').textContent.toLowerCase();
+                                var rating = row.getAttribute('data-rating');
+                                var shouldShow = true;
+
+                                // Apply search filter
+                                if (searchTerm && shelterName.indexOf(searchTerm) === -1) {
+                                    shouldShow = false;
+                                }
+
+                                // Apply rating filter
+                                if (currentRatingFilter !== 'all' && rating !== currentRatingFilter) {
+                                    shouldShow = false;
+                                }
+
+                                if (shouldShow) {
+                                    row.style.display = '';
+                                    visibleCount++;
+                                } else {
+                                    row.style.display = 'none';
+                                }
+                            }
+
+                            updatePaginationInfo(visibleCount);
+                        }
+
+                        function updatePaginationInfo(visibleCount) {
+                            var start = Math.min(visibleCount, (currentPage - 1) * ITEMS_PER_PAGE + 1);
+                            var end = Math.min(visibleCount, currentPage * ITEMS_PER_PAGE);
+
+                            document.getElementById('total-items').textContent = visibleCount;
+                            document.getElementById('start-index').textContent = start;
+                            document.getElementById('end-index').textContent = end;
+
+                            // Update button states
+                            document.getElementById('prev-btn').disabled = currentPage === 1;
+                            document.getElementById('next-btn').disabled = currentPage * ITEMS_PER_PAGE >= visibleCount;
+
+                            // Show/hide empty message
+                            var emptyRow = document.querySelector('#feedback-list tr:only-child');
+                            if (visibleCount === 0) {
+                                if (!emptyRow || emptyRow.cells.length > 1) {
+                                    var tbody = document.getElementById('feedback-list');
+                                    tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-comment-slash text-4xl mb-2"></i><p class="text-lg">No matching feedback found.</p><p class="text-sm">Try adjusting your filters.</p></td></tr>';
+                                }
+                            }
+                        }
+
+                        function updateFilterButtonStyles() {
+                            var filterButtons = document.querySelectorAll('.filter-btn');
+
+                            for (var i = 0; i < filterButtons.length; i++) {
+                                var btn = filterButtons[i];
+                                var btnRating = btn.getAttribute('data-rating');
+
+                                btn.className = 'px-5 py-2 rounded-full text-sm font-medium transition duration-150 filter-btn';
+
+                                if (btnRating === currentRatingFilter) {
+                                    if (btnRating === 'all') {
+                                        btn.classList.add('bg-primary', 'text-white', 'shadow-md');
+                                    } else {
+                                        btn.classList.add('star-filter', 'shadow-md');
+                                    }
+                                } else {
+                                    btn.classList.add('border', 'hover:bg-[#F6F3E7]');
+                                    if (btnRating === 'all') {
+                                        btn.classList.add('border-[#2F5D50]', 'text-[#2F5D50]');
+                                    } else {
+                                        btn.classList.add('border-[#FFD700]', 'text-[#2B2B2B]');
+                                    }
+                                }
+                            }
+                        }
+
+                        // =======================================================
+                        // 4. Event Listeners Setup
+                        // =======================================================
+                        document.addEventListener('DOMContentLoaded', function () {
+                            if (DEBUG)
+                                console.log('DOM loaded, setting up event listeners');
+
+                            // Search input
+                            document.getElementById('searchInput').addEventListener('input', function () {
+                                currentPage = 1;
+                                filterTable();
+                            });
+
+                            // Filter buttons
+                            var filterButtons = document.querySelectorAll('.filter-btn');
+                            for (var i = 0; i < filterButtons.length; i++) {
+                                filterButtons[i].addEventListener('click', function (e) {
+                                    currentRatingFilter = e.target.getAttribute('data-rating');
+                                    currentPage = 1;
+                                    updateFilterButtonStyles();
+                                    filterTable();
+                                });
+                            }
+
+                            // Pagination buttons
+                            document.getElementById('prev-btn').addEventListener('click', function () {
+                                if (currentPage > 1) {
+                                    currentPage--;
+                                    filterTable();
+                                }
+                            });
+
+                            document.getElementById('next-btn').addEventListener('click', function () {
+                                var rows = document.querySelectorAll('#feedback-list tr');
+                                var visibleCount = 0;
+                                for (var i = 0; i < rows.length; i++) {
+                                    if (rows[i].style.display !== 'none' && rows[i].cells.length > 1) {
+                                        visibleCount++;
+                                    }
+                                }
+
+                                var totalPages = Math.ceil(visibleCount / ITEMS_PER_PAGE);
+                                if (currentPage < totalPages) {
+                                    currentPage++;
+                                    filterTable();
+                                }
+                            });
+
+                            // Initial setup
+                            updateFilterButtonStyles();
+                            filterTable();
+
+                            if (DEBUG)
+                                console.log('Event listeners setup complete');
+                        });
+
+                        // Make functions available globally
+                        window.openEditModal = openEditModal;
+                        window.openDeleteModal = openDeleteModal;
+                        window.closeModal = closeModal;
+                        window.updateFormRating = updateFormRating;
+        </script>
     </body>
 </html>
