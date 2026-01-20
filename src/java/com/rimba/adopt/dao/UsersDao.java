@@ -754,4 +754,102 @@ public List<Map<String, Object>> getRecentActivity(int limit) throws SQLExceptio
     
     return activities;
 }
+
+    // ========== GET SHELTERS FOR PUBLIC VIEWING ==========
+    public List<Map<String, Object>> getSheltersForPublic() throws SQLException {
+        List<Map<String, Object>> shelters = new ArrayList<>();
+
+        // Query untuk mengambil shelter yang sudah approved dengan rating dan review count
+        String sql = "SELECT s.shelter_id, u.name, u.profile_photo_path, "
+                + "s.shelter_name, s.shelter_address, s.shelter_description, "
+                + "COALESCE(AVG(f.rating), 0) as avg_rating, "
+                + "COUNT(f.feedback_id) as review_count "
+                + "FROM shelter s "
+                + "JOIN users u ON s.shelter_id = u.user_id "
+                + "LEFT JOIN feedback f ON s.shelter_id = f.shelter_id "
+                + "WHERE s.approval_status = 'approved' "
+                + "GROUP BY s.shelter_id, u.name, u.profile_photo_path, "
+                + "s.shelter_name, s.shelter_address, s.shelter_description "
+                + "ORDER BY avg_rating DESC, s.shelter_name ASC";
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                Map<String, Object> shelter = new HashMap<>();
+                shelter.put("shelterId", rs.getInt("shelter_id"));
+                shelter.put("userName", rs.getString("name"));
+                shelter.put("photoPath", rs.getString("profile_photo_path"));
+                shelter.put("shelterName", rs.getString("shelter_name"));
+                shelter.put("shelterAddress", rs.getString("shelter_address"));
+                shelter.put("shelterDescription", rs.getString("shelter_description"));
+                shelter.put("avgRating", rs.getDouble("avg_rating"));
+                shelter.put("reviewCount", rs.getInt("review_count"));
+
+                shelters.add(shelter);
+            }
+        }
+
+        return shelters;
+    }
+
+    // ========== GET FILTERED SHELTERS ==========
+    public List<Map<String, Object>> getFilteredShelters(String searchTerm, double minRating) throws SQLException {
+        List<Map<String, Object>> shelters = new ArrayList<>();
+
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT s.shelter_id, u.name, u.profile_photo_path, ")
+           .append("s.shelter_name, s.shelter_address, s.shelter_description, ")
+           .append("COALESCE(AVG(f.rating), 0) as avg_rating, ")
+           .append("COUNT(f.feedback_id) as review_count ")
+           .append("FROM shelter s ")
+           .append("JOIN users u ON s.shelter_id = u.user_id ")
+           .append("LEFT JOIN feedback f ON s.shelter_id = f.shelter_id ")
+           .append("WHERE s.approval_status = 'approved' ");
+
+        // Add search condition
+        if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+            sql.append("AND (LOWER(s.shelter_name) LIKE ? OR LOWER(s.shelter_address) LIKE ?) ");
+        }
+
+        sql.append("GROUP BY s.shelter_id, u.name, u.profile_photo_path, ")
+           .append("s.shelter_name, s.shelter_address, s.shelter_description ");
+
+        // Add rating condition
+        sql.append("HAVING COALESCE(AVG(f.rating), 0) >= ? ");
+
+        sql.append("ORDER BY avg_rating DESC, s.shelter_name ASC");
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql.toString())) {
+            int paramIndex = 1;
+
+            // Set search parameter if exists
+            if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+                String searchPattern = "%" + searchTerm.toLowerCase() + "%";
+                stmt.setString(paramIndex++, searchPattern);
+                stmt.setString(paramIndex++, searchPattern);
+            }
+
+            // Set min rating parameter
+            stmt.setDouble(paramIndex, minRating);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> shelter = new HashMap<>();
+                    shelter.put("shelterId", rs.getInt("shelter_id"));
+                    shelter.put("userName", rs.getString("name"));
+                    shelter.put("photoPath", rs.getString("profile_photo_path"));
+                    shelter.put("shelterName", rs.getString("shelter_name"));
+                    shelter.put("shelterAddress", rs.getString("shelter_address"));
+                    shelter.put("shelterDescription", rs.getString("shelter_description"));
+                    shelter.put("avgRating", rs.getDouble("avg_rating"));
+                    shelter.put("reviewCount", rs.getInt("review_count"));
+
+                    shelters.add(shelter);
+                }
+            }
+        }
+
+        return shelters;
+    }
 }

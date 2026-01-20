@@ -15,6 +15,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 @WebServlet("/FeedbackServlet")
 @MultipartConfig
@@ -27,6 +28,7 @@ public class FeedbackServlet extends HttpServlet {
         feedbackDAO = new FeedbackDAO();
     }
 
+    // Dalam FeedbackServlet.java - Update doGet method untuk feedback:
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -53,11 +55,15 @@ public class FeedbackServlet extends HttpServlet {
                 int page = pageParam != null ? Integer.parseInt(pageParam) : 1;
                 int pageSize = pageSizeParam != null ? Integer.parseInt(pageSizeParam) : 4;
 
-                // Get feedback data
-                List<Feedback> feedbackList = feedbackDAO.getFeedbackByShelterId(shelterId, page, pageSize);
+                // Get feedback data with adopter info
+                List<Map<String, Object>> feedbackList = feedbackDAO.getFeedbackWithAdopterInfo(shelterId, page, pageSize);
                 int totalCount = feedbackDAO.getFeedbackCountByShelterId(shelterId);
                 double averageRating = feedbackDAO.getAverageRatingByShelterId(shelterId);
                 int[] ratingDistribution = feedbackDAO.getRatingDistributionByShelterId(shelterId);
+
+                System.out.println("DEBUG: Feedback stats - total: " + totalCount + 
+                                  ", avg: " + averageRating + 
+                                  ", current page: " + page);
 
                 // Build JSON response manually
                 StringBuilder json = new StringBuilder();
@@ -72,24 +78,35 @@ public class FeedbackServlet extends HttpServlet {
                 // Add feedback list
                 json.append("\"feedbackList\": [");
                 for (int i = 0; i < feedbackList.size(); i++) {
-                    Feedback feedback = feedbackList.get(i);
+                    Map<String, Object> feedback = feedbackList.get(i);
                     if (i > 0) {
                         json.append(",");
                     }
 
-                    String adopterName = feedbackDAO.getAdopterNameById(feedback.getAdopterId());
-                    if (adopterName == null) {
+                    String adopterName = (String) feedback.get("adopter_name");
+                    if (adopterName == null || adopterName.isEmpty()) {
                         adopterName = "Anonymous";
                     }
 
+                    // Get comment safely
+                    String comment = (String) feedback.get("comment");
+                    if (comment == null) {
+                        comment = "";
+                    }
+
+                    // Get relative time
+                    Timestamp createdAt = (Timestamp) feedback.get("created_at");
+                    String relativeTime = getRelativeTime(createdAt);
+
                     json.append("{");
-                    json.append("\"feedbackId\": ").append(feedback.getFeedbackId()).append(",");
-                    json.append("\"adopterId\": ").append(feedback.getAdopterId()).append(",");
-                    json.append("\"shelterId\": ").append(feedback.getShelterId()).append(",");
-                    json.append("\"rating\": ").append(feedback.getRating()).append(",");
-                    json.append("\"comment\": \"").append(escapeJson(feedback.getComment())).append("\",");
+                    json.append("\"feedbackId\": ").append(feedback.get("feedback_id")).append(",");
+                    json.append("\"adopterId\": ").append(feedback.get("adopter_id")).append(",");
+                    json.append("\"shelterId\": ").append(feedback.get("shelter_id")).append(",");
+                    json.append("\"rating\": ").append(feedback.get("rating")).append(",");
+                    json.append("\"comment\": \"").append(escapeJson(comment)).append("\",");
                     json.append("\"adopterName\": \"").append(escapeJson(adopterName)).append("\",");
-                    json.append("\"relativeTime\": \"").append(getRelativeTime(feedback.getCreatedAt())).append("\"");
+                    json.append("\"createdAt\": \"").append(createdAt != null ? createdAt.toString() : "").append("\",");
+                    json.append("\"relativeTime\": \"").append(escapeJson(relativeTime)).append("\"");
                     json.append("}");
                 }
                 json.append("],");
@@ -140,8 +157,106 @@ public class FeedbackServlet extends HttpServlet {
         }
     }
 
+    // Dalam FeedbackServlet.java - Update doPost method: REMOVE THE CHECK
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        HttpSession session = request.getSession(false);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        PrintWriter out = response.getWriter();
+
+        if (!SessionUtil.isLoggedIn(session) || !SessionUtil.isAdopter(session)) {
+            sendJsonResponse(out, false, "Unauthorized access. Please login as adopter.", null);
+            return;
+        }
+
+        try {
+            String action = request.getParameter("action");
+
+            if ("submitFeedback".equals(action)) {
+                String shelterIdParam = request.getParameter("shelterId");
+                String ratingParam = request.getParameter("rating");
+                String comment = request.getParameter("comment");
+                String title = request.getParameter("title"); // Optional
+                String forceSubmit = request.getParameter("forceSubmit"); // New parameter
+
+                System.out.println("DEBUG: Submitting feedback - shelterId: " + shelterIdParam + 
+                                  ", rating: " + ratingParam + 
+                                  ", comment length: " + (comment != null ? comment.length() : 0) +
+                                  ", forceSubmit: " + forceSubmit);
+
+                if (shelterIdParam == null || shelterIdParam.isEmpty()) {
+                    sendJsonResponse(out, false, "Shelter ID is required", null);
+                    return;
+                }
+
+                if (ratingParam == null || ratingParam.isEmpty()) {
+                    sendJsonResponse(out, false, "Rating is required", null);
+                    return;
+                }
+
+                if (comment == null || comment.trim().isEmpty()) {
+                    sendJsonResponse(out, false, "Comment cannot be empty", null);
+                    return;
+                }
+
+                int shelterId = Integer.parseInt(shelterIdParam);
+                int rating = Integer.parseInt(ratingParam);
+                int adopterId = SessionUtil.getUserId(session);
+
+                // Validate rating
+                if (rating < 1 || rating > 5) {
+                    sendJsonResponse(out, false, "Rating must be between 1 and 5", null);
+                    return;
+                }
+
+                // Check if forceSubmit is requested or if user wants to allow multiple reviews
+                boolean allowMultiple = "true".equalsIgnoreCase(forceSubmit);
+                
+                if (!allowMultiple) {
+                    // OPTIONAL: Only check if forceSubmit is not requested
+                    // You can remove this entire block if you always want to allow multiple reviews
+                    boolean hasReviewed = feedbackDAO.hasAdopterReviewedShelter(adopterId, shelterId);
+                    if (hasReviewed) {
+                        sendJsonResponse(out, false, "You have already reviewed this shelter", null);
+                        return;
+                    }
+                }
+
+                // Create feedback object
+                Feedback feedback = new Feedback();
+                feedback.setAdopterId(adopterId);
+                feedback.setShelterId(shelterId);
+                feedback.setRating(rating);
+                feedback.setComment(comment.trim());
+
+                // Add feedback
+                boolean success = feedbackDAO.addFeedback(feedback);
+
+                if (success) {
+                    System.out.println("DEBUG: Feedback submitted successfully for shelter " + shelterId);
+                    sendJsonResponse(out, true, "Thank you for your feedback!", null);
+                } else {
+                    sendJsonResponse(out, false, "Failed to submit feedback. Please try again.", null);
+                }
+
+            } else {
+                sendJsonResponse(out, false, "Invalid action", null);
+            }
+
+        } catch (NumberFormatException e) {
+            System.err.println("ERROR: Invalid number format: " + e.getMessage());
+            sendJsonResponse(out, false, "Invalid data format. Please check your input.", null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendJsonResponse(out, false, "Error: " + e.getMessage(), null);
+        }
+    }
+
+    @Override
+    protected void doPut(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
         HttpSession session = request.getSession(false);
@@ -155,66 +270,62 @@ public class FeedbackServlet extends HttpServlet {
         }
 
         try {
-            String shelterIdParam = request.getParameter("shelterId");
-            String ratingParam = request.getParameter("rating");
-            String title = request.getParameter("title");
-            String comment = request.getParameter("comment");
+            String action = request.getParameter("action");
 
-            if (shelterIdParam == null || ratingParam == null || comment == null) {
-                sendJsonResponse(out, false, "All fields are required", null);
-                return;
-            }
+            if ("updateFeedback".equals(action)) {
+                String feedbackIdParam = request.getParameter("feedbackId");
+                String ratingParam = request.getParameter("rating");
+                String comment = request.getParameter("comment");
 
-            int shelterId = Integer.parseInt(shelterIdParam);
-            int rating = Integer.parseInt(ratingParam);
-            int userId = SessionUtil.getUserId(session);
+                if (feedbackIdParam == null || ratingParam == null || comment == null) {
+                    sendJsonResponse(out, false, "All fields are required", null);
+                    return;
+                }
 
-            // Validate rating
-            if (rating < 1 || rating > 5) {
-                sendJsonResponse(out, false, "Rating must be between 1 and 5", null);
-                return;
-            }
+                int feedbackId = Integer.parseInt(feedbackIdParam);
+                int rating = Integer.parseInt(ratingParam);
+                int adopterId = SessionUtil.getUserId(session);
 
-            // Check if user has already reviewed this shelter
-            if (feedbackDAO.hasAdopterReviewedShelter(userId, shelterId)) {
-                sendJsonResponse(out, false, "You have already reviewed this shelter", null);
-                return;
-            }
+                // Validate rating
+                if (rating < 1 || rating > 5) {
+                    sendJsonResponse(out, false, "Rating must be between 1 and 5", null);
+                    return;
+                }
 
-            // Combine title and comment if title exists
-            String fullComment = comment;
-            if (title != null && !title.trim().isEmpty()) {
-                fullComment = title + " - " + comment;
-            }
+                // Validate comment
+                if (comment.trim().isEmpty()) {
+                    sendJsonResponse(out, false, "Comment cannot be empty", null);
+                    return;
+                }
 
-            // Create and save feedback
-            Feedback feedback = new Feedback();
-            feedback.setAdopterId(userId);
-            feedback.setShelterId(shelterId);
-            feedback.setRating(rating);
-            feedback.setComment(fullComment.trim());
-            feedback.setCreatedAt(new Timestamp(new Date().getTime()));
+                // Check if feedback belongs to this adopter
+                Map<String, Object> feedbackDetails = feedbackDAO.getFeedbackDetailsForAdopter(feedbackId, adopterId);
+                if (feedbackDetails.isEmpty()) {
+                    sendJsonResponse(out, false, "Feedback not found or you don't have permission to edit it", null);
+                    return;
+                }
 
-            boolean success = feedbackDAO.addFeedback(feedback);
+                // Update feedback
+                boolean success = feedbackDAO.updateFeedback(feedbackId, rating, comment);
 
-            if (success) {
-                sendJsonResponse(out, true, "Thank you for your review! Your feedback has been submitted.", null);
+                if (success) {
+                    sendJsonResponse(out, true, "Feedback updated successfully", null);
+                } else {
+                    sendJsonResponse(out, false, "Failed to update feedback", null);
+                }
+
             } else {
-                sendJsonResponse(out, false, "Failed to submit review. Please try again.", null);
+                sendJsonResponse(out, false, "Invalid action", null);
             }
 
         } catch (NumberFormatException e) {
-            sendJsonResponse(out, false, "Invalid rating format", null);
+            sendJsonResponse(out, false, "Invalid parameter format", null);
         } catch (Exception e) {
             e.printStackTrace();
-            sendJsonResponse(out, false, "Error submitting review: " + e.getMessage(), null);
+            sendJsonResponse(out, false, "Error: " + e.getMessage(), null);
         }
     }
 
-    // ========== BUANG/COMMENT METHOD INI ==========
-    // Jangan letak public method deleteFeedback di sini
-    // public boolean deleteFeedback(int feedbackId, int shelterId) { ... }
-    // ==============================================
     @Override
     protected void doDelete(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -224,24 +335,33 @@ public class FeedbackServlet extends HttpServlet {
         response.setCharacterEncoding("UTF-8");
         PrintWriter out = response.getWriter();
 
-        if (!SessionUtil.isLoggedIn(session) || !SessionUtil.isShelter(session)) {
+        if (!SessionUtil.isLoggedIn(session)) {
             sendJsonResponse(out, false, "Unauthorized access", null);
             return;
         }
 
         try {
             String feedbackIdParam = request.getParameter("feedbackId");
-            int shelterId = SessionUtil.getUserId(session); // Shelter ID = user ID
-
+            
             if (feedbackIdParam == null || feedbackIdParam.isEmpty()) {
                 sendJsonResponse(out, false, "Feedback ID is required", null);
                 return;
             }
-
+            
             int feedbackId = Integer.parseInt(feedbackIdParam);
-
-            // Delete feedback directly without calling helper method
-            boolean success = performDeleteFeedback(feedbackId, shelterId);
+            int userId = SessionUtil.getUserId(session);
+            boolean success = false;
+            
+            if (SessionUtil.isAdopter(session)) {
+                // Adopter deleting their own feedback
+                success = feedbackDAO.deleteFeedbackByAdopter(feedbackId, userId);
+            } else if (SessionUtil.isShelter(session)) {
+                // Shelter deleting feedback about them
+                success = performDeleteFeedback(feedbackId, userId);
+            } else {
+                sendJsonResponse(out, false, "Unauthorized access", null);
+                return;
+            }
 
             if (success) {
                 sendJsonResponse(out, true, "Feedback deleted successfully", null);
@@ -257,7 +377,7 @@ public class FeedbackServlet extends HttpServlet {
         }
     }
 
-    // ========== TAMBAH PRIVATE HELPER METHOD ==========
+    // ========== PRIVATE HELPER METHODS ==========
     private boolean performDeleteFeedback(int feedbackId, int shelterId) {
         Connection conn = null;
         PreparedStatement pstmt = null;

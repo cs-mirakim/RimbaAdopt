@@ -4,6 +4,7 @@ import com.rimba.adopt.model.LostReport;
 import com.rimba.adopt.util.DatabaseConnection;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -267,4 +268,74 @@ public class LostReportDAO {
         
         return report;
     }
+    
+    // NEW METHOD: Get lost report statistics for adopter
+public Map<String, Integer> getLostReportStatsByAdopter(int adopterId) throws SQLException {
+    Map<String, Integer> stats = new HashMap<>();
+    
+    String query = "SELECT status, COUNT(*) as count " +
+                   "FROM lost_report " +
+                   "WHERE adopter_id = ? " +
+                   "GROUP BY status";
+    
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+        
+        pstmt.setInt(1, adopterId);
+        try (ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                String status = rs.getString("status");
+                int count = rs.getInt("count");
+                stats.put(status.toLowerCase(), count);
+            }
+        }
+    }
+    
+    // Calculate total
+    int total = stats.values().stream().mapToInt(Integer::intValue).sum();
+    stats.put("total", total);
+    
+    return stats;
+}
+
+// NEW METHOD: Get monthly lost report stats for adopter
+public Map<String, List<Integer>> getMonthlyLostStatsByAdopter(int adopterId) throws SQLException {
+    Map<String, List<Integer>> monthlyStats = new HashMap<>();
+    
+    // Initialize arrays for each status (12 months)
+    List<Integer> monthlyLost = new ArrayList<>(Collections.nCopies(12, 0));
+    List<Integer> monthlyFound = new ArrayList<>(Collections.nCopies(12, 0));
+    
+    String query = "SELECT MONTH(created_at) as month, status, COUNT(*) as count " +
+                   "FROM lost_report " +
+                   "WHERE adopter_id = ? AND YEAR(created_at) = YEAR(CURDATE()) " +
+                   "GROUP BY MONTH(created_at), status " +
+                   "ORDER BY month";
+    
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+        
+        pstmt.setInt(1, adopterId);
+        try (ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                int month = rs.getInt("month") - 1; // Convert to 0-indexed
+                String status = rs.getString("status");
+                int count = rs.getInt("count");
+                
+                if (month >= 0 && month < 12 && status != null) {
+                    if (status.equalsIgnoreCase("lost")) {
+                        monthlyLost.set(month, count);
+                    } else if (status.equalsIgnoreCase("found")) {
+                        monthlyFound.set(month, count);
+                    }
+                }
+            }
+        }
+    }
+    
+    monthlyStats.put("lost", monthlyLost);
+    monthlyStats.put("found", monthlyFound);
+    
+    return monthlyStats;
+}
 }

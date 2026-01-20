@@ -5,14 +5,18 @@ import com.rimba.adopt.dao.AdoptionRecordDAO;
 import com.rimba.adopt.dao.FeedbackDAO;
 import com.rimba.adopt.dao.PetsDAO;
 import com.rimba.adopt.model.AdoptionRecord;
+import com.rimba.adopt.model.AdoptionRequest;
 import com.rimba.adopt.util.DatabaseConnection;
 import com.rimba.adopt.util.SessionUtil;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -28,6 +32,7 @@ import javax.servlet.http.HttpSession;
 public class ManageAdoptionRequestServlet extends HttpServlet {
 
     private static final Logger logger = Logger.getLogger(ManageAdoptionRequestServlet.class.getName());
+    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -35,23 +40,204 @@ public class ManageAdoptionRequestServlet extends HttpServlet {
 
         HttpSession session = request.getSession(false);
 
-        // Authentication check
+        // Check action parameter
+        String action = request.getParameter("action");
+
+        // ========== ACTION: VIEW PET INFO ==========
+        if ("viewPetInfo".equals(action)) {
+            String petIdStr = request.getParameter("id");
+
+            if (petIdStr == null) {
+                response.sendRedirect("index.jsp");
+                return;
+            }
+
+            try {
+                int petId = Integer.parseInt(petIdStr);
+                Connection conn = DatabaseConnection.getConnection();
+
+                try {
+                    // Get pet with shelter info
+                    PetsDAO petsDAO = new PetsDAO();
+                    Map<String, Object> petData = petsDAO.getPetWithShelterInfo(petId);
+
+                    if (petData == null) {
+                        // Pet not found
+                        request.setAttribute("error", "Pet not found or shelter not approved");
+                        request.getRequestDispatcher("error.jsp").forward(request, response);
+                        return;
+                    }
+
+                    // Get adoption request status if user is logged in
+                    if (session != null) {
+                        Integer userId = (Integer) session.getAttribute("userId");
+                        String role = (String) session.getAttribute("role");
+
+                        if (userId != null && "adopter".equals(role)) {
+                            // Check if adopter has already applied for this pet
+                            AdoptionRequestDAO requestDAO = new AdoptionRequestDAO();
+                            List<Map<String, Object>> applications = requestDAO.getApplicationsByAdopter(userId);
+
+                            for (Map<String, Object> app : applications) {
+                                if (petId == (Integer) app.get("pet_id")) {
+                                    request.setAttribute("hasApplied", true);
+                                    request.setAttribute("applicationStatus", app.get("status"));
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // Set attributes for JSP
+                    request.setAttribute("petData", petData);
+
+                    // Forward to pet_info.jsp
+                    request.getRequestDispatcher("pet_info.jsp").forward(request, response);
+
+                } finally {
+                    DatabaseConnection.closeConnection(conn);
+                }
+
+            } catch (NumberFormatException e) {
+                // Return JSON error instead of sendError
+                logger.log(Level.WARNING, "Invalid parameters", e);
+
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+
+                PrintWriter out = response.getWriter();
+                out.print("{\"success\": false, \"message\": \"Invalid parameters\"}");
+                out.flush();
+
+            } catch (SQLException e) {
+                // Return JSON error instead of sendError
+                logger.log(Level.SEVERE, "Error submitting adoption application", e);
+
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+
+                PrintWriter out = response.getWriter();
+                out.print("{\"success\": false, \"message\": \"Database error: " + escapeJsonString(e.getMessage()) + "\"}");
+                out.flush();
+            }
+            return;
+        }
+
+        // ========== ACTION: GET ADOPTER APPLICATIONS (JSON) ==========
+        if ("getAdopterApplications".equals(action)) {
+            // Authentication check for adopter
+            if (!SessionUtil.isLoggedIn(session) || !SessionUtil.isAdopter(session)) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+                return;
+            }
+
+            int adopterId = SessionUtil.getUserId(session);
+            Connection conn = null;
+
+            try {
+                conn = DatabaseConnection.getConnection();
+                AdoptionRequestDAO requestDAO = new AdoptionRequestDAO();
+
+                List<Map<String, Object>> applications = requestDAO.getApplicationsByAdopter(adopterId);
+
+                // Create JSON manually tanpa library
+                StringBuilder jsonBuilder = new StringBuilder();
+                jsonBuilder.append("[");
+
+                boolean first = true;
+                for (Map<String, Object> app : applications) {
+                    if (!first) {
+                        jsonBuilder.append(",");
+                    }
+                    first = false;
+
+                    jsonBuilder.append("{");
+
+                    boolean firstField = true;
+                    for (Map.Entry<String, Object> entry : app.entrySet()) {
+                        if (!firstField) {
+                            jsonBuilder.append(",");
+                        }
+                        firstField = false;
+
+                        String key = entry.getKey();
+                        Object value = entry.getValue();
+
+                        jsonBuilder.append("\"").append(key).append("\":");
+
+                        if (value == null) {
+                            jsonBuilder.append("null");
+                        } else if (value instanceof String) {
+                            // Escape special characters in string
+                            String escapedValue = escapeJsonString((String) value);
+                            jsonBuilder.append("\"").append(escapedValue).append("\"");
+                        } else if (value instanceof Number) {
+                            jsonBuilder.append(value);
+                        } else if (value instanceof Boolean) {
+                            jsonBuilder.append(value);
+                        } else if (value instanceof Date) {
+                            String dateStr = dateFormat.format((Date) value);
+                            jsonBuilder.append("\"").append(dateStr).append("\"");
+                        } else if (value instanceof java.sql.Timestamp) {
+                            Date date = new Date(((java.sql.Timestamp) value).getTime());
+                            String dateStr = dateFormat.format(date);
+                            jsonBuilder.append("\"").append(dateStr).append("\"");
+                        } else {
+                            // Default to string representation
+                            jsonBuilder.append("\"").append(escapeJsonString(value.toString())).append("\"");
+                        }
+                    }
+
+                    jsonBuilder.append("}");
+                }
+
+                jsonBuilder.append("]");
+
+                // Set response type
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+
+                PrintWriter out = response.getWriter();
+                out.print(jsonBuilder.toString());
+                out.flush();
+
+            } catch (SQLException e) {
+                logger.log(Level.SEVERE, "Error getting adopter applications", e);
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database error");
+            } finally {
+                DatabaseConnection.closeConnection(conn);
+            }
+            return;
+        }
+
+        // ========== ACTION: VIEW MONITOR APPLICATION PAGE ==========
+        if ("viewMonitor".equals(action)) {
+            // Authentication check for adopter
+            if (!SessionUtil.isLoggedIn(session) || !SessionUtil.isAdopter(session)) {
+                response.sendRedirect("index.jsp");
+                return;
+            }
+
+            // Forward to monitor_application.jsp
+            request.getRequestDispatcher("monitor_application.jsp").forward(request, response);
+            return;
+        }
+
+        // ========== ORIGINAL SHELTER LOGIC ==========
+        // Authentication check for shelter
         if (!SessionUtil.isLoggedIn(session) || !SessionUtil.isShelter(session)) {
             response.sendRedirect("index.jsp");
             return;
         }
 
         int userId = SessionUtil.getUserId(session);
-        String action = request.getParameter("action");
 
         Connection conn = null;
 
         try {
             conn = DatabaseConnection.getConnection();
-            int shelterId = getShelterIdFromUserId(conn, userId); // Anda sudah ada method ini
+            int shelterId = getShelterIdFromUserId(conn, userId);
 
-            // ========== NEW: ADD DASHBOARD ACTION ==========
-            // GANTI bahagian ini dalam doGet():
             if ("view".equals(action)) {
                 String requestIdStr = request.getParameter("id");
                 if (requestIdStr != null) {
@@ -111,15 +297,149 @@ public class ManageAdoptionRequestServlet extends HttpServlet {
             throws ServletException, IOException {
 
         HttpSession session = request.getSession(false);
+        String action = request.getParameter("action");
 
-        // Authentication check
+        // ========== ACTION: SUBMIT ADOPTION APPLICATION ==========
+        if ("applyAdoption".equals(action)) {
+            // Authentication check for adopter
+            if (!SessionUtil.isLoggedIn(session) || !SessionUtil.isAdopter(session)) {
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+
+                PrintWriter out = response.getWriter();
+                out.print("{\"success\": false, \"message\": \"Please login as adopter first\"}");
+                out.flush();
+                return;
+            }
+
+            String petIdStr = request.getParameter("petId");
+            String shelterIdStr = request.getParameter("shelterId");
+            String adopterMessage = request.getParameter("adopterMessage");
+
+            if (petIdStr == null || shelterIdStr == null) {
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+
+                PrintWriter out = response.getWriter();
+                out.print("{\"success\": false, \"message\": \"Missing required parameters\"}");
+                out.flush();
+                return;
+            }
+
+            try {
+                int petId = Integer.parseInt(petIdStr);
+                int shelterId = Integer.parseInt(shelterIdStr);
+                int adopterId = SessionUtil.getUserId(session);
+
+                Connection conn = DatabaseConnection.getConnection();
+
+                try {
+                    // Create adoption request
+                    AdoptionRequest adoptionRequest = new AdoptionRequest();
+                    adoptionRequest.setAdopterId(adopterId);
+                    adoptionRequest.setPetId(petId);
+                    adoptionRequest.setShelterId(shelterId);
+                    adoptionRequest.setAdopterMessage(adopterMessage);
+
+                    AdoptionRequestDAO requestDAO = new AdoptionRequestDAO();
+                    boolean success = requestDAO.createAdoptionRequest(adoptionRequest);
+
+                    // Create JSON response manually
+                    StringBuilder jsonBuilder = new StringBuilder();
+                    jsonBuilder.append("{");
+
+                    if (success) {
+                        jsonBuilder.append("\"success\": true,");
+                        jsonBuilder.append("\"message\": \"Adoption application submitted successfully!\"");
+                    } else {
+                        jsonBuilder.append("\"success\": false,");
+                        jsonBuilder.append("\"message\": \"Cannot submit application. Pet may not be available or you already applied.\"");
+                    }
+
+                    jsonBuilder.append("}");
+
+                    // Set response type
+                    response.setContentType("application/json");
+                    response.setCharacterEncoding("UTF-8");
+
+                    PrintWriter out = response.getWriter();
+                    out.print(jsonBuilder.toString());
+                    out.flush();
+
+                } finally {
+                    DatabaseConnection.closeConnection(conn);
+                }
+
+            } catch (NumberFormatException e) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid parameters");
+            } catch (SQLException e) {
+                logger.log(Level.SEVERE, "Error submitting adoption application", e);
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database error");
+            }
+            return;
+        }
+
+        // ========== ACTION: CANCEL ADOPTION REQUEST (ADOPTER) ==========
+        if ("cancelAdopterRequest".equals(action)) {
+            // Authentication check for adopter
+            if (!SessionUtil.isLoggedIn(session) || !SessionUtil.isAdopter(session)) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+                return;
+            }
+
+            int adopterId = SessionUtil.getUserId(session);
+            String requestIdStr = request.getParameter("requestId");
+            String cancellationReason = request.getParameter("cancellationReason");
+
+            if (requestIdStr == null) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing request ID");
+                return;
+            }
+
+            Connection conn = null;
+
+            try {
+                int requestId = Integer.parseInt(requestIdStr);
+                conn = DatabaseConnection.getConnection();
+                AdoptionRequestDAO requestDAO = new AdoptionRequestDAO();
+
+                boolean success = requestDAO.cancelRequestByAdopter(requestId, adopterId, cancellationReason);
+
+                // Create JSON response manually
+                StringBuilder jsonBuilder = new StringBuilder();
+                jsonBuilder.append("{");
+                jsonBuilder.append("\"success\":").append(success).append(",");
+                jsonBuilder.append("\"message\":\"").append(success ? "Application cancelled successfully" : "Failed to cancel application").append("\"");
+                jsonBuilder.append("}");
+
+                // Set response type
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+
+                PrintWriter out = response.getWriter();
+                out.print(jsonBuilder.toString());
+                out.flush();
+
+            } catch (NumberFormatException e) {
+                logger.log(Level.WARNING, "Invalid request ID format", e);
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid request ID");
+            } catch (SQLException e) {
+                logger.log(Level.SEVERE, "Error cancelling adoption request", e);
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database error");
+            } finally {
+                DatabaseConnection.closeConnection(conn);
+            }
+            return;
+        }
+
+        // ========== ORIGINAL SHELTER LOGIC ==========
+        // Authentication check for shelter
         if (!SessionUtil.isLoggedIn(session) || !SessionUtil.isShelter(session)) {
             response.sendRedirect("index.jsp");
             return;
         }
 
         int userId = SessionUtil.getUserId(session);
-        String action = request.getParameter("action");
         String requestIdStr = request.getParameter("requestId");
         String shelterResponse = request.getParameter("shelterResponse");
 
@@ -219,6 +539,47 @@ public class ManageAdoptionRequestServlet extends HttpServlet {
         throw new SQLException("User is not a shelter or shelter not found");
     }
 
+    // Helper method to escape JSON strings
+    private String escapeJsonString(String input) {
+        if (input == null) {
+            return "";
+        }
+
+        StringBuilder escaped = new StringBuilder();
+        for (char c : input.toCharArray()) {
+            switch (c) {
+                case '"':
+                    escaped.append("\\\"");
+                    break;
+                case '\\':
+                    escaped.append("\\\\");
+                    break;
+                case '\b':
+                    escaped.append("\\b");
+                    break;
+                case '\f':
+                    escaped.append("\\f");
+                    break;
+                case '\n':
+                    escaped.append("\\n");
+                    break;
+                case '\r':
+                    escaped.append("\\r");
+                    break;
+                case '\t':
+                    escaped.append("\\t");
+                    break;
+                default:
+                    if (c < 0x20) {
+                        escaped.append(String.format("\\u%04x", (int) c));
+                    } else {
+                        escaped.append(c);
+                    }
+            }
+        }
+        return escaped.toString();
+    }
+
     // ========== NEW METHOD FOR DASHBOARD DATA ==========
     private DashboardData getDashboardData(Connection conn, int shelterId) throws SQLException {
         DashboardData data = new DashboardData();
@@ -256,7 +617,7 @@ public class ManageAdoptionRequestServlet extends HttpServlet {
         return data;
     }
 
-// ========== NEW INNER CLASS FOR DASHBOARD DATA ==========
+    // ========== NEW INNER CLASS FOR DASHBOARD DATA ==========
     private static class DashboardData {
 
         private Integer totalPets;

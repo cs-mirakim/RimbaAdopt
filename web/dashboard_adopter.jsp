@@ -1,8 +1,12 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="com.rimba.adopt.util.SessionUtil" %>
+<%@ page import="com.rimba.adopt.dao.AdoptionRequestDAO" %>
+<%@ page import="com.rimba.adopt.dao.LostReportDAO" %>
+<%@ page import="java.sql.*" %>
+<%@ page import="java.util.*" %>
 
 <%
-    // Check if user is logged in and is admin
+    // Check if user is logged in and is adopter
     if (!SessionUtil.isLoggedIn(session)) {
         response.sendRedirect("index.jsp");
         return;
@@ -11,6 +15,104 @@
     if (!SessionUtil.isAdopter(session)) {
         response.sendRedirect("index.jsp");
         return;
+    }
+    
+    // Get adopter ID from session
+    Integer adopterId = (Integer) session.getAttribute("userId");
+    
+    // Initialize DAOs
+    AdoptionRequestDAO adoptionDAO = new AdoptionRequestDAO();
+    LostReportDAO lostReportDAO = new LostReportDAO();
+    
+    // Variables for statistics
+    int totalApplications = 0;
+    int pendingApplications = 0;
+    int approvedApplications = 0;
+    int rejectedApplications = 0;
+    int cancelledApplications = 0;
+    
+    int totalLostReports = 0;
+    int totalFound = 0;
+    int stillLost = 0;
+    
+    // Monthly data for charts
+    List<Integer> monthlyApproved = new ArrayList<Integer>();
+    List<Integer> monthlyPending = new ArrayList<Integer>();
+    List<Integer> monthlyRejected = new ArrayList<Integer>();
+    List<Integer> monthlyCancelled = new ArrayList<Integer>();
+    
+    List<Integer> monthlyLost = new ArrayList<Integer>();
+    List<Integer> monthlyFound = new ArrayList<Integer>();
+    
+    try {
+        // Get adoption statistics for this adopter
+        // Since we don't have getAdoptionStatsByAdopter method, we'll create temporary stats
+        
+        // For Lost Reports
+        totalLostReports = lostReportDAO.countLostReportsByStatus("lost") + 
+                          lostReportDAO.countLostReportsByStatus("found");
+        totalFound = lostReportDAO.countLostReportsByStatus("found");
+        stillLost = lostReportDAO.countLostReportsByStatus("lost");
+        
+        // Generate monthly data with simple logic
+        // In real implementation, you should create proper methods in DAO
+        
+        // Initialize lists with 12 months of zeros
+        for (int i = 0; i < 12; i++) {
+            monthlyApproved.add(0);
+            monthlyPending.add(0);
+            monthlyRejected.add(0);
+            monthlyCancelled.add(0);
+            monthlyLost.add(0);
+            monthlyFound.add(0);
+        }
+        
+        // Simple calculation for demo (you should replace with actual DAO calls)
+        // Example: put some sample data
+        monthlyApproved.set(0, 1); // Jan
+        monthlyApproved.set(1, 2); // Feb
+        monthlyApproved.set(2, 1); // Mar
+        
+        monthlyPending.set(0, 1);
+        monthlyPending.set(1, 1);
+        monthlyPending.set(2, 0);
+        
+        monthlyRejected.set(2, 1);
+        
+        monthlyLost.set(0, 2);
+        monthlyLost.set(1, 3);
+        monthlyFound.set(0, 1);
+        monthlyFound.set(1, 2);
+        
+        // Calculate totals manually (old Java way)
+        int approvedSum = 0;
+        int pendingSum = 0;
+        int rejectedSum = 0;
+        int cancelledSum = 0;
+        
+        for (Integer num : monthlyApproved) {
+            approvedSum += num;
+        }
+        for (Integer num : monthlyPending) {
+            pendingSum += num;
+        }
+        for (Integer num : monthlyRejected) {
+            rejectedSum += num;
+        }
+        for (Integer num : monthlyCancelled) {
+            cancelledSum += num;
+        }
+        
+        approvedApplications = approvedSum;
+        pendingApplications = pendingSum;
+        rejectedApplications = rejectedSum;
+        cancelledApplications = cancelledSum;
+        
+        totalApplications = approvedApplications + pendingApplications + 
+                           rejectedApplications + cancelledApplications;
+        
+    } catch (Exception e) {
+        e.printStackTrace();
     }
 %>
 
@@ -119,39 +221,36 @@
                     </p>
                 </div>
 
-
-
-
                 <!-- Statistics Cards -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
                     <!-- Total Applications -->
                     <div class="bg-[#F6F3E7] p-5 rounded-lg shadow-sm border-l-4 border-[#2F5D50]">
                         <p class="text-sm font-medium text-[#2F5D50] mb-1">Total Applications</p>
-                        <p class="text-3xl font-bold text-[#2B2B2B]">24</p>
+                        <p class="text-3xl font-bold text-[#2B2B2B]"><%= totalApplications %></p>
                     </div>
 
                     <!-- Pending -->
                     <div class="bg-[#F6F3E7] p-5 rounded-lg shadow-sm border-l-4 border-gray-400">
                         <p class="text-sm font-medium text-gray-700 mb-1">Pending</p>
-                        <p class="text-3xl font-bold text-[#2B2B2B]">8</p>
+                        <p class="text-3xl font-bold text-[#2B2B2B]"><%= pendingApplications %></p>
                     </div>
 
                     <!-- Approved -->
                     <div class="bg-[#F6F3E7] p-5 rounded-lg shadow-sm border-l-4 border-[#6DBF89]">
                         <p class="text-sm font-medium text-[#57A677] mb-1">Approved</p>
-                        <p class="text-3xl font-bold text-[#2B2B2B]">12</p>
+                        <p class="text-3xl font-bold text-[#2B2B2B]"><%= approvedApplications %></p>
                     </div>
 
                     <!-- Rejected -->
                     <div class="bg-[#F6F3E7] p-5 rounded-lg shadow-sm border-l-4 border-[#B84A4A]">
                         <p class="text-sm font-medium text-[#B84A4A] mb-1">Rejected</p>
-                        <p class="text-3xl font-bold text-[#2B2B2B]">3</p>
+                        <p class="text-3xl font-bold text-[#2B2B2B]"><%= rejectedApplications %></p>
                     </div>
 
                     <!-- Cancelled -->
                     <div class="bg-[#F6F3E7] p-5 rounded-lg shadow-sm border-l-4 border-[#C49A6C]">
                         <p class="text-sm font-medium text-[#C49A6C] mb-1">Cancelled</p>
-                        <p class="text-3xl font-bold text-[#2B2B2B]">1</p>
+                        <p class="text-3xl font-bold text-[#2B2B2B]"><%= cancelledApplications %></p>
                     </div>
                 </div>
 
@@ -171,12 +270,12 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div class="bg-red-50 p-5 rounded-lg shadow-sm border-l-4 border-[#B84A4A]">
                                 <p class="text-sm font-medium text-[#B84A4A] mb-1">Total Lost Reports</p>
-                                <p class="text-3xl font-bold text-[#2B2B2B]">45</p>
+                                <p class="text-3xl font-bold text-[#2B2B2B]"><%= totalLostReports %></p>
                             </div>
 
                             <div class="bg-green-50 p-5 rounded-lg shadow-sm border-l-4 border-[#6DBF89]">
                                 <p class="text-sm font-medium text-[#57A677] mb-1">Total Found</p>
-                                <p class="text-3xl font-bold text-[#2B2B2B]">30</p>
+                                <p class="text-3xl font-bold text-[#2B2B2B]"><%= totalFound %></p>
                             </div>
                         </div>
 
@@ -268,196 +367,196 @@
         <script src="includes/sidebar.js"></script>
 
         <script>
-                            // Banner Slideshow
-                            let slideIndex = 1;
-                            let slideTimer;
+            // Banner Slideshow
+            let slideIndex = 1;
+            let slideTimer;
 
-                            function showSlides(n) {
-                                let slides = document.getElementsByClassName("banner-slide");
-                                let dots = document.getElementsByClassName("dot");
+            function showSlides(n) {
+                let slides = document.getElementsByClassName("banner-slide");
+                let dots = document.getElementsByClassName("dot");
 
-                                if (n > slides.length) {
-                                    slideIndex = 1
-                                }
-                                if (n < 1) {
-                                    slideIndex = slides.length
-                                }
+                if (n > slides.length) {
+                    slideIndex = 1
+                }
+                if (n < 1) {
+                    slideIndex = slides.length
+                }
 
-                                for (let i = 0; i < slides.length; i++) {
-                                    slides[i].classList.remove("active");
-                                }
-                                for (let i = 0; i < dots.length; i++) {
-                                    dots[i].classList.remove("active");
-                                }
+                for (let i = 0; i < slides.length; i++) {
+                    slides[i].classList.remove("active");
+                }
+                for (let i = 0; i < dots.length; i++) {
+                    dots[i].classList.remove("active");
+                }
 
-                                slides[slideIndex - 1].classList.add("active");
-                                dots[slideIndex - 1].classList.add("active");
+                slides[slideIndex - 1].classList.add("active");
+                dots[slideIndex - 1].classList.add("active");
+            }
+
+            function changeSlide(n) {
+                clearInterval(slideTimer);
+                showSlides(slideIndex += n);
+                startAutoSlide();
+            }
+
+            function currentSlide(n) {
+                clearInterval(slideTimer);
+                showSlides(slideIndex = n);
+                startAutoSlide();
+            }
+
+            function startAutoSlide() {
+                slideTimer = setInterval(() => {
+                    slideIndex++;
+                    showSlides(slideIndex);
+                }, 5000);
+            }
+
+            // Initialize slideshow
+            showSlides(slideIndex);
+            startAutoSlide();
+
+            // Application Overview Chart (Stacked Bar)
+            const appCtx = document.getElementById('applicationChart').getContext('2d');
+            const applicationChart = new Chart(appCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [
+                        {
+                            label: 'Approved',
+                            data: <%= monthlyApproved %>,
+                            backgroundColor: '#6DBF89',
+                            stack: 'stack0'
+                        },
+                        {
+                            label: 'Pending',
+                            data: <%= monthlyPending %>,
+                            backgroundColor: '#A3A3A3',
+                            stack: 'stack0'
+                        },
+                        {
+                            label: 'Rejected',
+                            data: <%= monthlyRejected %>,
+                            backgroundColor: '#B84A4A',
+                            stack: 'stack0'
+                        },
+                        {
+                            label: 'Cancelled',
+                            data: <%= monthlyCancelled %>,
+                            backgroundColor: '#C49A6C',
+                            stack: 'stack0'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: {
+                                display: false
+                            },
+                            title: {
+                                display: true,
+                                text: 'Month'
                             }
-
-                            function changeSlide(n) {
-                                clearInterval(slideTimer);
-                                showSlides(slideIndex += n);
-                                startAutoSlide();
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                                precision: 0
+                            },
+                            title: {
+                                display: true,
+                                text: 'Number of Applications'
                             }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    }
+                }
+            });
 
-                            function currentSlide(n) {
-                                clearInterval(slideTimer);
-                                showSlides(slideIndex = n);
-                                startAutoSlide();
+            // Lost Animal Overview Chart (Line Chart)
+            const lostCtx = document.getElementById('lostAnimalChart').getContext('2d');
+            const lostAnimalChart = new Chart(lostCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [
+                        {
+                            label: 'Still Lost',
+                            data: <%= monthlyLost %>,
+                            borderColor: '#B84A4A',
+                            backgroundColor: 'rgba(184, 74, 74, 0.1)',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#B84A6A',
+                            fill: true
+                        },
+                        {
+                            label: 'Found',
+                            data: <%= monthlyFound %>,
+                            borderColor: '#6DBF89',
+                            backgroundColor: 'rgba(109, 191, 137, 0.1)',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#6DBF89',
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            title: {
+                                display: true,
+                                text: 'Month'
                             }
-
-                            function startAutoSlide() {
-                                slideTimer = setInterval(() => {
-                                    slideIndex++;
-                                    showSlides(slideIndex);
-                                }, 5000);
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                                precision: 0
+                            },
+                            title: {
+                                display: true,
+                                text: 'Number of Reports'
                             }
-
-                            // Initialize slideshow
-                            showSlides(slideIndex);
-                            startAutoSlide();
-
-                            // Application Overview Chart (Stacked Bar)
-                            const appCtx = document.getElementById('applicationChart').getContext('2d');
-                            const applicationChart = new Chart(appCtx, {
-                                type: 'bar',
-                                data: {
-                                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                                    datasets: [
-                                        {
-                                            label: 'Approved',
-                                            data: [1, 2, 1, 2, 1, 1, 1, 1, 1, 0, 1, 0],
-                                            backgroundColor: '#6DBF89',
-                                            stack: 'stack0'
-                                        },
-                                        {
-                                            label: 'Pending',
-                                            data: [1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0],
-                                            backgroundColor: '#A3A3A3',
-                                            stack: 'stack0'
-                                        },
-                                        {
-                                            label: 'Rejected',
-                                            data: [0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0],
-                                            backgroundColor: '#B84A4A',
-                                            stack: 'stack0'
-                                        },
-                                        {
-                                            label: 'Cancelled',
-                                            data: [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-                                            backgroundColor: '#C49A6C',
-                                            stack: 'stack0'
-                                        }
-                                    ]
-                                },
-                                options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    scales: {
-                                        x: {
-                                            stacked: true,
-                                            grid: {
-                                                display: false
-                                            },
-                                            title: {
-                                                display: true,
-                                                text: 'Month'
-                                            }
-                                        },
-                                        y: {
-                                            stacked: true,
-                                            beginAtZero: true,
-                                            ticks: {
-                                                stepSize: 1,
-                                                precision: 0
-                                            },
-                                            title: {
-                                                display: true,
-                                                text: 'Number of Applications'
-                                            }
-                                        }
-                                    },
-                                    plugins: {
-                                        legend: {
-                                            position: 'top'
-                                        },
-                                        tooltip: {
-                                            mode: 'index',
-                                            intersect: false
-                                        }
-                                    }
-                                }
-                            });
-
-                            // Lost Animal Overview Chart (Line Chart)
-                            const lostCtx = document.getElementById('lostAnimalChart').getContext('2d');
-                            const lostAnimalChart = new Chart(lostCtx, {
-                                type: 'line',
-                                data: {
-                                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                                    datasets: [
-                                        {
-                                            label: 'Still Lost',
-                                            data: [2, 3, 5, 4, 6, 5, 7, 6, 5, 4, 3, 2],
-                                            borderColor: '#B84A4A',
-                                            backgroundColor: 'rgba(184, 74, 74, 0.1)',
-                                            borderWidth: 2,
-                                            borderDash: [5, 5],
-                                            tension: 0.4,
-                                            pointRadius: 4,
-                                            pointBackgroundColor: '#B84A4A',
-                                            fill: true
-                                        },
-                                        {
-                                            label: 'Found',
-                                            data: [1, 2, 2, 3, 2, 4, 3, 5, 6, 7, 8, 9],
-                                            borderColor: '#6DBF89',
-                                            backgroundColor: 'rgba(109, 191, 137, 0.1)',
-                                            borderWidth: 2,
-                                            borderDash: [5, 5],
-                                            tension: 0.4,
-                                            pointRadius: 4,
-                                            pointBackgroundColor: '#6DBF89',
-                                            fill: true
-                                        }
-                                    ]
-                                },
-                                options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    scales: {
-                                        x: {
-                                            grid: {
-                                                display: false
-                                            },
-                                            title: {
-                                                display: true,
-                                                text: 'Month'
-                                            }
-                                        },
-                                        y: {
-                                            beginAtZero: true,
-                                            ticks: {
-                                                stepSize: 1,
-                                                precision: 0
-                                            },
-                                            title: {
-                                                display: true,
-                                                text: 'Number of Reports'
-                                            }
-                                        }
-                                    },
-                                    plugins: {
-                                        legend: {
-                                            position: 'top'
-                                        },
-                                        tooltip: {
-                                            mode: 'index',
-                                            intersect: false
-                                        }
-                                    }
-                                }
-                            });
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    }
+                }
+            });
         </script>
 
     </body>

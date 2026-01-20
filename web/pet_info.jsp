@@ -1,8 +1,16 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" isELIgnored="true"%>
 <%@ page import="com.rimba.adopt.util.SessionUtil" %>
+<%@ page import="com.rimba.adopt.dao.PetsDAO" %>
+<%@ page import="com.rimba.adopt.dao.ShelterDAO" %>
+<%@ page import="com.rimba.adopt.dao.AdoptionRequestDAO" %>
+<%@ page import="com.rimba.adopt.model.Pets" %>
+<%@ page import="com.rimba.adopt.model.Shelter" %>
+<%@ page import="java.util.Map" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.sql.SQLException" %>
 
 <%
-    // Check if user is logged in and is admin
+    // Check if user is logged in and is adopter
     if (!SessionUtil.isLoggedIn(session)) {
         response.sendRedirect("index.jsp");
         return;
@@ -12,6 +20,159 @@
         response.sendRedirect("index.jsp");
         return;
     }
+
+    // Get pet ID from parameter
+    String petIdParam = request.getParameter("id");
+    System.out.println("DEBUG: petIdParam = " + petIdParam);
+
+    Pets pet = null;
+    Shelter shelter = null;
+    boolean hasApplied = false;
+    String applicationStatus = "";
+    double avgRating = 0.0;
+    int reviewCount = 0;
+
+    if (petIdParam != null && !petIdParam.isEmpty()) {
+        try {
+            int petId = Integer.parseInt(petIdParam);
+            System.out.println("DEBUG: Parsed petId = " + petId);
+
+            // Get pet with shelter info
+            PetsDAO petsDAO = new PetsDAO();
+            Map<String, Object> petData = petsDAO.getPetWithShelterInfo(petId);
+
+            if (petData == null) {
+                System.out.println("DEBUG: Pet not found, redirecting to pet_list.jsp");
+                response.sendRedirect("pet_list.jsp");
+                return;
+            }
+
+            // Get pet object
+            pet = (Pets) petData.get("pet");
+
+            // Get shelter info using ShelterDAO
+            ShelterDAO shelterDAO = new ShelterDAO();
+            int petShelterId = pet.getShelterId();
+            System.out.println("DEBUG pet_info.jsp: pet.getShelterId() = " + petShelterId);
+
+            shelter = shelterDAO.getShelterWithRating(petShelterId);
+            System.out.println("DEBUG pet_info.jsp: shelter from DAO = " + (shelter != null ? shelter.getShelterName() : "NULL"));
+
+            if (shelter == null) {
+                System.out.println("DEBUG pet_info.jsp: Shelter NULL, using fallback");
+                // Fallback to basic shelter info from petData
+                shelter = new Shelter();
+                shelter.setShelterId(petShelterId);
+                shelter.setShelterName((String) petData.get("shelter_name"));
+                shelter.setShelterAddress((String) petData.get("shelter_address"));
+                shelter.setPhotoPath((String) petData.get("shelter_photo_path"));
+
+                // CRITICAL: Set default values untuk fields lain
+                shelter.setEmail((String) petData.get("shelter_email"));
+                shelter.setPhone((String) petData.get("shelter_phone"));
+                shelter.setOperatingHours("Mon-Fri: 9AM-6PM"); // default
+                shelter.setShelterDescription("Animal shelter providing care and adoption services.");
+            }
+
+            System.out.println("DEBUG pet_info.jsp: Final shelter.getShelterId() = " + shelter.getShelterId());
+
+            // Get adoption request status if user is logged in
+            int userId = SessionUtil.getUserId(session);
+            if (userId > 0) {
+                AdoptionRequestDAO requestDAO = new AdoptionRequestDAO();
+                List<Map<String, Object>> applications = requestDAO.getApplicationsByAdopter(userId);
+
+                for (Map<String, Object> app : applications) {
+                    if (petId == (Integer) app.get("pet_id")) {
+                        hasApplied = true;
+                        applicationStatus = (String) app.get("status");
+                        break;
+                    }
+                }
+            }
+
+            // Get shelter rating
+            if (shelter != null) {
+                avgRating = shelter.getAvgRating();
+                reviewCount = shelter.getReviewCount();
+            }
+
+            System.out.println("DEBUG: Pet found - ID: " + pet.getPetId() + ", Name: " + pet.getName());
+            System.out.println("DEBUG: Shelter found - ID: " + shelter.getShelterId() + ", Name: " + shelter.getShelterName());
+
+        } catch (NumberFormatException e) {
+            System.err.println("ERROR: Invalid pet ID format: " + petIdParam);
+            response.sendRedirect("pet_list.jsp");
+            return;
+        } catch (SQLException e) {
+            System.err.println("ERROR getting pet data: " + e.getMessage());
+            e.printStackTrace();
+            response.sendRedirect("pet_list.jsp");
+            return;
+        }
+    } else {
+        System.out.println("DEBUG: No pet ID parameter, redirecting to pet_list.jsp");
+        response.sendRedirect("pet_list.jsp");
+        return;
+    }
+%>
+
+<%!
+    // Helper functions (declaration section)
+    String capitalizeFirstLetter(String input) {
+        if (input == null || input.isEmpty()) {
+            return "";
+        }
+        return input.substring(0, 1).toUpperCase() + input.substring(1).toLowerCase();
+    }
+
+    String escapeHtml(String input) {
+        if (input == null) {
+            return "";
+        }
+        return input.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
+    }
+
+    String getSpeciesIcon(String species) {
+        if (species == null) {
+            return "fa-paw";
+        }
+
+        String speciesLower = species.toLowerCase();
+        if ("dog".equals(speciesLower)) {
+            return "fa-paw";
+        } else if ("cat".equals(speciesLower)) {
+            return "fa-cat";
+        } else if ("rabbit".equals(speciesLower)) {
+            return "fa-rabbit";
+        } else if ("bird".equals(speciesLower)) {
+            return "fa-dove";
+        } else {
+            return "fa-paw";
+        }
+    }
+
+    String generateStars(double rating) {
+        StringBuilder stars = new StringBuilder();
+        int fullStars = (int) Math.floor(rating);
+        boolean hasHalfStar = (rating - fullStars) >= 0.5;
+
+        for (int i = 1; i <= 5; i++) {
+            if (i <= fullStars) {
+                stars.append("<i class='fas fa-star'></i>");
+            } else if (i == fullStars + 1 && hasHalfStar) {
+                stars.append("<i class='fas fa-star-half-alt'></i>");
+            } else {
+                stars.append("<i class='far fa-star'></i>");
+            }
+        }
+
+        return stars.toString();
+    }
 %>
 
 <!DOCTYPE html>
@@ -19,7 +180,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Buddy - Pet Details - Rimba Adopt</title>
+        <title><%= escapeHtml(pet.getName())%> - Pet Details - Rimba Adopt</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <style>
@@ -86,11 +247,19 @@
                 position: relative;
                 margin-top: 0;
             }
+
+            .star-rating {
+                color: #C49A6C;
+            }
         </style>
+        <script>
+            console.log('DEBUG: Pet ID = <%= pet.getPetId()%>');
+            console.log('DEBUG: Shelter ID = <%= shelter != null ? shelter.getShelterId() : "NULL"%>');
+            console.log('DEBUG: Shelter Name = <%= shelter != null ? shelter.getShelterName() : "NULL"%>');
+        </script>
     </head>
     <body class="flex flex-col min-h-screen relative bg-[#F6F3E7]">
 
-        <!-- Header container -->
         <!-- Header container -->
         <jsp:include page="includes/header.jsp" />
 
@@ -101,11 +270,16 @@
                 <!-- Back Button and Title -->
                 <div class="mb-8">
                     <div class="flex items-center justify-between mb-2">
-                        <a href="pet_list.html" class="flex items-center text-[#2F5D50] hover:text-[#24483E]">
+                        <a href="pet_list.jsp" class="flex items-center text-[#2F5D50] hover:text-[#24483E]">
                             <i class="fas fa-arrow-left mr-2"></i> Back to Pets
                         </a>
                         <div class="bg-[#6DBF89] text-[#06321F] px-4 py-2 rounded-full text-sm font-medium">
-                            <i class="fas fa-heart mr-2"></i> Available for Adoption
+                            <i class="fas fa-heart mr-2"></i> 
+                            <% if ("available".equals(pet.getAdoptionStatus())) { %>
+                            Available for Adoption
+                            <% } else { %>
+                            Adopted
+                            <% }%>
                         </div>
                     </div>
                     <h1 class="text-3xl font-bold text-[#2F5D50]">Pet Details</h1>
@@ -113,7 +287,9 @@
 
                 <!-- Full Width Pet Image -->
                 <div class="mb-8">
-                    <img src="animal_picture/animal1.png" alt="Buddy" class="w-full h-96 object-cover rounded-xl">
+                    <img src="<%= pet.getPhotoPath() != null ? pet.getPhotoPath() : "animal_picture/default.png"%>" 
+                         alt="<%= escapeHtml(pet.getName())%>" 
+                         class="w-full h-96 object-cover rounded-xl">
                 </div>
 
                 <!-- Two Column Layout - FIXED -->
@@ -123,25 +299,27 @@
                         <div class="bg-white p-6 rounded-xl border border-[#E5E5E5]">
                             <div class="flex justify-between items-start mb-6">
                                 <div>
-                                    <h2 class="text-2xl font-bold text-[#2B2B2B] mb-2">Buddy</h2>
+                                    <h2 class="text-2xl font-bold text-[#2B2B2B] mb-2"><%= escapeHtml(pet.getName())%></h2>
                                     <div class="flex items-center flex-wrap gap-3">
-                                        <span class="gender-male px-3 py-1 rounded-full text-sm font-medium">
-                                            <i class="fas fa-mars mr-1"></i> Male
+                                        <span class="<%= "male".equals(pet.getGender()) ? "gender-male" : "gender-female"%> px-3 py-1 rounded-full text-sm font-medium">
+                                            <i class="fas <%= "male".equals(pet.getGender()) ? "fa-mars" : "fa-venus"%> mr-1"></i> 
+                                            <%= capitalizeFirstLetter(pet.getGender())%>
                                         </span>
                                         <span class="bg-[#A8E6CF] text-[#2B2B2B] px-3 py-1 rounded-full text-sm">
-                                            <i class="fas fa-paw mr-1"></i> Dog
+                                            <i class="fas <%= getSpeciesIcon(pet.getSpecies())%> mr-1"></i>
+                                            <%= capitalizeFirstLetter(pet.getSpecies())%>
                                         </span>
                                         <span class="bg-[#A8E6CF] text-[#2B2B2B] px-3 py-1 rounded-full text-sm">
-                                            3 years old
+                                            <%= pet.getAge() != null ? pet.getAge() + " years old" : "Age unknown"%>
                                         </span>
                                         <span class="bg-[#A8E6CF] text-[#2B2B2B] px-3 py-1 rounded-full text-sm">
-                                            Large Size
+                                            <%= capitalizeFirstLetter(pet.getSize())%> Size
                                         </span>
                                     </div>
                                 </div>
                                 <div class="text-right">
                                     <p class="text-[#888] text-sm">Pet ID</p>
-                                    <p class="font-bold text-[#2F5D50]">#PET001</p>
+                                    <p class="font-bold text-[#2F5D50]">#PET<%= String.format("%03d", pet.getPetId())%></p>
                                 </div>
                             </div>
 
@@ -151,23 +329,23 @@
                                     <div class="space-y-3">
                                         <div class="flex justify-between">
                                             <span class="text-[#666]">Breed</span>
-                                            <span class="font-medium">Golden Retriever</span>
+                                            <span class="font-medium"><%= pet.getBreed() != null ? escapeHtml(pet.getBreed()) : "Mixed Breed"%></span>
                                         </div>
                                         <div class="flex justify-between">
                                             <span class="text-[#666]">Color</span>
-                                            <span class="font-medium">Golden</span>
+                                            <span class="font-medium"><%= pet.getColor() != null ? escapeHtml(pet.getColor()) : "Not specified"%></span>
                                         </div>
                                         <div class="flex justify-between">
                                             <span class="text-[#666]">Age</span>
-                                            <span class="font-medium">3 years</span>
+                                            <span class="font-medium"><%= pet.getAge() != null ? pet.getAge() + " years" : "Unknown"%></span>
                                         </div>
                                         <div class="flex justify-between">
                                             <span class="text-[#666]">Size</span>
-                                            <span class="font-medium">Large</span>
+                                            <span class="font-medium"><%= capitalizeFirstLetter(pet.getSize())%></span>
                                         </div>
                                         <div class="flex justify-between">
                                             <span class="text-[#666]">Gender</span>
-                                            <span class="font-medium">Male</span>
+                                            <span class="font-medium"><%= capitalizeFirstLetter(pet.getGender())%></span>
                                         </div>
                                     </div>
                                 </div>
@@ -177,7 +355,20 @@
                                     <div class="space-y-3">
                                         <div class="flex justify-between">
                                             <span class="text-[#666]">Health Status</span>
-                                            <span class="font-medium text-[#6DBF89]">Excellent</span>
+                                            <%
+                                                String healthStatus = pet.getHealthStatus();
+                                                String healthStatusClass = "text-[#2B2B2B]";
+                                                if (healthStatus != null) {
+                                                    if (healthStatus.toLowerCase().contains("excellent")
+                                                            || healthStatus.toLowerCase().contains("good")
+                                                            || healthStatus.toLowerCase().contains("healthy")) {
+                                                        healthStatusClass = "text-[#6DBF89]";
+                                                    }
+                                                }
+                                            %>
+                                            <span class="font-medium <%= healthStatusClass%>">
+                                                <%= healthStatus != null ? capitalizeFirstLetter(healthStatus) : "Good"%>
+                                            </span>
                                         </div>
                                         <div class="flex justify-between">
                                             <span class="text-[#666]">Vaccinated</span>
@@ -189,7 +380,7 @@
                                         </div>
                                         <div class="flex justify-between">
                                             <span class="text-[#666]">Spayed/Neutered</span>
-                                            <span class="font-medium">Neutered</span>
+                                            <span class="font-medium"><%= "male".equals(pet.getGender()) ? "Neutered" : "Spayed"%></span>
                                         </div>
                                         <div class="flex justify-between">
                                             <span class="text-[#666]">Microchipped</span>
@@ -200,16 +391,15 @@
                             </div>
 
                             <div class="mb-8">
-                                <h3 class="font-semibold text-[#2B2B2B] mb-3 text-lg">About Buddy</h3>
+                                <h3 class="font-semibold text-[#2B2B2B] mb-3 text-lg">About <%= escapeHtml(pet.getName())%></h3>
                                 <div class="text-[#666] leading-relaxed space-y-4">
                                     <p>
-                                        Buddy is a friendly and energetic golden retriever who loves playing fetch and going for long walks. He has a beautiful golden coat and a wagging tail that never stops!
+                                        <%= pet.getDescription() != null && !pet.getDescription().isEmpty()
+                                                ? escapeHtml(pet.getDescription())
+                                                : escapeHtml(pet.getName()) + " is a friendly and lovable pet looking for a forever home."%>
                                     </p>
                                     <p>
-                                        He's great with children and gets along well with other dogs. Buddy knows basic commands like sit, stay, and come. He's house-trained and walks well on a leash.
-                                    </p>
-                                    <p>
-                                        Buddy would do best in an active household where he can get plenty of exercise. He loves water and would enjoy a home with access to a yard or nearby park.
+                                        This pet has been well cared for and is ready to become part of a loving family.
                                     </p>
                                 </div>
                             </div>
@@ -218,20 +408,38 @@
                                 <h3 class="font-semibold text-[#2B2B2B] mb-3 text-lg">Special Requirements</h3>
                                 <div class="bg-[#F0F7F4] p-4 rounded-lg">
                                     <ul class="list-disc pl-5 text-[#666] space-y-2">
-                                        <li>Requires daily exercise (at least 1 hour)</li>
-                                        <li>Prefers a home with a yard</li>
-                                        <li>Good with older children (8+)</li>
-                                        <li>Compatible with other dogs</li>
-                                        <li>Regular grooming needed</li>
+                                        <li>Requires daily exercise and attention</li>
+                                        <li>Prefers a loving home environment</li>
+                                        <li>Good with patient owners</li>
+                                        <li>Regular veterinary checkups needed</li>
+                                        <li>Proper nutrition and care required</li>
                                     </ul>
                                 </div>
                             </div>
 
                             <!-- Apply for Adoption Button -->
                             <div class="text-center">
-                                <button id="applyAdoptionBtn" class="px-8 py-4 bg-[#2F5D50] text-white font-bold text-lg rounded-lg hover:bg-[#24483E] transition duration-300">
-                                    <i class="fas fa-heart mr-2"></i> Apply to Adopt Buddy
+                                <% if ("available".equals(pet.getAdoptionStatus())) { %>
+                                <% if (hasApplied) {%>
+                                <div class="mb-4 p-4 bg-[#F0F7F4] rounded-lg">
+                                    <p class="text-[#2B2B2B] font-medium">
+                                        <i class="fas fa-info-circle text-[#2F5D50] mr-2"></i>
+                                        You have already applied to adopt this pet. Status: <span class="font-bold"><%= capitalizeFirstLetter(applicationStatus)%></span>
+                                    </p>
+                                </div>
+                                <button class="px-8 py-4 bg-gray-400 text-white font-bold text-lg rounded-lg cursor-not-allowed" disabled>
+                                    <i class="fas fa-check mr-2"></i> Already Applied
                                 </button>
+                                <% } else {%>
+                                <button id="applyAdoptionBtn" class="px-8 py-4 bg-[#2F5D50] text-white font-bold text-lg rounded-lg hover:bg-[#24483E] transition duration-300">
+                                    <i class="fas fa-heart mr-2"></i> Apply to Adopt <%= escapeHtml(pet.getName())%>
+                                </button>
+                                <% } %>
+                                <% } else { %>
+                                <button class="px-8 py-4 bg-gray-400 text-white font-bold text-lg rounded-lg cursor-not-allowed" disabled>
+                                    <i class="fas fa-check mr-2"></i> Already Adopted
+                                </button>
+                                <% }%>
                                 <p class="text-[#888] text-sm mt-3">By applying, you agree to our adoption terms and conditions</p>
                             </div>
                         </div>
@@ -245,19 +453,19 @@
 
                             <div class="flex items-center mb-6">
                                 <div class="w-16 h-16 rounded-full overflow-hidden mr-4">
-                                    <img src="profile_picture/shelter/pic1.png" alt="Happy Paws Shelter" class="w-full h-full object-cover">
+                                    <img src="<%= shelter.getPhotoPath() != null ? shelter.getPhotoPath() : "profile_picture/shelter/default.png"%>" 
+                                         alt="<%= escapeHtml(shelter.getShelterName())%>" 
+                                         class="w-full h-full object-cover">
                                 </div>
                                 <div>
-                                    <h4 class="font-bold text-[#2B2B2B] text-lg">Happy Paws Shelter</h4>
+                                    <h4 class="font-bold text-[#2B2B2B] text-lg"><%= escapeHtml(shelter.getShelterName())%></h4>
                                     <div class="flex items-center mt-1">
                                         <div class="star-rating text-[#C49A6C] mr-2">
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star-half-alt"></i>
+                                            <%= generateStars(avgRating)%>
                                         </div>
-                                        <span class="text-sm text-[#888]">4.5 (42 reviews)</span>
+                                        <span class="text-sm text-[#888]">
+                                            <%= String.format("%.1f", avgRating)%> (<%= reviewCount%> reviews)
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -269,7 +477,7 @@
                                     </div>
                                     <div>
                                         <p class="text-[#666] text-sm">Location</p>
-                                        <p class="font-medium">123 Jalan Ampang, Kuala Lumpur</p>
+                                        <p class="font-medium"><%= shelter.getShelterAddress() != null ? escapeHtml(shelter.getShelterAddress()) : "Address not available"%></p>
                                     </div>
                                 </div>
 
@@ -279,7 +487,7 @@
                                     </div>
                                     <div>
                                         <p class="text-[#666] text-sm">Contact</p>
-                                        <p class="font-medium">+603-1234 5678</p>
+                                        <p class="font-medium"><%= shelter.getPhone() != null ? shelter.getPhone() : "N/A"%></p>
                                     </div>
                                 </div>
 
@@ -289,7 +497,7 @@
                                     </div>
                                     <div>
                                         <p class="text-[#666] text-sm">Email</p>
-                                        <p class="font-medium">info@happypaws.org</p>
+                                        <p class="font-medium"><%= shelter.getEmail() != null ? shelter.getEmail() : "N/A"%></p>
                                     </div>
                                 </div>
 
@@ -299,8 +507,7 @@
                                     </div>
                                     <div>
                                         <p class="text-[#666] text-sm">Operating Hours</p>
-                                        <p class="font-medium">Mon-Fri: 9AM-6PM</p>
-                                        <p class="font-medium">Sat-Sun: 10AM-4PM</p>
+                                        <p class="font-medium"><%= shelter.getOperatingHours() != null ? escapeHtml(shelter.getOperatingHours()) : "Mon-Fri: 9AM-6PM"%></p>
                                     </div>
                                 </div>
                             </div>
@@ -308,37 +515,53 @@
                             <div class="mb-6">
                                 <h4 class="font-semibold text-[#2B2B2B] mb-2">About This Shelter</h4>
                                 <p class="text-[#666] text-sm">
-                                    Happy Paws Shelter is a non-profit animal rescue organization dedicated to saving the lives of stray, abandoned, and abused animals in the Kuala Lumpur area.
+                                    <%
+                                        String shelterDesc = shelter.getShelterDescription();
+                                        if (shelterDesc != null && !shelterDesc.isEmpty()) {
+                                            if (shelterDesc.length() > 150) {
+                                                out.print(escapeHtml(shelterDesc.substring(0, 150) + "..."));
+                                            } else {
+                                                out.print(escapeHtml(shelterDesc));
+                                            }
+                                        } else {
+                                            out.print("Animal shelter providing care and adoption services.");
+                                        }
+                                    %>
                                 </p>
                             </div>
 
-                            <a href="shelter_info.html" class="block w-full text-center py-3 bg-[#6DBF89] text-[#06321F] font-medium rounded-lg hover:bg-[#57A677] transition duration-300">
+                            <a href="shelter_info.jsp?id=<%= shelter.getShelterId()%>" class="block w-full text-center py-3 bg-[#6DBF89] text-[#06321F] font-medium rounded-lg hover:bg-[#57A677] transition duration-300">
                                 <i class="fas fa-info-circle mr-2"></i> Learn More About Shelter
                             </a>
                         </div>
 
-                        <!-- Adoption Stats - UPDATED BASED ON DB -->
+                        <!-- Adoption Stats -->
                         <div class="bg-white p-6 rounded-xl border border-[#E5E5E5]">
-                            <h3 class="text-xl font-bold text-[#2B2B2B] mb-4">Adoption Information</h3>
+                            <h3 class="text-xl font-bold text-[#2B2B2B] mb-4">Pet Information</h3>
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="flex flex-col items-center justify-center p-6 bg-[#F9F9F9] rounded-lg">
-                                    <p class="text-2xl font-bold text-[#2F5D50]">24</p>
-                                    <p class="text-sm text-[#666] mt-1">Days Listed</p>
-                                    <p class="text-xs text-[#888] mt-1">Since: 15 Mar 2024</p>
+                                    <p class="text-2xl font-bold text-[#2F5D50]">ID</p>
+                                    <p class="text-sm text-[#666] mt-1"><%= pet.getPetId()%></p>
                                 </div>
                                 <div class="flex flex-col items-center justify-center p-6 bg-[#F9F9F9] rounded-lg">
-                                    <p class="text-2xl font-bold text-[#2F5D50]">3</p>
-                                    <p class="text-sm text-[#666] mt-1">Applications</p>
+                                    <p class="text-2xl font-bold text-[#2F5D50]">
+                                        <% if ("available".equals(pet.getAdoptionStatus())) { %>
+                                        Available
+                                        <% } else { %>
+                                        Adopted
+                                        <% }%>
+                                    </p>
+                                    <p class="text-sm text-[#666] mt-1">Status</p>
                                 </div>
                             </div>
                             <div class="mt-4 pt-4 border-t border-[#E5E5E5]">
                                 <div class="flex items-center justify-between mb-2">
-                                    <span class="text-[#666]">Created Date</span>
-                                    <span class="font-medium">15 March 2024</span>
+                                    <span class="text-[#666]">Species</span>
+                                    <span class="font-medium"><%= capitalizeFirstLetter(pet.getSpecies())%></span>
                                 </div>
                                 <div class="flex items-center justify-between">
-                                    <span class="text-[#666]">Last Updated</span>
-                                    <span class="font-medium">28 March 2024</span>
+                                    <span class="text-[#666]">Shelter</span>
+                                    <span class="font-medium"><%= escapeHtml(shelter.getShelterName())%></span>
                                 </div>
                             </div>
                         </div>
@@ -353,23 +576,32 @@
         <div id="adoptionModal" class="modal-overlay">
             <div class="modal-content p-6">
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-bold text-[#2B2B2B]">Apply to Adopt Buddy</h3>
+                    <h3 class="text-xl font-bold text-[#2B2B2B]">Apply to Adopt <%= escapeHtml(pet.getName())%></h3>
                     <button id="closeModal" class="text-[#888] hover:text-[#2B2B2B]">
                         <i class="fas fa-times text-2xl"></i>
                     </button>
                 </div>
 
                 <form id="adoptionForm">
+                    <input type="hidden" id="petId" name="petId" value="<%= pet.getPetId()%>">
+                    <input type="hidden" id="shelterId" name="shelterId" value="<%= shelter.getShelterId()%>">
+
                     <div class="mb-6">
-                        <p class="text-[#666] mb-4">You're applying to adopt <span class="font-bold text-[#2F5D50]">Buddy</span> from <span class="font-bold text-[#2F5D50]">Happy Paws Shelter</span>.</p>
+                        <p class="text-[#666] mb-4">
+                            You're applying to adopt <span class="font-bold text-[#2F5D50]"><%= escapeHtml(pet.getName())%></span> 
+                            from <span class="font-bold text-[#2F5D50]"><%= escapeHtml(shelter.getShelterName())%></span>.
+                        </p>
                         <div class="bg-[#F0F7F4] p-4 rounded-lg mb-4">
-                            <p class="text-sm text-[#666]"><i class="fas fa-info-circle mr-2 text-[#2F5D50]"></i> Your application will be reviewed by the shelter. They may contact you for additional information or to schedule a meet-and-greet.</p>
+                            <p class="text-sm text-[#666]">
+                                <i class="fas fa-info-circle mr-2 text-[#2F5D50]"></i> 
+                                Your application will be reviewed by the shelter. They may contact you for additional information or to schedule a meet-and-greet.
+                            </p>
                         </div>
                     </div>
 
                     <div class="mb-6">
                         <label for="adopterMessage" class="block text-[#2B2B2B] mb-2 font-medium">Why do you want to adopt this pet? *</label>
-                        <textarea id="adopterMessage" name="adopter_message" rows="5" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]" placeholder="Tell us about yourself, your experience with pets, and why you think you'd be a good fit for this animal..." required></textarea>
+                        <textarea id="adopterMessage" name="adopterMessage" rows="5" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]" placeholder="Tell us about yourself, your experience with pets, and why you think you'd be a good fit for this animal..." required></textarea>
                         <p class="text-[#888] text-sm mt-1">Please provide detailed information to help the shelter assess your application.</p>
                     </div>
 
@@ -414,7 +646,6 @@
         </div>
 
         <!-- Footer container -->
-        <!-- Footer container -->
         <jsp:include page="includes/footer.jsp" />
         <!-- Sidebar container -->
         <jsp:include page="includes/sidebar.jsp" />
@@ -424,11 +655,11 @@
 
         <script>
             // DOM Elements
-            const adoptionModal = document.getElementById('adoptionModal');
-            const applyAdoptionBtn = document.getElementById('applyAdoptionBtn');
-            const closeModalBtn = document.getElementById('closeModal');
-            const cancelAdoptionBtn = document.getElementById('cancelAdoption');
-            const adoptionForm = document.getElementById('adoptionForm');
+            var adoptionModal = document.getElementById('adoptionModal');
+            var applyAdoptionBtn = document.getElementById('applyAdoptionBtn');
+            var closeModalBtn = document.getElementById('closeModal');
+            var cancelAdoptionBtn = document.getElementById('cancelAdoption');
+            var adoptionForm = document.getElementById('adoptionForm');
 
             // Initialize
             document.addEventListener('DOMContentLoaded', function () {
@@ -437,73 +668,149 @@
 
             // Open adoption modal
             function openAdoptionModal() {
-                adoptionModal.classList.add('show');
-                setTimeout(() => {
-                    const modalContent = adoptionModal.querySelector('.modal-content');
-                    modalContent.classList.add('show');
-                }, 10);
+                if (adoptionModal) {
+                    adoptionModal.classList.add('show');
+                    setTimeout(function () {
+                        var modalContent = adoptionModal.querySelector('.modal-content');
+                        if (modalContent) {
+                            modalContent.classList.add('show');
+                        }
+                    }, 10);
+                }
             }
 
             // Close adoption modal
             function closeAdoptionModal() {
-                const modalContent = adoptionModal.querySelector('.modal-content');
-                modalContent.classList.remove('show');
+                if (adoptionModal) {
+                    var modalContent = adoptionModal.querySelector('.modal-content');
+                    if (modalContent) {
+                        modalContent.classList.remove('show');
+                    }
 
-                setTimeout(() => {
-                    adoptionModal.classList.remove('show');
-                    resetAdoptionForm();
-                }, 300);
+                    setTimeout(function () {
+                        adoptionModal.classList.remove('show');
+                        resetAdoptionForm();
+                    }, 300);
+                }
             }
 
             // Reset adoption form
             function resetAdoptionForm() {
-                adoptionForm.reset();
+                if (adoptionForm) {
+                    adoptionForm.reset();
+                }
             }
 
-            // Handle adoption form submission
+            // Handle adoption form submission - ES5 COMPATIBLE
             function handleAdoptionSubmit(e) {
                 e.preventDefault();
 
                 // Validate required fields
-                const adopterMessage = document.getElementById('adopterMessage').value.trim();
-
-                if (!adopterMessage) {
+                var adopterMessage = document.getElementById('adopterMessage');
+                if (!adopterMessage || !adopterMessage.value.trim()) {
                     alert('Please tell us why you want to adopt this pet.');
                     return;
                 }
 
                 // Check if all terms are accepted
-                const terms = document.querySelectorAll('input[name="terms"]');
-                const allTermsAccepted = Array.from(terms).every(term => term.checked);
+                var terms = document.querySelectorAll('input[name="terms"]');
+                var allTermsAccepted = true;
+
+                for (var i = 0; i < terms.length; i++) {
+                    if (!terms[i].checked) {
+                        allTermsAccepted = false;
+                        break;
+                    }
+                }
 
                 if (!allTermsAccepted) {
                     alert('Please accept all adoption terms to proceed.');
                     return;
                 }
 
-                // In a real app, this would be sent to a server
-                // For demo, we'll just show a success message
-                alert('Your adoption application has been submitted successfully! The shelter will contact you within 3-5 business days.');
+                // Submit via AJAX to servlet
+                var petId = document.getElementById('petId').value;
+                var shelterId = document.getElementById('shelterId').value;
+                var message = adopterMessage.value.trim();
 
-                // Close modal and reset form
-                closeAdoptionModal();
+                // ADD DEBUG
+                console.log('DEBUG JS: petId =', petId);
+                console.log('DEBUG JS: shelterId =', shelterId);
+                console.log('DEBUG JS: message =', message);
+
+// VALIDATE shelterId
+                if (!shelterId || shelterId === '0' || shelterId === 'null') {
+                    alert('Error: Shelter ID is missing. Please refresh the page and try again.');
+                    return;
+                }
+
+                // Create form data
+                var formData = new FormData();
+                formData.append('action', 'applyAdoption');
+                formData.append('petId', petId);
+                formData.append('shelterId', shelterId);
+                formData.append('adopterMessage', message);
+
+                // Show loading
+                var submitBtn = adoptionForm.querySelector('button[type="submit"]');
+                var originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...';
+                submitBtn.disabled = true;
+
+                // Send request
+                fetch('ManageAdoptionRequest', {
+                    method: 'POST',
+                    body: formData
+                })
+                        .then(function (response) {
+                            return response.json();
+                        })
+                        .then(function (data) {
+                            if (data.success) {
+                                alert('Your adoption application has been submitted successfully! The shelter will contact you within 3-5 business days.');
+                                // Close modal and reload page
+                                closeAdoptionModal();
+                                // Reload page to update status
+                                location.reload();
+                            } else {
+                                alert('Application failed: ' + data.message);
+                                submitBtn.innerHTML = originalText;
+                                submitBtn.disabled = false;
+                            }
+                        })
+                        .catch(function (error) {
+                            console.error('Error:', error);
+                            alert('Failed to submit application. Please try again.');
+                            submitBtn.innerHTML = originalText;
+                            submitBtn.disabled = false;
+                        });
             }
 
-            // Attach event listeners
+            // Attach event listeners - ES5 COMPATIBLE
             function attachEventListeners() {
-                applyAdoptionBtn.addEventListener('click', openAdoptionModal);
-                closeModalBtn.addEventListener('click', closeAdoptionModal);
-                cancelAdoptionBtn.addEventListener('click', closeAdoptionModal);
+                if (applyAdoptionBtn) {
+                    applyAdoptionBtn.addEventListener('click', openAdoptionModal);
+                }
+                if (closeModalBtn) {
+                    closeModalBtn.addEventListener('click', closeAdoptionModal);
+                }
+                if (cancelAdoptionBtn) {
+                    cancelAdoptionBtn.addEventListener('click', closeAdoptionModal);
+                }
 
                 // Close modal when clicking outside
-                adoptionModal.addEventListener('click', (e) => {
-                    if (e.target === adoptionModal) {
-                        closeAdoptionModal();
-                    }
-                });
+                if (adoptionModal) {
+                    adoptionModal.addEventListener('click', function (e) {
+                        if (e.target === adoptionModal) {
+                            closeAdoptionModal();
+                        }
+                    });
+                }
 
                 // Adoption form submission
-                adoptionForm.addEventListener('submit', handleAdoptionSubmit);
+                if (adoptionForm) {
+                    adoptionForm.addEventListener('submit', handleAdoptionSubmit);
+                }
             }
         </script>
 

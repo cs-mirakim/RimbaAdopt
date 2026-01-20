@@ -7,39 +7,100 @@
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.sql.SQLException" %>
+<%@ page import="com.rimba.adopt.dao.UsersDao" %>
+<%@ page import="com.rimba.adopt.util.DatabaseConnection" %>
+<%@ page import="java.sql.Connection" %>
+<%@ page import="com.rimba.adopt.dao.FeedbackDAO" %>
+<%@ page import="com.rimba.adopt.model.Users" %>
 
 <%
+    // Debug: Check session
+    System.out.println("DEBUG: Starting shelter_info.jsp");
+    
     // Check if user is logged in and is adopter
     if (!SessionUtil.isLoggedIn(session)) {
+        System.out.println("DEBUG: User not logged in, redirecting to index.jsp");
         response.sendRedirect("index.jsp");
         return;
     }
 
     if (!SessionUtil.isAdopter(session)) {
+        System.out.println("DEBUG: User is not adopter, redirecting to index.jsp");
         response.sendRedirect("index.jsp");
         return;
     }
     
     // Get shelter ID from parameter
     String shelterIdParam = request.getParameter("id");
+    System.out.println("DEBUG: shelterIdParam = " + shelterIdParam);
+    
     int shelterId = 0;
     Shelter shelter = null;
+    double avgRating = 0.0;
+    int reviewCount = 0;
+    int[] ratingDistribution = new int[5];
+    int currentUserId = 0;
+    
+    // Get current user ID
+    Users currentUser = (Users) session.getAttribute("user");
+    if (currentUser != null) {
+        currentUserId = currentUser.getUserId();
+        System.out.println("DEBUG: Current user ID = " + currentUserId);
+    }
     
     if (shelterIdParam != null && !shelterIdParam.isEmpty()) {
         try {
             shelterId = Integer.parseInt(shelterIdParam);
-            ShelterDAO shelterDAO = new ShelterDAO();
-            shelter = shelterDAO.getShelterById(shelterId);
+            System.out.println("DEBUG: Parsed shelterId = " + shelterId);
+            
+            // Try multiple ways to get shelter data
+            Connection conn = null;
+            try {
+                conn = DatabaseConnection.getConnection();
+                ShelterDAO shelterDAO = new ShelterDAO();
+                FeedbackDAO feedbackDAO = new FeedbackDAO();
+                
+                // Try with new method first
+                shelter = shelterDAO.getShelterWithRating(shelterId);
+                System.out.println("DEBUG: After getShelterWithRating(), shelter = " + (shelter != null ? "found" : "null"));
+                
+                if (shelter == null) {
+                    // Fallback to old method
+                    System.out.println("DEBUG: Falling back to getShelterById()");
+                    shelter = shelterDAO.getShelterById(shelterId);
+                    System.out.println("DEBUG: After getShelterById(), shelter = " + (shelter != null ? "found" : "null"));
+                }
+                
+                // Get rating stats from FeedbackDAO
+                avgRating = feedbackDAO.getAverageRatingByShelterId(shelterId);
+                reviewCount = feedbackDAO.getFeedbackCountByShelterId(shelterId);
+                ratingDistribution = feedbackDAO.getRatingDistributionByShelterId(shelterId);
+                
+                System.out.println("DEBUG: Rating stats - avgRating = " + avgRating + ", reviewCount = " + reviewCount);
+                System.out.println("DEBUG: Rating distribution: " + java.util.Arrays.toString(ratingDistribution));
+                
+            } catch (Exception e) {
+                System.err.println("ERROR getting shelter data: " + e.getMessage());
+                e.printStackTrace();
+            } finally {
+                if (conn != null) {
+                    try { conn.close(); } catch (SQLException e) {}
+                }
+            }
             
             if (shelter == null) {
+                System.out.println("DEBUG: Shelter not found, redirecting to shelter_list.jsp");
                 response.sendRedirect("shelter_list.jsp");
                 return;
             }
+            
         } catch (NumberFormatException e) {
+            System.err.println("ERROR: Invalid shelter ID format: " + shelterIdParam);
             response.sendRedirect("shelter_list.jsp");
             return;
         }
     } else {
+        System.out.println("DEBUG: No shelter ID parameter, redirecting to shelter_list.jsp");
         response.sendRedirect("shelter_list.jsp");
         return;
     }
@@ -49,7 +110,9 @@
     List<Pets> pets = new ArrayList<Pets>();
     try {
         pets = petsDAO.getAvailablePetsByShelter(shelterId);
+        System.out.println("DEBUG: Found " + pets.size() + " available pets");
     } catch (SQLException e) {
+        System.err.println("ERROR getting pets: " + e.getMessage());
         e.printStackTrace();
     }
 %>
@@ -102,6 +165,25 @@
             body {
                 overflow-x: hidden;
             }
+            .star-selector {
+                font-size: 32px;
+                margin: 10px 0;
+                cursor: pointer;
+            }
+            .select-star {
+                color: #ddd;
+                margin-right: 5px;
+                transition: color 0.2s;
+            }
+            .select-star:hover,
+            .select-star.active {
+                color: #f39c12;
+            }
+            #selected-rating-text {
+                color: #7f8c8d;
+                font-style: italic;
+                margin-top: 5px;
+            }
         </style>
     </head>
     <body class="flex flex-col min-h-screen relative bg-[#F6F3E7]">
@@ -116,7 +198,7 @@
                 <!-- Back Button and Title -->
                 <div class="mb-8">
                     <div class="flex items-center justify-between mb-2">
-                        <a href="shelter_list.html" class="flex items-center text-[#2F5D50] hover:text-[#24483E]">
+                        <a href="shelter_list.jsp" class="flex items-center text-[#2F5D50] hover:text-[#24483E]">
                             <i class="fas fa-arrow-left mr-2"></i> Back to Shelters
                         </a>
                         <div class="bg-[#6DBF89] text-[#06321F] px-4 py-2 rounded-full text-sm font-medium">
@@ -147,22 +229,52 @@
                             <div class="bg-[#F9F9F9] p-5 rounded-xl">
                                 <div class="flex items-center mb-4">
                                     <div id="averageStars" class="star-rating text-2xl mr-3">
-                                        <!-- Stars will be loaded by JavaScript -->
-                                        <i class="far fa-star"></i>
-                                        <i class="far fa-star"></i>
-                                        <i class="far fa-star"></i>
-                                        <i class="far fa-star"></i>
-                                        <i class="far fa-star"></i>
+                                        <% 
+                                        // Generate stars based on average rating
+                                        int fullStars = (int) avgRating;
+                                        boolean hasHalfStar = (avgRating - fullStars) >= 0.5;
+                                        
+                                        for (int i = 1; i <= 5; i++) {
+                                            if (i <= fullStars) {
+                                                out.print("<i class='fas fa-star'></i>");
+                                            } else if (i == fullStars + 1 && hasHalfStar) {
+                                                out.print("<i class='fas fa-star-half-alt'></i>");
+                                            } else {
+                                                out.print("<i class='far fa-star'></i>");
+                                            }
+                                        }
+                                        %>
                                     </div>
                                     <div>
-                                        <span id="averageRating" class="text-2xl font-bold text-[#2B2B2B]">0.0</span>
-                                        <span id="reviewCount" class="text-[#888] ml-1">(0 reviews)</span>
+                                        <span id="averageRating" class="text-2xl font-bold text-[#2B2B2B]"><%= String.format("%.1f", avgRating) %></span>
+                                        <span id="reviewCount" class="text-[#888] ml-1">(<%= reviewCount %> <%= reviewCount == 1 ? "review" : "reviews" %>)</span>
                                     </div>
                                 </div>
 
                                 <!-- Rating Distribution -->
                                 <div id="ratingDistribution">
-                                    <!-- Will be loaded by JavaScript -->
+                                    <%
+                                    int totalReviews = 0;
+                                    for (int count : ratingDistribution) {
+                                        totalReviews += count;
+                                    }
+                                    
+                                    for (int i = 5; i >= 1; i--) {
+                                        int count = ratingDistribution[i-1];
+                                        double percentage = totalReviews > 0 ? (count * 100.0 / totalReviews) : 0;
+                                    %>
+                                    <div class="mb-4">
+                                        <div class="flex items-center justify-between mb-1">
+                                            <span class="text-sm"><%= i %> star<%= i != 1 ? "s" : "" %></span>
+                                            <span class="text-sm font-medium"><%= count %></span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: <%= percentage %>%"></div>
+                                        </div>
+                                    </div>
+                                    <%
+                                    }
+                                    %>
                                 </div>
 
                                 <button id="writeReviewBtn" class="w-full py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">
@@ -242,12 +354,20 @@
                     <!-- Pets Grid -->
                     <div id="petsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
                         <% 
-                        for (Pets pet : pets) { 
-                            String petPhoto = pet.getPhotoPath() != null ? pet.getPhotoPath() : "profile_picture/pet/default.png";
-                            String breed = pet.getBreed() != null ? pet.getBreed() : "Mixed";
-                            String age = pet.getAge() != null ? pet.getAge().toString() + " years" : "N/A";
-                            String size = pet.getSize() != null ? pet.getSize() : "N/A";
-                            String description = pet.getDescription() != null ? pet.getDescription() : "No description available.";
+                        if (pets.isEmpty()) { 
+                        %>
+                        <div class="col-span-3 text-center py-8">
+                            <i class="fas fa-paw text-4xl text-[#E5E5E5] mb-4"></i>
+                            <p class="text-[#888]">No pets available for adoption at this shelter.</p>
+                        </div>
+                        <% 
+                        } else {
+                            for (Pets pet : pets) { 
+                                String petPhoto = pet.getPhotoPath() != null ? pet.getPhotoPath() : "profile_picture/pet/default.png";
+                                String breed = pet.getBreed() != null ? pet.getBreed() : "Mixed";
+                                String age = pet.getAge() != null ? pet.getAge().toString() + " years" : "N/A";
+                                String size = pet.getSize() != null ? pet.getSize() : "N/A";
+                                String description = pet.getDescription() != null ? pet.getDescription() : "No description available.";
                         %>
                         <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-[#E5E5E5] hover:shadow-xl transition duration-300">
                             <div class="relative">
@@ -286,14 +406,10 @@
                                 </div>
                             </div>
                         </div>
-                        <% } %>
-                        
-                        <% if (pets.isEmpty()) { %>
-                        <div class="col-span-3 text-center py-8">
-                            <i class="fas fa-paw text-4xl text-[#E5E5E5] mb-4"></i>
-                            <p class="text-[#888]">No pets available for adoption at this shelter.</p>
-                        </div>
-                        <% } %>
+                        <% 
+                            } 
+                        } 
+                        %>
                     </div>
                 </div>
 
@@ -307,9 +423,10 @@
                     </div>
 
                     <!-- Reviews List -->
-                    <div id="reviewsContainer" class="space-y-6">
+                    <div id="reviewsContainer">
+                        <!-- Reviews will be loaded by JavaScript -->
                         <div class="text-center py-8">
-                            <i class="fas fa-spinner fa-spin text-2xl text-[#2F5D50] mb-4"></i>
+                            <i class="fas fa-spinner fa-spin text-4xl text-[#2F5D50] mb-4"></i>
                             <p class="text-[#888]">Loading reviews...</p>
                         </div>
                     </div>
@@ -325,7 +442,7 @@
                                 <!-- Page numbers will be generated here -->
                             </div>
 
-                            <button id="nextReviewPage" class="p-3 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]">
+                            <button id="nextReviewPage" class="p-3 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7] disabled:opacity-50 disabled:cursor-not-allowed">
                                 <i class="fas fa-chevron-right"></i>
                             </button>
                         </nav>
@@ -347,27 +464,34 @@
 
                 <form id="reviewForm">
                     <input type="hidden" id="shelterId" name="shelterId" value="<%= shelterId %>">
+                    <input type="hidden" name="action" value="submitFeedback">
+                    <input type="hidden" name="adopterId" value="<%= currentUserId %>">
+                    <!-- Tambah flag untuk bypass check -->
+                    <input type="hidden" name="forceSubmit" value="true">
                     
                     <div class="mb-6">
-                        <label class="block text-[#2B2B2B] mb-3 font-medium">Rating</label>
-                        <div class="flex space-x-2" id="starRating">
-                            <i class="far fa-star text-3xl text-[#C49A6C] cursor-pointer rating-star" data-value="1"></i>
-                            <i class="far fa-star text-3xl text-[#C49A6C] cursor-pointer rating-star" data-value="2"></i>
-                            <i class="far fa-star text-3xl text-[#C49A6C] cursor-pointer rating-star" data-value="3"></i>
-                            <i class="far fa-star text-3xl text-[#C49A6C] cursor-pointer rating-star" data-value="4"></i>
-                            <i class="far fa-star text-3xl text-[#C49A6C] cursor-pointer rating-star" data-value="5"></i>
+                        <label class="block text-[#2B2B2B] mb-3 font-medium">Your Rating:</label>
+                        <div class="star-selector">
+                            <span class="select-star" data-value="1">☆</span>
+                            <span class="select-star" data-value="2">☆</span>
+                            <span class="select-star" data-value="3">☆</span>
+                            <span class="select-star" data-value="4">☆</span>
+                            <span class="select-star" data-value="5">☆</span>
                         </div>
+                        <p id="selected-rating-text">Select a star rating</p>
                         <input type="hidden" id="selectedRating" name="rating" value="0">
                     </div>
 
                     <div class="mb-6">
-                        <label for="reviewTitle" class="block text-[#2B2B2B] mb-2 font-medium">Review Title</label>
-                        <input type="text" id="reviewTitle" name="title" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]" placeholder="Summarize your experience">
+                        <label for="reviewerName" class="block text-[#2B2B2B] mb-2 font-medium">Your Name</label>
+                        <input type="text" id="reviewerName" name="reviewerName" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89] bg-gray-50" 
+                               value="<%= currentUser != null ? currentUser.getName() : "" %>" readonly>
                     </div>
 
                     <div class="mb-6">
                         <label for="reviewComment" class="block text-[#2B2B2B] mb-2 font-medium">Your Review</label>
-                        <textarea id="reviewComment" name="comment" rows="5" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]" placeholder="Share details of your experience with this shelter..."></textarea>
+                        <textarea id="reviewComment" name="comment" rows="5" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]" 
+                                  placeholder="Share your experience with this shelter..."></textarea>
                     </div>
 
                     <div class="flex justify-end space-x-3">
@@ -394,6 +518,7 @@
         <script>
             // Get shelter ID from JSP
             const shelterId = <%= shelterId %>;
+            const currentUserId = <%= currentUserId %>;
             
             // Pagination variables
             let currentReviewPage = 1;
@@ -412,95 +537,73 @@
             const closeModalBtn = document.getElementById('closeModal');
             const cancelReviewBtn = document.getElementById('cancelReview');
             const reviewForm = document.getElementById('reviewForm');
-            const starRatingElements = document.querySelectorAll('.rating-star');
             const selectedRatingInput = document.getElementById('selectedRating');
-            const averageRatingElement = document.getElementById('averageRating');
-            const reviewCountElement = document.getElementById('reviewCount');
-            const averageStarsElement = document.getElementById('averageStars');
-            const ratingDistributionElement = document.getElementById('ratingDistribution');
+            const selectedRatingText = document.getElementById('selected-rating-text');
+
+            // Star selector functionality
+            function updateStarSelector(rating) {
+                const starRatingElements = document.querySelectorAll('.select-star');
+                starRatingElements.forEach(star => {
+                    const starValue = parseInt(star.getAttribute('data-value'));
+                    if (starValue <= rating) {
+                        star.textContent = '★';
+                        star.classList.add('active');
+                    } else {
+                        star.textContent = '☆';
+                        star.classList.remove('active');
+                    }
+                });
+            }
+
+            function updateRatingText(rating) {
+                const ratingPhrases = [
+                    "Select a star rating",
+                    "Poor",
+                    "Fair",
+                    "Good",
+                    "Very Good",
+                    "Excellent"
+                ];
+                if (selectedRatingText) {
+                    selectedRatingText.textContent = ratingPhrases[rating];
+                }
+            }
 
             // Initialize
             document.addEventListener('DOMContentLoaded', function () {
-                loadRatingStats();
                 loadReviews();
                 attachEventListeners();
-            });
-
-            // Load rating statistics
-            function loadRatingStats() {
-                fetch('FeedbackServlet?action=getFeedback&shelterId=' + shelterId + '&page=1&pageSize=1')
-                    .then(function(response) {
-                        return response.json();
-                    })
-                    .then(function(data) {
-                        if (data.success) {
-                            updateRatingStats(data.averageRating, data.ratingDistribution, data.totalCount);
-                        }
-                    })
-                    .catch(function(error) {
-                        console.error('Error loading rating stats:', error);
+                
+                // Initialize star selector events
+                const starRatingElements = document.querySelectorAll('.select-star');
+                if (starRatingElements) {
+                    starRatingElements.forEach(star => {
+                        star.addEventListener('click', function() {
+                            selectedRating = parseInt(this.getAttribute('data-value'));
+                            updateStarSelector(selectedRating);
+                            updateRatingText(selectedRating);
+                            if (selectedRatingInput) {
+                                selectedRatingInput.value = selectedRating.toString();
+                            }
+                        });
                     });
-            }
-
-            // Update rating statistics display
-            function updateRatingStats(averageRating, ratingDistribution, totalCount) {
-                // Update average rating
-                if (averageRatingElement) {
-                    averageRatingElement.textContent = averageRating.toFixed(1);
                 }
-                if (reviewCountElement) {
-                    reviewCountElement.textContent = '(' + totalCount + ' ' + (totalCount === 1 ? 'review' : 'reviews') + ')';
-                }
-                
-                // Update stars
-                if (averageStarsElement) {
-                    let starsHTML = '';
-                    const fullStars = Math.floor(averageRating);
-                    const hasHalfStar = averageRating % 1 >= 0.5;
-                    
-                    for (let i = 1; i <= 5; i++) {
-                        if (i <= fullStars) {
-                            starsHTML += '<i class="fas fa-star"></i>';
-                        } else if (i === fullStars + 1 && hasHalfStar) {
-                            starsHTML += '<i class="fas fa-star-half-alt"></i>';
-                        } else {
-                            starsHTML += '<i class="far fa-star"></i>';
-                        }
-                    }
-                    averageStarsElement.innerHTML = starsHTML;
-                }
-                
-                // Update rating distribution
-                if (ratingDistributionElement) {
-                    let distributionHTML = '';
-                    const total = ratingDistribution.reduce(function(a, b) { return a + b; }, 0);
-                    
-                    for (let i = 5; i >= 1; i--) {
-                        const count = ratingDistribution[i-1] || 0;
-                        const percentage = total > 0 ? (count / total * 100) : 0;
-                        
-                        distributionHTML += 
-                            '<div class="mb-4">' +
-                            '<div class="flex items-center justify-between mb-1">' +
-                            '<span class="text-sm">' + i + ' star' + (i !== 1 ? 's' : '') + '</span>' +
-                            '<span class="text-sm font-medium">' + count + '</span>' +
-                            '</div>' +
-                            '<div class="progress-bar">' +
-                            '<div class="progress-fill" style="width: ' + percentage + '%"></div>' +
-                            '</div>' +
-                            '</div>';
-                    }
-                    ratingDistributionElement.innerHTML = distributionHTML;
-                }
-            }
+            });
 
             // Load reviews for current page
             function loadReviews() {
+                console.log("DEBUG: Loading reviews for page " + currentReviewPage);
+
                 fetch('FeedbackServlet?action=getFeedback&shelterId=' + shelterId + '&page=' + currentReviewPage + '&pageSize=' + reviewsPerPage)
                     .then(function(response) {
+                        console.log("DEBUG: Response status: " + response.status);
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
                         return response.json();
                     })
                     .then(function(data) {
+                        console.log("DEBUG: Received data:", data);
                         if (data.success) {
                             renderReviews(data.feedbackList);
                             updateReviewPagination(data.totalCount, data.currentPage, data.pageSize);
@@ -527,10 +630,10 @@
                 }
             }
 
-            // Render reviews
+            // Update renderReviews() function:
             function renderReviews(reviews) {
                 if (!reviewsContainer) return;
-                
+
                 reviewsContainer.innerHTML = '';
 
                 if (!reviews || reviews.length === 0) {
@@ -541,38 +644,44 @@
                 for (var i = 0; i < reviews.length; i++) {
                     var review = reviews[i];
                     var reviewCard = document.createElement('div');
-                    reviewCard.className = 'feedback-card bg-[#F9F9F9] p-6 rounded-xl';
-                    
+                    reviewCard.className = 'feedback-card bg-[#F9F9F9] p-6 rounded-xl mb-4';
+
                     // Generate star HTML
                     var starsHTML = '';
                     for (var j = 1; j <= 5; j++) {
                         if (j <= review.rating) {
-                            starsHTML += '<i class="fas fa-star"></i>';
+                            starsHTML += '<i class="fas fa-star text-yellow-500"></i>';
                         } else {
-                            starsHTML += '<i class="far fa-star"></i>';
+                            starsHTML += '<i class="far fa-star text-gray-300"></i>';
                         }
+                    }
+
+                    // Format date
+                    var dateStr = '';
+                    if (review.created_at) {
+                        var date = new Date(review.created_at);
+                        dateStr = date.toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric' 
+                        });
                     }
 
                     reviewCard.innerHTML =
                         '<div class="flex justify-between items-start mb-4">' +
                         '<div>' +
+                        '<h4 class="font-bold text-[#2B2B2B] mb-1">' + (review.adopter_name || 'Anonymous') + '</h4>' +
                         '<div class="flex items-center mt-1">' +
                         '<div class="star-rating mr-3">' +
                         starsHTML +
                         '</div>' +
-                        '<span class="text-[#888] text-sm">by ' + (review.adopterName || 'Anonymous') + '</span>' +
+                        '<span class="text-sm text-gray-600">' + review.rating + '/5</span>' +
                         '</div>' +
                         '</div>' +
-                        '<span class="text-[#888] text-sm">' + (review.relativeTime || '') + '</span>' +
+                        '<span class="text-[#888] text-sm">' + dateStr + '</span>' +
                         '</div>' +
-                        '<p class="text-[#666] mb-4">' + (review.comment || '') + '</p>' +
-                        '<div class="flex justify-between items-center">' +
-                        '<button class="text-[#2F5D50] hover:text-[#24483E] text-sm helpful-btn" data-id="' + review.feedbackId + '">' +
-                        '<i class="far fa-thumbs-up mr-1"></i> Helpful' +
-                        '</button>' +
-                        '<button class="text-[#888] hover:text-[#2B2B2B] text-sm report-btn" data-id="' + review.feedbackId + '">' +
-                        '<i class="far fa-flag mr-1"></i> Report' +
-                        '</button>' +
+                        '<div class="mb-4">' +
+                        '<p class="text-[#666]">' + (review.comment || 'No comment') + '</p>' +
                         '</div>';
 
                     reviewsContainer.appendChild(reviewCard);
@@ -597,60 +706,6 @@
                     const maxVisiblePages = 5;
                     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
                     let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-            // Open feedback modal
-            function openFeedbackModal() {
-                feedbackModal.classList.add('show');
-                setTimeout(() => {
-                    const modalContent = feedbackModal.querySelector('.modal-content');
-                    modalContent.classList.add('show');
-                }, 10);
-            }
-
-            // Close feedback modal
-            function closeFeedbackModal() {
-                const modalContent = feedbackModal.querySelector('.modal-content');
-                modalContent.classList.remove('show');
-
-                setTimeout(() => {
-                    feedbackModal.classList.remove('show');
-                    resetReviewForm();
-                }, 300);
-            }
-
-            // Reset review form
-            function resetReviewForm() {
-                selectedRating = 0;
-                selectedRatingInput.value = "0";
-
-                // Reset stars
-                starRatingElements.forEach(star => {
-                    star.classList.remove('fas');
-                    star.classList.add('far');
-                });
-
-                // Reset form fields
-                document.getElementById('reviewTitle').value = '';
-                document.getElementById('reviewComment').value = '';
-            }
-
-            // Handle star rating selection
-            function handleStarClick(e) {
-                const rating = parseInt(e.target.getAttribute('data-value'));
-                selectedRating = rating;
-                selectedRatingInput.value = rating.toString();
-
-                // Update star display
-                starRatingElements.forEach((star, index) => {
-                    if (index < rating) {
-                        star.classList.remove('far');
-                        star.classList.add('fas');
-                    } else {
-                        star.classList.remove('fas');
-                        star.classList.add('far');
-                    }
-                });
-            }
 
                     for (let i = startPage; i <= endPage; i++) {
                         const pageBtn = document.createElement('button');
@@ -684,90 +739,37 @@
 
             // Open feedback modal
             function openFeedbackModal() {
-                // Check if user has already reviewed
-                fetch('FeedbackServlet?action=checkReview&shelterId=' + shelterId)
-                    .then(function(response) {
-                        return response.json();
-                    })
-                    .then(function(data) {
-                        if (data.success && data.hasReviewed) {
-                            alert('You have already reviewed this shelter.');
-                            return;
-                        }
-                        
-                        if (feedbackModal) {
-                            feedbackModal.style.display = 'flex';
-                        }
-                    })
-                    .catch(function(error) {
-                        console.error('Error checking review:', error);
-                        // Still open modal even if check fails
-                        if (feedbackModal) {
-                            feedbackModal.style.display = 'flex';
-                        }
-                    });
+                if (feedbackModal) {
+                    // Reset form
+                    selectedRating = 0;
+                    if (selectedRatingInput) {
+                        selectedRatingInput.value = "0";
+                    }
+                    updateStarSelector(0);
+                    updateRatingText(0);
+                    const reviewComment = document.getElementById('reviewComment');
+                    if (reviewComment) reviewComment.value = '';
+                    
+                    feedbackModal.style.display = 'flex';
+                }
             }
 
             // Close feedback modal
             function closeFeedbackModal() {
                 if (feedbackModal) {
                     feedbackModal.style.display = 'none';
-                    resetReviewForm();
                 }
             }
 
-            // Reset review form
-            function resetReviewForm() {
-                selectedRating = 0;
-                if (selectedRatingInput) {
-                    selectedRatingInput.value = "0";
-                }
-
-                // Reset stars
-                for (var i = 0; i < starRatingElements.length; i++) {
-                    var star = starRatingElements[i];
-                    star.classList.remove('fas');
-                    star.classList.add('far');
-                }
-
-                // Reset form fields
-                var reviewTitle = document.getElementById('reviewTitle');
-                var reviewComment = document.getElementById('reviewComment');
-                if (reviewTitle) reviewTitle.value = '';
-                if (reviewComment) reviewComment.value = '';
-            }
-
-            // Handle star rating selection
-            function handleStarClick(e) {
-                const rating = parseInt(e.target.getAttribute('data-value'));
-                selectedRating = rating;
-                if (selectedRatingInput) {
-                    selectedRatingInput.value = rating.toString();
-                }
-
-                // Update star display
-                for (var i = 0; i < starRatingElements.length; i++) {
-                    var star = starRatingElements[i];
-                    if (i < rating) {
-                        star.classList.remove('far');
-                        star.classList.add('fas');
-                    } else {
-                        star.classList.remove('fas');
-                        star.classList.add('far');
-                    }
-                }
-            }
-
-            // Handle review form submission
+            // Handle review form submission - SIMPLE VERSION
+            // Dalam fungsi handleReviewSubmit di shelter_info.jsp
             function handleReviewSubmit(e) {
                 e.preventDefault();
 
-                const shelterId = document.getElementById('shelterId').value;
-                const rating = document.getElementById('selectedRating').value;
-                const title = document.getElementById('reviewTitle').value.trim();
-                const comment = document.getElementById('reviewComment').value.trim();
+                const rating = document.getElementById('selectedRating')?.value;
+                const comment = document.getElementById('reviewComment')?.value.trim();
 
-                if (parseInt(rating) === 0) {
+                if (!rating || parseInt(rating) === 0) {
                     alert('Please select a rating');
                     return;
                 }
@@ -778,12 +780,12 @@
                 }
 
                 const formData = new FormData();
-                formData.append('shelterId', shelterId);
+                formData.append('action', 'submitFeedback');
+                formData.append('shelterId', shelterId.toString());
+                formData.append('adopterId', currentUserId.toString());
                 formData.append('rating', rating);
-                if (title) {
-                    formData.append('title', title);
-                }
                 formData.append('comment', comment);
+                formData.append('forceSubmit', 'true'); // Ini yang penting!
 
                 fetch('FeedbackServlet', {
                     method: 'POST',
@@ -794,11 +796,10 @@
                 })
                 .then(function(data) {
                     if (data.success) {
-                        alert(data.message);
+                        alert('Review submitted successfully!');
                         closeFeedbackModal();
-                        // Reload reviews and rating stats
-                        loadReviews();
-                        loadRatingStats();
+                        // Reload page to update everything
+                        location.reload();
                     } else {
                         alert('Error: ' + data.message);
                     }
@@ -806,6 +807,34 @@
                 .catch(function(error) {
                     console.error('Error:', error);
                     alert('Failed to submit review. Please try again.');
+                });
+            }
+
+            // Alternative: Direct submission without checking
+            function submitDirectReview(rating, comment) {
+                const directFormData = new FormData();
+                directFormData.append('shelterId', shelterId.toString());
+                directFormData.append('adopterId', currentUserId.toString());
+                directFormData.append('rating', rating);
+                directFormData.append('comment', comment);
+                
+                // Use a different endpoint or direct AJAX
+                fetch('submit_review_direct.jsp', {
+                    method: 'POST',
+                    body: directFormData
+                })
+                .then(function(response) {
+                    if (response.ok) {
+                        alert('Review submitted successfully!');
+                        closeFeedbackModal();
+                        location.reload();
+                    } else {
+                        alert('Failed to submit review. Please try again.');
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Error:', error);
+                    alert('Network error. Please try again.');
                 });
             }
 
@@ -838,11 +867,6 @@
                             closeFeedbackModal();
                         }
                     });
-                }
-
-                // Star rating click events
-                for (var i = 0; i < starRatingElements.length; i++) {
-                    starRatingElements[i].addEventListener('click', handleStarClick);
                 }
 
                 // Review form submission

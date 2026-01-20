@@ -3,14 +3,20 @@ package com.rimba.adopt.controller;
 import com.rimba.adopt.dao.LostReportDAO;
 import com.rimba.adopt.model.LostReport;
 import com.rimba.adopt.util.SessionUtil;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
@@ -18,6 +24,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.Part;
 
 @WebServlet("/ManageLostAnimalServlet")
 @MultipartConfig(
@@ -28,9 +35,26 @@ import javax.servlet.http.HttpSession;
 public class ManageLostAnimalServlet extends HttpServlet {
     private LostReportDAO lostReportDAO;
     
+    // Directory where lost pet pictures will be stored
+    private static final String UPLOAD_DIR = "lost_picture";
+    // Default image path if no image is uploaded
+    private static final String DEFAULT_IMAGE = "lost_picture/default_lost_pet.jpg";
+    
     @Override
     public void init() throws ServletException {
         lostReportDAO = new LostReportDAO();
+        
+        // Create upload directory if it doesn't exist
+        try {
+            String appPath = getServletContext().getRealPath("");
+            String uploadPath = appPath + File.separator + UPLOAD_DIR;
+            File uploadDir = new File(uploadPath);
+            if (!uploadDir.exists()) {
+                uploadDir.mkdirs();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -222,7 +246,8 @@ public class ManageLostAnimalServlet extends HttpServlet {
                 reportJson.append("\"status\": \"").append(escapeJson(report.getStatus())).append("\",");
                 reportJson.append("\"last_seen_location\": \"").append(escapeJson(report.getLastSeenLocation())).append("\",");
                 reportJson.append("\"last_seen_date\": \"").append(report.getLastSeenDate() != null ? report.getLastSeenDate().toString() : "").append("\",");
-                reportJson.append("\"photo_path\": \"").append(escapeJson(report.getPhotoPath() != null ? report.getPhotoPath() : "animal_picture/default_lost_pet.jpg")).append("\"");
+                reportJson.append("\"description\": \"").append(escapeJson(report.getDescription())).append("\",");
+                reportJson.append("\"photo_path\": \"").append(escapeJson(report.getPhotoPath() != null ? report.getPhotoPath() : DEFAULT_IMAGE)).append("\"");
                 reportJson.append("}");
                 
                 json.append(reportJson);
@@ -322,6 +347,8 @@ public class ManageLostAnimalServlet extends HttpServlet {
         response.setCharacterEncoding("UTF-8");
         PrintWriter out = response.getWriter();
         
+        String photoPath = DEFAULT_IMAGE;
+        
         try {
             int adopterId = SessionUtil.getUserId(session);
             String petName = request.getParameter("pet_name");
@@ -339,6 +366,24 @@ public class ManageLostAnimalServlet extends HttpServlet {
                 out.print("{\"success\": false, \"message\": \"Required fields are missing\"}");
                 out.flush();
                 return;
+            }
+            
+            // Handle file upload
+            Part filePart = request.getPart("pet_photo");
+            if (filePart != null && filePart.getSize() > 0 && filePart.getSubmittedFileName() != null && 
+                !filePart.getSubmittedFileName().isEmpty()) {
+                
+                // Generate unique filename
+                String fileName = generateUniqueFileName(filePart.getSubmittedFileName());
+                photoPath = UPLOAD_DIR + "/" + fileName;
+                
+                // Save the file
+                String appPath = getServletContext().getRealPath("");
+                String uploadPath = appPath + File.separator + photoPath;
+                
+                try (InputStream fileContent = filePart.getInputStream()) {
+                    Files.copy(fileContent, Paths.get(uploadPath), StandardCopyOption.REPLACE_EXISTING);
+                }
             }
             
             LostReport lostReport = new LostReport();
@@ -362,8 +407,8 @@ public class ManageLostAnimalServlet extends HttpServlet {
                                    (contactInfo != null ? contactInfo.trim() : "");
             lostReport.setDescription(fullDescription);
             
-            // Set default photo path
-            lostReport.setPhotoPath("animal_picture/default_lost_pet.jpg");
+            // Set photo path
+            lostReport.setPhotoPath(photoPath);
             lostReport.setStatus("lost"); // Default status
             
             int lostId = lostReportDAO.createLostReport(lostReport);
@@ -375,6 +420,7 @@ public class ManageLostAnimalServlet extends HttpServlet {
             }
             
         } catch (Exception e) {
+            e.printStackTrace();
             out.print("{\"success\": false, \"message\": \"Error creating lost report: " + 
                      e.getMessage().replace("\"", "\\\"") + "\"}");
         }
@@ -398,7 +444,46 @@ public class ManageLostAnimalServlet extends HttpServlet {
             String description = request.getParameter("description");
             String status = request.getParameter("status");
             
-            // Get existing report (need to create a new one)
+            // Get existing report to get current photo path
+            Map<String, Object> existingReport = lostReportDAO.getLostReportWithAdopterById(lostId);
+            String currentPhotoPath = DEFAULT_IMAGE;
+            if (existingReport != null && existingReport.get("photo_path") != null) {
+                currentPhotoPath = (String) existingReport.get("photo_path");
+            }
+            
+            // Handle file upload for update
+            Part filePart = request.getPart("pet_photo");
+            if (filePart != null && filePart.getSize() > 0 && filePart.getSubmittedFileName() != null && 
+                !filePart.getSubmittedFileName().isEmpty()) {
+                
+                // Delete old photo if it's not the default
+                if (!currentPhotoPath.equals(DEFAULT_IMAGE)) {
+                    try {
+                        String appPath = getServletContext().getRealPath("");
+                        String oldFilePath = appPath + File.separator + currentPhotoPath;
+                        File oldFile = new File(oldFilePath);
+                        if (oldFile.exists() && oldFile.isFile()) {
+                            oldFile.delete();
+                        }
+                    } catch (Exception e) {
+                        // Log but continue
+                        e.printStackTrace();
+                    }
+                }
+                
+                // Generate unique filename
+                String fileName = generateUniqueFileName(filePart.getSubmittedFileName());
+                currentPhotoPath = UPLOAD_DIR + "/" + fileName;
+                
+                // Save the new file
+                String appPath = getServletContext().getRealPath("");
+                String uploadPath = appPath + File.separator + currentPhotoPath;
+                
+                try (InputStream fileContent = filePart.getInputStream()) {
+                    Files.copy(fileContent, Paths.get(uploadPath), StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+            
             LostReport lostReport = new LostReport();
             lostReport.setLostId(lostId);
             
@@ -408,6 +493,9 @@ public class ManageLostAnimalServlet extends HttpServlet {
             if (lastSeenLocation != null) lostReport.setLastSeenLocation(lastSeenLocation.trim());
             if (description != null) lostReport.setDescription(description.trim());
             if (status != null) lostReport.setStatus(status.trim());
+            
+            // Set photo path
+            lostReport.setPhotoPath(currentPhotoPath);
             
             // Parse date
             if (lastSeenDateStr != null && !lastSeenDateStr.isEmpty()) {
@@ -427,6 +515,7 @@ public class ManageLostAnimalServlet extends HttpServlet {
         } catch (NumberFormatException e) {
             out.print("{\"success\": false, \"message\": \"Invalid lost ID format\"}");
         } catch (Exception e) {
+            e.printStackTrace();
             out.print("{\"success\": false, \"message\": \"Error updating lost report: " + 
                      e.getMessage().replace("\"", "\\\"") + "\"}");
         }
@@ -479,6 +568,26 @@ public class ManageLostAnimalServlet extends HttpServlet {
         try {
             int lostId = Integer.parseInt(request.getParameter("lostId"));
             
+            // Get report to delete associated photo
+            Map<String, Object> report = lostReportDAO.getLostReportWithAdopterById(lostId);
+            if (report != null && report.get("photo_path") != null) {
+                String photoPath = (String) report.get("photo_path");
+                // Delete photo if it's not the default image
+                if (photoPath != null && !photoPath.equals(DEFAULT_IMAGE)) {
+                    try {
+                        String appPath = getServletContext().getRealPath("");
+                        String filePath = appPath + File.separator + photoPath;
+                        File file = new File(filePath);
+                        if (file.exists() && file.isFile()) {
+                            file.delete();
+                        }
+                    } catch (Exception e) {
+                        // Log but continue with deletion
+                        e.printStackTrace();
+                    }
+                }
+            }
+            
             boolean success = lostReportDAO.deleteLostReport(lostId);
             
             if (success) {
@@ -490,6 +599,7 @@ public class ManageLostAnimalServlet extends HttpServlet {
         } catch (NumberFormatException e) {
             out.print("{\"success\": false, \"message\": \"Invalid lost ID format\"}");
         } catch (Exception e) {
+            e.printStackTrace();
             out.print("{\"success\": false, \"message\": \"Error deleting lost report: " + 
                      e.getMessage().replace("\"", "\\\"") + "\"}");
         }
@@ -518,6 +628,10 @@ public class ManageLostAnimalServlet extends HttpServlet {
                 json.append(value);
             } else if (value instanceof Boolean) {
                 json.append(value);
+            } else if (value instanceof Date) {
+                json.append("\"").append(value.toString()).append("\"");
+            } else if (value instanceof java.sql.Timestamp) {
+                json.append("\"").append(value.toString()).append("\"");
             } else {
                 // Escape special characters in string
                 json.append("\"").append(escapeJson(value.toString())).append("\"");
@@ -545,5 +659,18 @@ public class ManageLostAnimalServlet extends HttpServlet {
         String errorJson = "{\"success\": false, \"message\": \"" + escapeJson(message) + "\"}";
         out.print(errorJson);
         out.flush();
+    }
+    
+    private String generateUniqueFileName(String originalFileName) {
+        // Get file extension
+        String extension = "";
+        int dotIndex = originalFileName.lastIndexOf(".");
+        if (dotIndex > 0 && dotIndex < originalFileName.length() - 1) {
+            extension = originalFileName.substring(dotIndex);
+        }
+        
+        // Generate unique filename with UUID
+        String uniqueID = UUID.randomUUID().toString();
+        return "lost_" + uniqueID + extension;
     }
 }

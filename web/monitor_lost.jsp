@@ -72,6 +72,43 @@
                 border-radius: 0.5rem;
                 margin-bottom: 1rem;
             }
+            
+            /* File upload styles */
+            .file-upload {
+                border: 2px dashed #E5E5E5;
+                border-radius: 0.5rem;
+                padding: 1.5rem;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+            
+            .file-upload:hover {
+                border-color: #2F5D50;
+                background-color: #F6F3E7;
+            }
+            
+            .file-upload.dragover {
+                border-color: #2F5D50;
+                background-color: #E8F5E8;
+            }
+            
+            .preview-image {
+                max-width: 200px;
+                max-height: 200px;
+                object-fit: cover;
+                border-radius: 0.5rem;
+                border: 2px solid #E5E5E5;
+            }
+            
+            /* Delete confirmation modal */
+            .delete-confirmation {
+                background-color: #FEF2F2;
+                border: 1px solid #FECACA;
+                color: #7F1D1D;
+                padding: 1rem;
+                border-radius: 0.5rem;
+            }
         </style>
     </head>
     <body class="flex flex-col min-h-screen relative bg-[#F6F3E7] text-main">
@@ -115,7 +152,7 @@
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Last Seen Location</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Last Seen Date</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Status</th>
-                                <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 18%;">Actions</th>
+                                <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 20%;">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="lost-animal-list" class="bg-white divide-y" style="border-color: #E5E5E5;">
@@ -149,14 +186,41 @@
                     </button>
                 </div>
                 <div class="max-h-[70vh] overflow-y-auto pr-2">
-                    <form id="reportForm" class="space-y-4">
+                    <form id="reportForm" class="space-y-4" enctype="multipart/form-data">
+                        <!-- Hidden input for report ID in edit mode -->
+                        <input type="hidden" id="lostId" name="lostId" value="">
+                        
+                        <!-- Pet Photo Upload -->
+                        <div>
+                            <label class="block text-sm font-medium" style="color: #2B2B2B;">Pet Photo:</label>
+                            <div id="fileUploadArea" class="file-upload mt-1" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+                                <input type="file" id="petPhoto" name="pet_photo" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+                                <div id="uploadContent">
+                                    <i class="fas fa-cloud-upload-alt text-4xl mb-2" style="color: #2F5D50;"></i>
+                                    <p class="text-sm" style="color: #2B2B2B;">Drag & drop a photo here or click to browse</p>
+                                    <p class="text-xs text-gray-500 mt-1">Recommended: JPG, PNG up to 5MB</p>
+                                </div>
+                                <div id="previewContainer" class="hidden mt-4">
+                                    <img id="imagePreview" class="preview-image mx-auto">
+                                    <div class="mt-2">
+                                        <button type="button" onclick="removeImage()" class="text-sm text-red-600 hover:text-red-800">
+                                            <i class="fas fa-trash mr-1"></i> Remove Image
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <p id="currentImageInfo" class="text-xs text-gray-500 mt-1 hidden">
+                                <i class="fas fa-info-circle"></i> Current image will be replaced if you upload a new one.
+                            </p>
+                        </div>
+                        
                         <div>
                             <label for="petName" class="block text-sm font-medium" style="color: #2B2B2B;">Pet Name: <span class="text-red-500">*</span></label>
-                            <input type="text" id="petName" required class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="Enter pet's name">
+                            <input type="text" id="petName" name="pet_name" required class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="Enter pet's name">
                         </div>
                         <div>
                             <label for="species" class="block text-sm font-medium" style="color: #2B2B2B;">Species: <span class="text-red-500">*</span></label>
-                            <select id="species" required class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;">
+                            <select id="species" name="species" required class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;">
                                 <option value="">Select species</option>
                                 <option value="dog">Dog</option>
                                 <option value="cat">Cat</option>
@@ -167,20 +231,20 @@
                         </div>
                         <div>
                             <label for="lastSeenLocation" class="block text-sm font-medium" style="color: #2B2B2B;">Last Seen Location: <span class="text-red-500">*</span></label>
-                            <input type="text" id="lastSeenLocation" required class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="E.g., Near Taman Jaya Park, Petaling Jaya">
+                            <input type="text" id="lastSeenLocation" name="last_seen_location" required class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="E.g., Near Taman Jaya Park, Petaling Jaya">
                         </div>
                         <div>
                             <label for="lastSeenDate" class="block text-sm font-medium" style="color: #2B2B2B;">Last Seen Date: <span class="text-red-500">*</span></label>
-                            <input type="date" id="lastSeenDate" required class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;">
+                            <input type="date" id="lastSeenDate" name="last_seen_date" required class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;">
                         </div>
                         <div>
                             <label for="description" class="block text-sm font-medium" style="color: #2B2B2B;">Description:</label>
-                            <textarea id="description" rows="4" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="Describe your pet - color, size, unique markings, temperament, etc."></textarea>
+                            <textarea id="description" name="description" rows="4" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="Describe your pet - color, size, unique markings, temperament, etc."></textarea>
                             <p class="text-xs text-gray-500 mt-1">Provide as much detail as possible to help others identify your pet.</p>
                         </div>
                         <div>
                             <label for="contactInfo" class="block text-sm font-medium" style="color: #2B2B2B;">Your Contact Information: <span class="text-red-500">*</span></label>
-                            <textarea id="contactInfo" rows="3" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="Phone number, email, or other contact details..." required></textarea>
+                            <textarea id="contactInfo" name="contact_info" rows="3" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="Phone number, email, or other contact details..." required></textarea>
                             <p class="text-xs text-gray-500 mt-1">This information will be visible to users who may have found your pet.</p>
                         </div>
                     </form>
@@ -226,6 +290,35 @@
             </div>
         </div>
 
+        <!-- Delete Confirmation Modal -->
+        <div id="deleteModal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+            <div class="bg-white rounded-2xl p-8 w-full max-w-md mx-4 shadow-2xl transform transition-transform duration-300 scale-95" role="dialog" aria-modal="true" style="color: #2B2B2B;">
+                <div class="flex justify-between items-center border-b pb-3 mb-4" style="border-color: #E5E5E5;">
+                    <h3 class="text-2xl font-bold" style="color: #B84A4A;">Delete Report</h3>
+                    <button onclick="closeModal('deleteModal')" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                <div class="delete-confirmation mb-6">
+                    <p class="text-lg" style="color: #7F1D1D;">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        Are you sure you want to delete this lost pet report?
+                    </p>
+                    <p class="mt-2 text-sm" style="color: #2B2B2B;">
+                        This action cannot be undone. All data including the pet photo will be permanently deleted.
+                    </p>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button onclick="closeModal('deleteModal')" class="px-5 py-2 rounded-xl border text-[#2B2B2B] hover:bg-gray-100 transition duration-150 font-medium" style="border-color: #E5E5E5;">
+                        Cancel
+                    </button>
+                    <button id="confirmDeleteBtn" class="px-5 py-2 rounded-xl text-white font-semibold hover:bg-red-800 transition duration-200 shadow-md" style="background-color: #B84A4A;">
+                        Yes, Delete Report
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- View Details Modal (Read-only for Found pets) -->
         <div id="viewModal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
             <div class="bg-white rounded-2xl p-8 w-full max-w-2xl mx-4 shadow-2xl transform transition-transform duration-300 scale-95" role="dialog" aria-modal="true" style="color: #2B2B2B;">
@@ -240,6 +333,12 @@
                         <div class="p-3 rounded-lg border" style="background-color: #A8E6CF; border-color: #6DBF89;">
                             <p class="text-sm font-semibold" style="color: #2B2B2B;">✅ This pet has been found!</p>
                         </div>
+                        
+                        <!-- Photo preview -->
+                        <div class="text-center">
+                            <img id="viewPhoto" class="preview-image mx-auto" style="max-width: 300px; max-height: 300px;">
+                        </div>
+                        
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-600">Pet Name:</label>
@@ -295,6 +394,7 @@
             var currentStatusFilter = 'all';
             var currentReportId = null;
             var isEditMode = false;
+            var selectedFile = null;
 
             // =======================================================
             // DOM Elements
@@ -314,10 +414,77 @@
                 // Set today's date as max for date input
                 var today = new Date().toISOString().split('T')[0];
                 document.getElementById('lastSeenDate').max = today;
+                
+                // Initialize file upload area click handler
+                document.getElementById('fileUploadArea').addEventListener('click', function() {
+                    document.getElementById('petPhoto').click();
+                });
             };
 
             // =======================================================
-            // API Functions (Simplified tanpa loading)
+            // File Upload Functions
+            // =======================================================
+            function handleDragOver(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                document.getElementById('fileUploadArea').classList.add('dragover');
+            }
+
+            function handleDragLeave(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                document.getElementById('fileUploadArea').classList.remove('dragover');
+            }
+
+            function handleDrop(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                document.getElementById('fileUploadArea').classList.remove('dragover');
+                
+                var files = event.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileSelect({ target: { files: files } });
+                }
+            }
+
+            function handleFileSelect(event) {
+                var file = event.target.files[0];
+                if (file) {
+                    // Validate file type
+                    if (!file.type.match('image.*')) {
+                        showError('Please select an image file (JPG, PNG, GIF, etc.)');
+                        return;
+                    }
+                    
+                    // Validate file size (5MB limit)
+                    if (file.size > 5 * 1024 * 1024) {
+                        showError('File size should be less than 5MB');
+                        return;
+                    }
+                    
+                    selectedFile = file;
+                    
+                    // Show preview
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('imagePreview').src = e.target.result;
+                        document.getElementById('uploadContent').classList.add('hidden');
+                        document.getElementById('previewContainer').classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+
+            function removeImage() {
+                selectedFile = null;
+                document.getElementById('petPhoto').value = '';
+                document.getElementById('uploadContent').classList.remove('hidden');
+                document.getElementById('previewContainer').classList.add('hidden');
+                document.getElementById('currentImageInfo').classList.add('hidden');
+            }
+
+            // =======================================================
+            // API Functions
             // =======================================================
             function showError(msg) {
                 errorMessage.textContent = msg;
@@ -419,9 +586,14 @@
                     formData.append('last_seen_date', reportData.lastSeenDate);
                     formData.append('description', reportData.description);
                     
+                    // Only append file if selected
+                    if (selectedFile) {
+                        formData.append('pet_photo', selectedFile);
+                    }
+                    
                     var response = await fetch('ManageLostAnimalServlet', {
                         method: 'POST',
-                        body: new URLSearchParams(formData)
+                        body: formData
                     });
                     
                     var data = await response.json();
@@ -453,6 +625,11 @@
                     formData.append('description', reportData.description);
                     formData.append('contact_info', reportData.contactInfo);
                     
+                    // Append file if selected
+                    if (selectedFile) {
+                        formData.append('pet_photo', selectedFile);
+                    }
+                    
                     var response = await fetch('ManageLostAnimalServlet', {
                         method: 'POST',
                         body: formData
@@ -475,6 +652,35 @@
                 }
             }
 
+            // Delete lost report
+            async function deleteLostReport(reportId) {
+                try {
+                    var formData = new FormData();
+                    formData.append('lostId', reportId);
+                    formData.append('action', 'delete');
+                    
+                    var response = await fetch('ManageLostAnimalServlet', {
+                        method: 'POST',
+                        body: new URLSearchParams(formData)
+                    });
+                    
+                    var data = await response.json();
+                    
+                    if (data.success) {
+                        showSuccess(data.message);
+                        await loadLostReports();
+                        return true;
+                    } else {
+                        showError(data.message);
+                        return false;
+                    }
+                } catch (error) {
+                    console.error('Error deleting report:', error);
+                    showError('Network error. Please check your connection.');
+                    return false;
+                }
+            }
+
             // =======================================================
             // Modal Functions
             // =======================================================
@@ -487,12 +693,16 @@
                         // Edit mode
                         isEditMode = true;
                         document.getElementById('modalTitle').textContent = 'Edit Lost Pet Report';
+                        document.getElementById('lostId').value = reportId;
                         loadReportForEdit(reportId);
                     } else {
                         // Create mode
                         isEditMode = false;
                         document.getElementById('modalTitle').textContent = 'Report Lost Pet';
+                        document.getElementById('lostId').value = '';
                         document.getElementById('reportForm').reset();
+                        removeImage();
+                        document.getElementById('currentImageInfo').classList.add('hidden');
                     }
                 } else if (modalId === 'foundModal' && reportId) {
                     var report = null;
@@ -507,6 +717,20 @@
                         document.getElementById('foundPetName').textContent = report.pet_name;
                         document.getElementById('confirmFoundBtn').onclick = function () {
                             confirmMarkAsFound(reportId);
+                        };
+                    }
+                } else if (modalId === 'deleteModal' && reportId) {
+                    var report = null;
+                    for (var i = 0; i < allLostReports.length; i++) {
+                        if (allLostReports[i].lost_id === reportId) {
+                            report = allLostReports[i];
+                            break;
+                        }
+                    }
+
+                    if (report) {
+                        document.getElementById('confirmDeleteBtn').onclick = function () {
+                            confirmDeleteReport(reportId);
                         };
                     }
                 }
@@ -526,6 +750,8 @@
                     modal.classList.add('hidden');
                     if (modalId === 'createModal') {
                         document.getElementById('reportForm').reset();
+                        removeImage();
+                        document.getElementById('currentImageInfo').classList.add('hidden');
                     } else if (modalId === 'foundModal') {
                         document.getElementById('foundNotes').value = '';
                     }
@@ -541,10 +767,26 @@
                         document.getElementById('lastSeenLocation').value = report.last_seen_location;
                         document.getElementById('lastSeenDate').value = report.last_seen_date;
                         document.getElementById('description').value = report.description;
+                        
                         // Extract contact info from description if available
-                        var contactMatch = report.description.match(/Contact Information:\s*(.+)/);
+                        var description = report.description || '';
+                        var contactMatch = description.match(/Contact Information:\s*(.+)/);
                         if (contactMatch) {
-                            document.getElementById('contactInfo').value = contactMatch[1];
+                            document.getElementById('contactInfo').value = contactMatch[1].trim();
+                        }
+                        
+                        // Show current image info
+                        if (report.photo_path) {
+                            document.getElementById('currentImageInfo').classList.remove('hidden');
+                            
+                            // Show current image preview
+                            var currentImageUrl = report.photo_path;
+                            if (!currentImageUrl.startsWith('http') && !currentImageUrl.startsWith('/')) {
+                                currentImageUrl = currentImageUrl;
+                            }
+                            document.getElementById('imagePreview').src = currentImageUrl;
+                            document.getElementById('uploadContent').classList.add('hidden');
+                            document.getElementById('previewContainer').classList.remove('hidden');
                         }
                     }
                 } catch (error) {
@@ -622,6 +864,18 @@
                 }
             }
 
+            async function confirmDeleteReport(reportId) {
+                try {
+                    var success = await deleteLostReport(reportId);
+                    if (success) {
+                        closeModal('deleteModal');
+                    }
+                } catch (error) {
+                    console.error('Error deleting report:', error);
+                    showError('Failed to delete report');
+                }
+            }
+
             // =======================================================
             // Rendering Functions
             // =======================================================
@@ -667,6 +921,7 @@
                             actionButtons = '<div class="flex flex-col items-center space-y-2">' +
                                     '<button onclick="openModal(\'createModal\', ' + item.lost_id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View/Edit</button>' +
                                     '<button onclick="openModal(\'foundModal\', ' + item.lost_id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-green-700" style="background-color: #57A677;">Mark as Found</button>' +
+                                    '<button onclick="openModal(\'deleteModal\', ' + item.lost_id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-red-800" style="background-color: #B84A4A;">Delete</button>' +
                                     '</div>';
                         } else {
                             actionButtons = '<button onclick="showViewDetails(' + item.lost_id + ')" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View Details</button>';
@@ -677,7 +932,7 @@
                                 '<td class="px-6 py-4 whitespace-nowrap">' +
                                 '<div class="flex items-center">' +
                                 '<div class="flex-shrink-0 h-10 w-10">' +
-                                '<img class="h-10 w-10 rounded-full object-cover" src="' + (item.photo_path || 'animal_picture/default_lost_pet.jpg') + '" alt="' + item.pet_name + '" onerror="this.src=\'https://via.placeholder.com/40x40?text=Pet\'">' +
+                                '<img class="h-10 w-10 rounded-full object-cover" src="' + (item.photo_path || 'lost_picture/default_lost_pet.jpg') + '" alt="' + item.pet_name + '" onerror="this.src=\'lost_picture/default_lost_pet.jpg\'">' +
                                 '</div>' +
                                 '<div class="ml-4">' +
                                 '<div class="text-sm font-medium" style="color: #2B2B2B;">' + item.pet_name + '</div>' +
@@ -714,6 +969,10 @@
                         document.getElementById('viewDate').textContent = formatDate(report.last_seen_date);
                         document.getElementById('viewDescription').textContent = report.description || 'No description provided.';
                         document.getElementById('viewCreatedAt').textContent = formatDate(report.created_at);
+                        
+                        // Set photo
+                        var photoUrl = report.photo_path || 'lost_picture/default_lost_pet.jpg';
+                        document.getElementById('viewPhoto').src = photoUrl;
                         
                         openModal('viewModal');
                     }

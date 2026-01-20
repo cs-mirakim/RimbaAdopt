@@ -1,24 +1,51 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" isELIgnored="true"%>
 <%@ page import="com.rimba.adopt.util.SessionUtil" %>
+<%@ page import="com.rimba.adopt.dao.PetsDAO" %>
+<%@ page import="com.rimba.adopt.model.Pets" %>
+<%@ page import="java.util.List" %>
 
 <%
-// Check if user is logged in and is admin
-    if (!SessionUtil.isLoggedIn(session)) {
-        response.sendRedirect("index.jsp");
-        return;
-    }
+// Check if user is logged in and is adopter
+if (!SessionUtil.isLoggedIn(session)) {
+    response.sendRedirect("index.jsp");
+    return;
+}
 
-    if (!SessionUtil.isAdopter(session)) {
-        response.sendRedirect("index.jsp");
-        return;
-    }
+if (!SessionUtil.isAdopter(session)) {
+    response.sendRedirect("index.jsp");
+    return;
+}
+
+// Get filter parameters
+String speciesFilter = request.getParameter("species");
+String breedFilter = request.getParameter("breed");
+String ageFilter = request.getParameter("age");
+String sizeFilter = request.getParameter("size");
+String genderFilter = request.getParameter("gender");
+String locationFilter = request.getParameter("location");
+String searchTerm = request.getParameter("search");
+
+// Get all available pets from database
+PetsDAO petsDAO = new PetsDAO();
+List<Pets> pets = petsDAO.getAllAvailablePets();
+
+// Apply filters if any
+if ((speciesFilter != null && !speciesFilter.trim().isEmpty()) ||
+    (breedFilter != null && !breedFilter.trim().isEmpty()) ||
+    (ageFilter != null && !ageFilter.trim().isEmpty()) ||
+    (sizeFilter != null && !sizeFilter.trim().isEmpty()) ||
+    (genderFilter != null && !genderFilter.trim().isEmpty()) ||
+    (locationFilter != null && !locationFilter.trim().isEmpty()) ||
+    (searchTerm != null && !searchTerm.trim().isEmpty())) {
+    // We'll use JavaScript filtering for better UX
+}
 %>
 <!DOCTYPE html>
 <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Pet List</title>
+        <title>Pet List - Rimba Adopt</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <style>
@@ -62,6 +89,13 @@
                 background-color: #C49A6C;
                 color: white;
             }
+            
+            .line-clamp-2 {
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
         </style>
     </head>
     <body class="flex flex-col min-h-screen relative bg-[#F6F3E7]">
@@ -82,87 +116,78 @@
                 <!-- Filter Section -->
                 <div class="mb-8 p-6 bg-[#F9F9F9] rounded-lg border border-[#E5E5E5]">
                     <h2 class="text-xl font-semibold text-[#2F5D50] mb-4">Filter Pets</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <form id="filterForm" method="get" action="pet_list.jsp" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <!-- Species Filter -->
                         <div>
                             <label class="block text-[#2B2B2B] mb-2 font-medium">Species</label>
-                            <select id="speciesFilter" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]">
+                            <select id="speciesFilter" name="species" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]">
                                 <option value="">All Species</option>
-                                <option value="dog">Dog</option>
-                                <option value="cat">Cat</option>
-                                <option value="rabbit">Rabbit</option>
-                                <option value="bird">Bird</option>
-                                <option value="other">Other</option>
+                                <option value="dog" <%= "dog".equals(speciesFilter) ? "selected" : "" %>>Dog</option>
+                                <option value="cat" <%= "cat".equals(speciesFilter) ? "selected" : "" %>>Cat</option>
+                                <option value="rabbit" <%= "rabbit".equals(speciesFilter) ? "selected" : "" %>>Rabbit</option>
+                                <option value="bird" <%= "bird".equals(speciesFilter) ? "selected" : "" %>>Bird</option>
+                                <option value="other" <%= "other".equals(speciesFilter) ? "selected" : "" %>>Other</option>
                             </select>
                         </div>
 
                         <!-- Breed Filter -->
                         <div>
                             <label class="block text-[#2B2B2B] mb-2 font-medium">Breed</label>
-                            <select id="breedFilter" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]">
+                            <select id="breedFilter" name="breed" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]">
                                 <option value="">All Breeds</option>
-                                <option value="golden_retriever">Golden Retriever</option>
-                                <option value="persian">Persian Cat</option>
-                                <option value="siamese">Siamese</option>
-                                <option value="beagle">Beagle</option>
-                                <option value="mixed">Mixed Breed</option>
+                                <!-- Breed options will be populated dynamically -->
                             </select>
                         </div>
 
                         <!-- Age Filter -->
                         <div>
                             <label class="block text-[#2B2B2B] mb-2 font-medium">Age</label>
-                            <select id="ageFilter" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]">
+                            <select id="ageFilter" name="age" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]">
                                 <option value="">All Ages</option>
-                                <option value="baby">Baby (0-1 years)</option>
-                                <option value="young">Young (1-3 years)</option>
-                                <option value="adult">Adult (3-8 years)</option>
-                                <option value="senior">Senior (8+ years)</option>
+                                <option value="baby" <%= "baby".equals(ageFilter) ? "selected" : "" %>>Baby (0-1 years)</option>
+                                <option value="young" <%= "young".equals(ageFilter) ? "selected" : "" %>>Young (1-3 years)</option>
+                                <option value="adult" <%= "adult".equals(ageFilter) ? "selected" : "" %>>Adult (3-8 years)</option>
+                                <option value="senior" <%= "senior".equals(ageFilter) ? "selected" : "" %>>Senior (8+ years)</option>
                             </select>
                         </div>
 
                         <!-- Size Filter -->
                         <div>
                             <label class="block text-[#2B2B2B] mb-2 font-medium">Size</label>
-                            <select id="sizeFilter" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]">
+                            <select id="sizeFilter" name="size" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]">
                                 <option value="">All Sizes</option>
-                                <option value="small">Small</option>
-                                <option value="medium">Medium</option>
-                                <option value="large">Large</option>
+                                <option value="small" <%= "small".equals(sizeFilter) ? "selected" : "" %>>Small</option>
+                                <option value="medium" <%= "medium".equals(sizeFilter) ? "selected" : "" %>>Medium</option>
+                                <option value="large" <%= "large".equals(sizeFilter) ? "selected" : "" %>>Large</option>
                             </select>
                         </div>
 
                         <!-- Gender Filter -->
                         <div>
                             <label class="block text-[#2B2B2B] mb-2 font-medium">Gender</label>
-                            <select id="genderFilter" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]">
+                            <select id="genderFilter" name="gender" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]">
                                 <option value="">All Genders</option>
-                                <option value="male">Male</option>
-                                <option value="female">Female</option>
+                                <option value="male" <%= "male".equals(genderFilter) ? "selected" : "" %>>Male</option>
+                                <option value="female" <%= "female".equals(genderFilter) ? "selected" : "" %>>Female</option>
                             </select>
                         </div>
 
-                        <!-- Location Filter -->
+                        <!-- Search Filter -->
                         <div>
-                            <label class="block text-[#2B2B2B] mb-2 font-medium">Location</label>
-                            <select id="locationFilter" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]">
-                                <option value="">All Locations</option>
-                                <option value="kuala_lumpur">Kuala Lumpur</option>
-                                <option value="selangor">Selangor</option>
-                                <option value="johor">Johor</option>
-                                <option value="penang">Penang</option>
-                                <option value="sabah">Sabah</option>
-                                <option value="sarawak">Sarawak</option>
-                            </select>
+                            <label class="block text-[#2B2B2B] mb-2 font-medium">Search</label>
+                            <input type="text" id="searchFilter" name="search" 
+                                   value="<%= searchTerm != null ? escapeHtml(searchTerm) : "" %>"
+                                   class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]" 
+                                   placeholder="Search by pet name...">
                         </div>
-                    </div>
+                    </form>
 
                     <!-- Filter Buttons -->
                     <div class="flex justify-end gap-3 mt-6">
-                        <button id="applyFilter" class="px-6 py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">
+                        <button type="submit" form="filterForm" id="applyFilter" class="px-6 py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">
                             <i class="fas fa-filter mr-2"></i>Apply Filters
                         </button>
-                        <button id="resetFilter" class="px-6 py-3 bg-[#E5E5E5] text-[#2B2B2B] font-medium rounded-lg hover:bg-[#D5D5D5] transition duration-300">
+                        <button type="button" id="resetFilter" class="px-6 py-3 bg-[#E5E5E5] text-[#2B2B2B] font-medium rounded-lg hover:bg-[#D5D5D5] transition duration-300">
                             <i class="fas fa-redo mr-2"></i>Reset
                         </button>
                     </div>
@@ -171,34 +196,95 @@
                 <!-- Results Count -->
                 <div class="flex justify-between items-center mb-6">
                     <p class="text-[#2B2B2B]">
-                        Showing <span id="resultCount" class="font-semibold">8</span> pets
+                        Showing <span id="resultCount" class="font-semibold"><%= pets.size() %></span> pets
                     </p>
                     <div class="text-[#2B2B2B]">
-                        Page <span id="currentPage" class="font-semibold">1</span> of <span id="totalPages" class="font-semibold">3</span>
+                        Page <span id="currentPage" class="font-semibold">1</span> of <span id="totalPages" class="font-semibold">1</span>
                     </div>
                 </div>
 
                 <!-- Pets Grid (4x2 layout) -->
                 <div id="petsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <!-- Pet cards will be dynamically generated here -->
-                </div>
-
-                <!-- Pagination -->
-                <div class="flex justify-center items-center mt-8">
-                    <nav class="flex items-center space-x-2">
-                        <button id="prevPage" class="p-3 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7] disabled:opacity-50 disabled:cursor-not-allowed">
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
-
-                        <div id="pageNumbers" class="flex space-x-2">
-                            <!-- Page numbers will be generated here -->
+                    <% 
+                    int count = 0;
+                    for (Pets pet : pets) { 
+                        String ageCategory = getAgeCategory(pet.getAge());
+                    %>
+                    <div class="pet-card bg-white rounded-xl border border-[#E5E5E5] overflow-hidden card-hover">
+                        <div class="relative">
+                            <img src="<%= pet.getPhotoPath() != null ? pet.getPhotoPath() : "animal_picture/default.png" %>" 
+                                 alt="<%= escapeHtml(pet.getName()) %>" 
+                                 class="w-full h-48 object-cover">
+                            <div class="absolute top-3 right-3">
+                                <span class="px-3 py-1 rounded-full text-sm font-medium <%= "male".equals(pet.getGender()) ? "gender-male" : "gender-female" %>">
+                                    <i class="fas <%= "male".equals(pet.getGender()) ? "fa-mars" : "fa-venus" %> mr-1"></i> 
+                                    <%= "male".equals(pet.getGender()) ? "Male" : "Female" %>
+                                </span>
+                            </div>
+                            <div class="absolute top-3 left-3 bg-[#6DBF89] text-[#06321F] px-3 py-1 rounded-full text-sm font-medium">
+                                Available
+                            </div>
                         </div>
-
-                        <button id="nextPage" class="p-3 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]">
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </nav>
+                        <div class="p-5">
+                            <h3 class="text-xl font-bold text-[#2B2B2B] mb-2"><%= escapeHtml(pet.getName()) %></h3>
+                            <div class="flex items-center mb-3">
+                                <div class="bg-[#F0F7F4] p-2 rounded-lg mr-3">
+                                    <i class="fas <%= getSpeciesIcon(pet.getSpecies()) %> text-[#2F5D50]"></i>
+                                </div>
+                                <div>
+                                    <p class="text-[#2B2B2B] font-medium"><%= capitalizeFirstLetter(pet.getSpecies()) %></p>
+                                    <p class="text-[#666] text-sm"><%= pet.getBreed() != null ? escapeHtml(pet.getBreed()) : "Mixed Breed" %></p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3 mb-4">
+                                <div>
+                                    <p class="text-xs text-[#888]">Age</p>
+                                    <p class="font-medium"><%= pet.getAge() != null ? pet.getAge() + " years" : "Unknown" %></p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-[#888]">Size</p>
+                                    <p class="font-medium"><%= pet.getSize() != null ? capitalizeFirstLetter(pet.getSize()) : "Not specified" %></p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-[#888]">Color</p>
+                                    <p class="font-medium"><%= pet.getColor() != null ? escapeHtml(pet.getColor()) : "Not specified" %></p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-[#888]">Shelter</p>
+                                    <p class="font-medium"><%= pet.getShelterId() %></p>
+                                </div>
+                            </div>
+                            <p class="text-[#666] text-sm mb-4 line-clamp-2">
+                                <%= pet.getDescription() != null && !pet.getDescription().isEmpty() ? 
+                                    escapeHtml(pet.getDescription().length() > 100 ? 
+                                    pet.getDescription().substring(0, 100) + "..." : pet.getDescription()) : 
+                                    "A lovely pet looking for a forever home." %>
+                            </p>
+                            <a href="pet_info.jsp?id=<%= pet.getPetId() %>" 
+                               class="block w-full text-center py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+                    <% 
+                        count++;
+                    } %>
+                    
+                    <% if (pets.isEmpty()) { %>
+                    <div class="col-span-1 md:col-span-2 lg:grid-cols-4 text-center py-12">
+                        <i class="fas fa-paw text-5xl text-[#E5E5E5] mb-4"></i>
+                        <h3 class="text-xl font-semibold text-[#2B2B2B] mb-2">No pets available at the moment</h3>
+                        <p class="text-[#666]">Check back later for new arrivals.</p>
+                    </div>
+                    <% } %>
                 </div>
+
+                <!-- Simple Pagination Note -->
+                <% if (pets.size() > 0) { %>
+                <div class="text-center text-[#888] mt-4">
+                    <p>Showing <%= pets.size() %> pets available for adoption</p>
+                </div>
+                <% } %>
 
             </div>
         </main>
@@ -213,694 +299,217 @@
         <script src="includes/sidebar.js"></script>
 
         <script>
-            // Dummy pet data
-            const pets = [
-                {
-                    id: 1,
-                    name: "Buddy",
-                    species: "dog",
-                    breed: "Golden Retriever",
-                    age: 3,
-                    ageCategory: "young",
-                    gender: "male",
-                    size: "large",
-                    color: "Golden",
-                    description: "Friendly and energetic golden retriever. Loves playing fetch and going for walks.",
-                    health_status: "Vaccinated, Dewormed",
-                    location: "Kuala Lumpur",
-                    shelter: "Happy Paws Shelter",
-                    image: "animal_picture/animal1.png",
-                    status: "available"
-                },
-                {
-                    id: 2,
-                    name: "Luna",
-                    species: "cat",
-                    breed: "Persian Cat",
-                    age: 2,
-                    ageCategory: "young",
-                    gender: "female",
-                    size: "small",
-                    color: "White",
-                    description: "Calm and affectionate cat. Enjoys lounging in sunny spots.",
-                    health_status: "Vaccinated, Spayed",
-                    location: "Selangor",
-                    shelter: "Furry Friends Haven",
-                    image: "animal_picture/animal2.jpg",
-                    status: "available"
-                },
-                {
-                    id: 3,
-                    name: "Max",
-                    species: "dog",
-                    breed: "Beagle Mix",
-                    age: 4,
-                    ageCategory: "adult",
-                    gender: "male",
-                    size: "medium",
-                    color: "Tri-color",
-                    description: "Curious and friendly beagle mix. Great with children and other dogs.",
-                    health_status: "Vaccinated, Dewormed",
-                    location: "Johor",
-                    shelter: "Second Chance Sanctuary",
-                    image: "animal_picture/animal3.jpg",
-                    status: "available"
-                },
-                {
-                    id: 4,
-                    name: "Whiskers",
-                    species: "rabbit",
-                    breed: "Holland Lop",
-                    age: 1,
-                    ageCategory: "baby",
-                    gender: "female",
-                    size: "small",
-                    color: "White",
-                    description: "Gentle and playful bunny. Loves fresh vegetables and hopping around.",
-                    health_status: "Healthy",
-                    location: "Penang",
-                    shelter: "Whisker Woods Shelter",
-                    image: "animal_picture/animal1.png",
-                    status: "available"
-                },
-                {
-                    id: 5,
-                    name: "Rocky",
-                    species: "dog",
-                    breed: "Siberian Husky",
-                    age: 2,
-                    ageCategory: "young",
-                    gender: "male",
-                    size: "large",
-                    color: "Gray & White",
-                    description: "Energetic husky with striking blue eyes. Needs an active family.",
-                    health_status: "Vaccinated",
-                    location: "Selangor",
-                    shelter: "Barkville Rescue Center",
-                    image: "animal_picture/animal2.jpg",
-                    status: "available"
-                },
-                {
-                    id: 6,
-                    name: "Coco",
-                    species: "dog",
-                    breed: "Poodle",
-                    age: 5,
-                    ageCategory: "adult",
-                    gender: "female",
-                    size: "medium",
-                    color: "Brown",
-                    description: "Intelligent and gentle poodle. Great companion for seniors.",
-                    health_status: "Vaccinated, Groomed",
-                    location: "Kuala Lumpur",
-                    shelter: "Paws & Claws Shelter",
-                    image: "animal_picture/animal3.jpg",
-                    status: "available"
-                },
-                {
-                    id: 7,
-                    name: "Simba",
-                    species: "cat",
-                    breed: "Domestic Shorthair",
-                    age: 3,
-                    ageCategory: "adult",
-                    gender: "male",
-                    size: "medium",
-                    color: "Orange Tabby",
-                    description: "Playful and independent cat. Enjoys exploring and napping.",
-                    health_status: "Vaccinated, Neutered",
-                    location: "Sabah",
-                    shelter: "Sunshine Animal Refuge",
-                    image: "animal_picture/animal1.png",
-                    status: "available"
-                },
-                {
-                    id: 8,
-                    name: "Bella",
-                    species: "dog",
-                    breed: "German Shepherd",
-                    age: 6,
-                    ageCategory: "adult",
-                    gender: "female",
-                    size: "large",
-                    color: "Black & Tan",
-                    description: "Loyal and protective shepherd. Great guard dog and family pet.",
-                    health_status: "Vaccinated, Trained",
-                    location: "Sarawak",
-                    shelter: "Rainbow Rescue Home",
-                    image: "animal_picture/animal2.jpg",
-                    status: "available"
-                },
-                {
-                    id: 9,
-                    name: "Milo",
-                    species: "cat",
-                    breed: "Siamese",
-                    age: 1,
-                    ageCategory: "baby",
-                    gender: "male",
-                    size: "small",
-                    color: "Cream Point",
-                    description: "Vocal and affectionate Siamese. Loves attention and playtime.",
-                    health_status: "Vaccinated",
-                    location: "Perak",
-                    shelter: "Gentle Giants Sanctuary",
-                    image: "animal_picture/animal3.jpg",
-                    status: "available"
-                },
-                {
-                    id: 10,
-                    name: "Charlie",
-                    species: "dog",
-                    breed: "Labrador Retriever",
-                    age: 7,
-                    ageCategory: "senior",
-                    gender: "male",
-                    size: "large",
-                    color: "Yellow",
-                    description: "Gentle senior lab. Perfect for a calm household.",
-                    health_status: "Vaccinated, Special Diet",
-                    location: "Kuala Lumpur",
-                    shelter: "Urban Animal Allies",
-                    image: "animal_picture/animal1.png",
-                    status: "available"
-                },
-                {
-                    id: 11,
-                    name: "Daisy",
-                    species: "rabbit",
-                    breed: "Mini Rex",
-                    age: 2,
-                    ageCategory: "young",
-                    gender: "female",
-                    size: "small",
-                    color: "Brown",
-                    description: "Soft and cuddly mini rex rabbit. Very gentle with children.",
-                    health_status: "Healthy",
-                    location: "Johor",
-                    shelter: "Coastal Critter Care",
-                    image: "animal_picture/animal2.jpg",
-                    status: "available"
-                },
-                {
-                    id: 12,
-                    name: "Oreo",
-                    species: "cat",
-                    breed: "Tuxedo",
-                    age: 4,
-                    ageCategory: "adult",
-                    gender: "male",
-                    size: "medium",
-                    color: "Black & White",
-                    description: "Classic tuxedo cat with charming personality.",
-                    health_status: "Vaccinated, Neutered",
-                    location: "Sabah",
-                    shelter: "Mountainview Animal Shelter",
-                    image: "animal_picture/animal3.jpg",
-                    status: "available"
-                },
-                {
-                    id: 13,
-                    name: "Zoe",
-                    species: "dog",
-                    breed: "Mixed Breed",
-                    age: 2,
-                    ageCategory: "young",
-                    gender: "female",
-                    size: "medium",
-                    color: "Brindle",
-                    description: "Sweet mixed breed looking for a loving home.",
-                    health_status: "Vaccinated, Dewormed",
-                    location: "Selangor",
-                    shelter: "Heartwarming Homes",
-                    image: "animal_picture/animal1.png",
-                    status: "available"
-                },
-                {
-                    id: 14,
-                    name: "Mochi",
-                    species: "cat",
-                    breed: "Scottish Fold",
-                    age: 1,
-                    ageCategory: "baby",
-                    gender: "female",
-                    size: "small",
-                    color: "Gray",
-                    description: "Adorable Scottish fold with folded ears.",
-                    health_status: "Vaccinated",
-                    location: "Penang",
-                    shelter: "Precious Paws Project",
-                    image: "animal_picture/animal2.jpg",
-                    status: "available"
-                },
-                {
-                    id: 15,
-                    name: "Bruno",
-                    species: "dog",
-                    breed: "Rottweiler",
-                    age: 8,
-                    ageCategory: "senior",
-                    gender: "male",
-                    size: "large",
-                    color: "Black & Brown",
-                    description: "Gentle giant rottweiler. Very loyal and loving.",
-                    health_status: "Vaccinated, Arthritis Care",
-                    location: "Kuala Lumpur",
-                    shelter: "Loyal Companions Shelter",
-                    image: "animal_picture/animal3.jpg",
-                    status: "available"
-                },
-                {
-                    id: 16,
-                    name: "Lily",
-                    species: "bird",
-                    breed: "Cockatiel",
-                    age: 3,
-                    ageCategory: "adult",
-                    gender: "female",
-                    size: "small",
-                    color: "Gray & Yellow",
-                    description: "Friendly cockatiel that loves to whistle and sing.",
-                    health_status: "Healthy",
-                    location: "Sarawak",
-                    shelter: "Island Animal Oasis",
-                    image: "animal_picture/animal1.png",
-                    status: "available"
-                },
-                {
-                    id: 17,
-                    name: "Toby",
-                    species: "dog",
-                    breed: "Cocker Spaniel",
-                    age: 4,
-                    ageCategory: "adult",
-                    gender: "male",
-                    size: "medium",
-                    color: "Golden",
-                    description: "Cheerful spaniel with floppy ears. Loves cuddles.",
-                    health_status: "Vaccinated, Groomed",
-                    location: "Johor",
-                    shelter: "Hope Haven for Animals",
-                    image: "animal_picture/animal2.jpg",
-                    status: "available"
-                },
-                {
-                    id: 18,
-                    name: "Peanut",
-                    species: "rabbit",
-                    breed: "Netherland Dwarf",
-                    age: 2,
-                    ageCategory: "young",
-                    gender: "male",
-                    size: "small",
-                    color: "Brown & White",
-                    description: "Tiny netherland dwarf rabbit with big personality.",
-                    health_status: "Healthy",
-                    location: "Perak",
-                    shelter: "Tender Care Shelter",
-                    image: "animal_picture/animal3.jpg",
-                    status: "available"
-                },
-                {
-                    id: 19,
-                    name: "Shadow",
-                    species: "cat",
-                    breed: "Black Domestic",
-                    age: 5,
-                    ageCategory: "adult",
-                    gender: "male",
-                    size: "medium",
-                    color: "Black",
-                    description: "Mysterious black cat with golden eyes.",
-                    health_status: "Vaccinated, Neutered",
-                    location: "Selangor",
-                    shelter: "Forever Friends Foundation",
-                    image: "animal_picture/animal1.png",
-                    status: "available"
-                },
-                {
-                    id: 20,
-                    name: "Rex",
-                    species: "dog",
-                    breed: "Doberman",
-                    age: 3,
-                    ageCategory: "young",
-                    gender: "male",
-                    size: "large",
-                    color: "Black & Rust",
-                    description: "Elegant doberman looking for an active family.",
-                    health_status: "Vaccinated, Trained",
-                    location: "Kuala Lumpur",
-                    shelter: "New Beginnings Animal Rescue",
-                    image: "animal_picture/animal2.jpg",
-                    status: "available"
-                },
-                {
-                    id: 21,
-                    name: "Ginger",
-                    species: "cat",
-                    breed: "Tabby",
-                    age: 2,
-                    ageCategory: "young",
-                    gender: "female",
-                    size: "medium",
-                    color: "Orange Tabby",
-                    description: "Sweet tabby cat with beautiful striped pattern.",
-                    health_status: "Vaccinated, Spayed",
-                    location: "Penang",
-                    shelter: "Pawsitive Outcomes",
-                    image: "animal_picture/animal3.jpg",
-                    status: "available"
-                },
-                {
-                    id: 22,
-                    name: "Zeus",
-                    species: "dog",
-                    breed: "Great Dane",
-                    age: 4,
-                    ageCategory: "adult",
-                    gender: "male",
-                    size: "large",
-                    color: "Fawn",
-                    description: "Gentle giant great dane. Surprisingly good apartment dog.",
-                    health_status: "Vaccinated",
-                    location: "Sabah",
-                    shelter: "Critter Comforts Shelter",
-                    image: "animal_picture/animal1.png",
-                    status: "available"
-                },
-                {
-                    id: 23,
-                    name: "Misty",
-                    species: "cat",
-                    breed: "Ragdoll",
-                    age: 3,
-                    ageCategory: "adult",
-                    gender: "female",
-                    size: "medium",
-                    color: "Seal Point",
-                    description: "Fluffy ragdoll that goes limp when held.",
-                    health_status: "Vaccinated, Spayed",
-                    location: "Sarawak",
-                    shelter: "Safe Haven Sanctuary",
-                    image: "animal_picture/animal2.jpg",
-                    status: "available"
-                },
-                {
-                    id: 24,
-                    name: "Bailey",
-                    species: "dog",
-                    breed: "Border Collie",
-                    age: 2,
-                    ageCategory: "young",
-                    gender: "female",
-                    size: "medium",
-                    color: "Black & White",
-                    description: "Intelligent border collie. Needs mental stimulation.",
-                    health_status: "Vaccinated, Dewormed",
-                    location: "Johor",
-                    shelter: "Loving Paws Rescue",
-                    image: "animal_picture/animal3.jpg",
-                    status: "available"
-                }
-            ];
-
-            // Pagination variables
-            let currentPage = 1;
-            const itemsPerPage = 8;
-            let filteredPets = [...pets];
-
             // DOM Elements
-            const petsContainer = document.getElementById('petsContainer');
-            const resultCount = document.getElementById('resultCount');
-            const currentPageSpan = document.getElementById('currentPage');
-            const totalPagesSpan = document.getElementById('totalPages');
-            const prevPageBtn = document.getElementById('prevPage');
-            const nextPageBtn = document.getElementById('nextPage');
-            const pageNumbers = document.getElementById('pageNumbers');
-            const applyFilterBtn = document.getElementById('applyFilter');
             const resetFilterBtn = document.getElementById('resetFilter');
-            const speciesFilter = document.getElementById('speciesFilter');
-            const breedFilter = document.getElementById('breedFilter');
-            const ageFilter = document.getElementById('ageFilter');
-            const sizeFilter = document.getElementById('sizeFilter');
-            const genderFilter = document.getElementById('genderFilter');
-            const locationFilter = document.getElementById('locationFilter');
+            const filterForm = document.getElementById('filterForm');
 
             // Initialize
             document.addEventListener('DOMContentLoaded', function () {
-                renderPets();
-                updatePagination();
                 attachEventListeners();
+                
+                // Apply JavaScript filtering if needed
+                applyClientSideFiltering();
             });
 
-            // Render pets for current page
-            function renderPets() {
-                const startIndex = (currentPage - 1) * itemsPerPage;
-                const endIndex = startIndex + itemsPerPage;
-                const pagePets = filteredPets.slice(startIndex, endIndex);
-
-                petsContainer.innerHTML = '';
-
-                if (pagePets.length === 0) {
-                    petsContainer.innerHTML = `
-                        <div class="col-span-1 md:col-span-2 lg:col-span-4 text-center py-12">
-                            <i class="fas fa-paw text-5xl text-[#E5E5E5] mb-4"></i>
-                            <h3 class="text-xl font-semibold text-[#2B2B2B] mb-2">No pets found</h3>
-                            <p class="text-[#666]">Try adjusting your filters to find more pets.</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                pagePets.forEach(pet => {
-                    const card = createPetCard(pet);
-                    petsContainer.appendChild(card);
-                });
-
-                resultCount.textContent = filteredPets.length;
-            }
-
-            // Create pet card HTML
-            function createPetCard(pet) {
-                const card = document.createElement('div');
-                card.className = 'pet-card bg-white rounded-xl border border-[#E5E5E5] overflow-hidden card-hover';
-
-                // Get species icon
-                const speciesIcon = getSpeciesIcon(pet.species);
-
-                // Pre-calculate gender values to avoid template literal issues
-                const genderClass = pet.gender === 'male' ? 'gender-male' : 'gender-female';
-                const genderIcon = pet.gender === 'male' ? 'fa-mars' : 'fa-venus';
-                const genderText = pet.gender === 'male' ? 'Male' : 'Female';
-
-                // Use string concatenation to avoid JSP EL conflicts
-                card.innerHTML = ''
-                        + '<div class="relative">'
-                        + '<img src="' + pet.image + '" alt="' + pet.name + '" class="w-full h-48 object-cover">'
-                        + '<div class="absolute top-3 right-3">'
-                        + '<span class="px-3 py-1 rounded-full text-sm font-medium ' + genderClass + '">'
-                        + '<i class="fas ' + genderIcon + ' mr-1"></i> ' + genderText
-                        + '</span>'
-                        + '</div>'
-                        + '<div class="absolute top-3 left-3 bg-[#6DBF89] text-[#06321F] px-3 py-1 rounded-full text-sm font-medium">'
-                        + 'Available'
-                        + '</div>'
-                        + '</div>'
-                        + '<div class="p-5">'
-                        + '<h3 class="text-xl font-bold text-[#2B2B2B] mb-2">' + pet.name + '</h3>'
-                        + '<div class="flex items-center mb-3">'
-                        + '<div class="bg-[#F0F7F4] p-2 rounded-lg mr-3">'
-                        + '<i class="fas ' + speciesIcon + ' text-[#2F5D50]"></i>'
-                        + '</div>'
-                        + '<div>'
-                        + '<p class="text-[#2B2B2B] font-medium">' + capitalizeFirstLetter(pet.species) + '</p>'
-                        + '<p class="text-[#666] text-sm">' + pet.breed + '</p>'
-                        + '</div>'
-                        + '</div>'
-                        + '<div class="grid grid-cols-2 gap-3 mb-4">'
-                        + '<div>'
-                        + '<p class="text-xs text-[#888]">Age</p>'
-                        + '<p class="font-medium">' + pet.age + ' years</p>'
-                        + '</div>'
-                        + '<div>'
-                        + '<p class="text-xs text-[#888]">Size</p>'
-                        + '<p class="font-medium">' + capitalizeFirstLetter(pet.size) + '</p>'
-                        + '</div>'
-                        + '<div>'
-                        + '<p class="text-xs text-[#888]">Color</p>'
-                        + '<p class="font-medium">' + pet.color + '</p>'
-                        + '</div>'
-                        + '<div>'
-                        + '<p class="text-xs text-[#888]">Location</p>'
-                        + '<p class="font-medium">' + formatLocation(pet.location) + '</p>'
-                        + '</div>'
-                        + '</div>'
-                        + '<p class="text-[#666] text-sm mb-4 line-clamp-2">' + pet.description + '</p>'
-                        + '<a href="pet_info.jsp" class="block w-full text-center py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">'
-                        + 'View Details'
-                        + '</a>'
-                        + '</div>';
-
-                return card;
-            }
-
-            // Get icon for species
-            function getSpeciesIcon(species) {
-                switch (species) {
-                    case 'dog':
-                        return 'fa-paw';
-                    case 'cat':
-                        return 'fa-cat';
-                    case 'rabbit':
-                        return 'fa-rabbit';
-                    case 'bird':
-                        return 'fa-dove';
-                    default:
-                        return 'fa-paw';
-                }
-            }
-
-            // Capitalize first letter
-            function capitalizeFirstLetter(string) {
-                return string.charAt(0).toUpperCase() + string.slice(1);
-            }
-
-            // Format location for display
-            function formatLocation(location) {
-                return location.split('_').map(word =>
-                    word.charAt(0).toUpperCase() + word.slice(1)
-                ).join(' ');
-            }
-
-            // Update pagination controls
-            function updatePagination() {
-                const totalPages = Math.ceil(filteredPets.length / itemsPerPage);
-
-                currentPageSpan.textContent = currentPage;
-                totalPagesSpan.textContent = totalPages;
-
-                // Update button states
-                prevPageBtn.disabled = currentPage === 1 || totalPages === 0;
-                nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
-
-                // Generate page number buttons
-                pageNumbers.innerHTML = '';
-                const maxVisiblePages = 5;
-                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-                if (endPage - startPage + 1 < maxVisiblePages) {
-                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
-                }
-
-                for (let i = startPage; i <= endPage; i++) {
-                    const pageBtn = document.createElement('button');
-                    pageBtn.className = 'page-btn w-10 h-10 rounded-lg border ' + (i === currentPage ? 'border-[#2F5D50] bg-[#2F5D50] text-white' : 'border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]');
-                    pageBtn.textContent = i;
-                    pageBtn.addEventListener('click', () => {
-                        currentPage = i;
-                        renderPets();
-                        updatePagination();
+            // Apply client-side filtering (for better UX)
+            function applyClientSideFiltering() {
+                const speciesFilter = '<%= speciesFilter != null ? escapeJavaScript(speciesFilter) : "" %>';
+                const breedFilter = '<%= breedFilter != null ? escapeJavaScript(breedFilter) : "" %>';
+                const ageFilter = '<%= ageFilter != null ? escapeJavaScript(ageFilter) : "" %>';
+                const sizeFilter = '<%= sizeFilter != null ? escapeJavaScript(sizeFilter) : "" %>';
+                const genderFilter = '<%= genderFilter != null ? escapeJavaScript(genderFilter) : "" %>';
+                const searchTerm = '<%= searchTerm != null ? escapeJavaScript(searchTerm) : "" %>';
+                
+                if (speciesFilter || breedFilter || ageFilter || sizeFilter || genderFilter || searchTerm) {
+                    const petCards = document.querySelectorAll('.pet-card');
+                    let visibleCount = 0;
+                    
+                    petCards.forEach(card => {
+                        const petName = card.querySelector('h3').textContent.toLowerCase();
+                        const petSpecies = card.querySelector('.text-[#2B2B2B].font-medium').textContent.toLowerCase();
+                        const petBreed = card.querySelector('.text-[#666].text-sm').textContent.toLowerCase();
+                        const petAgeText = card.querySelector('.grid.grid-cols-2 .font-medium').textContent.toLowerCase();
+                        const petSize = card.querySelectorAll('.grid.grid-cols-2 .font-medium')[1].textContent.toLowerCase();
+                        const petGenderElement = card.querySelector('.absolute.top-3.right-3 span');
+                        const petGender = petGenderElement.textContent.toLowerCase().includes('male') ? 'male' : 'female';
+                        
+                        // Parse age from text (e.g., "3 years")
+                        let petAge = null;
+                        const ageMatch = petAgeText.match(/(\d+)/);
+                        if (ageMatch) {
+                            petAge = parseInt(ageMatch[1]);
+                        }
+                        
+                        // Determine age category
+                        let petAgeCategory = '';
+                        if (petAge !== null) {
+                            if (petAge <= 1) petAgeCategory = 'baby';
+                            else if (petAge <= 3) petAgeCategory = 'young';
+                            else if (petAge <= 8) petAgeCategory = 'adult';
+                            else petAgeCategory = 'senior';
+                        }
+                        
+                        let shouldShow = true;
+                        
+                        // Apply species filter
+                        if (speciesFilter && speciesFilter.trim() !== '') {
+                            if (petSpecies !== speciesFilter.toLowerCase()) {
+                                shouldShow = false;
+                            }
+                        }
+                        
+                        // Apply breed filter
+                        if (breedFilter && breedFilter.trim() !== '') {
+                            if (!petBreed.includes(breedFilter.toLowerCase())) {
+                                shouldShow = false;
+                            }
+                        }
+                        
+                        // Apply age filter
+                        if (ageFilter && ageFilter.trim() !== '') {
+                            if (petAgeCategory !== ageFilter.toLowerCase()) {
+                                shouldShow = false;
+                            }
+                        }
+                        
+                        // Apply size filter
+                        if (sizeFilter && sizeFilter.trim() !== '') {
+                            if (petSize !== sizeFilter.toLowerCase()) {
+                                shouldShow = false;
+                            }
+                        }
+                        
+                        // Apply gender filter
+                        if (genderFilter && genderFilter.trim() !== '') {
+                            if (petGender !== genderFilter.toLowerCase()) {
+                                shouldShow = false;
+                            }
+                        }
+                        
+                        // Apply search filter
+                        if (searchTerm && searchTerm.trim() !== '') {
+                            const searchLower = searchTerm.toLowerCase();
+                            if (!petName.includes(searchLower) && 
+                                !petSpecies.includes(searchLower) && 
+                                !petBreed.includes(searchLower)) {
+                                shouldShow = false;
+                            }
+                        }
+                        
+                        if (shouldShow) {
+                            card.style.display = 'block';
+                            visibleCount++;
+                        } else {
+                            card.style.display = 'none';
+                        }
                     });
-                    pageNumbers.appendChild(pageBtn);
+                    
+                    // Update result count
+                    const resultCount = document.getElementById('resultCount');
+                    if (resultCount) {
+                        resultCount.textContent = visibleCount;
+                    }
+                    
+                    // Show message if no results
+                    if (visibleCount === 0) {
+                        const container = document.getElementById('petsContainer');
+                        container.innerHTML = `
+                            <div class="col-span-1 md:col-span-2 lg:col-span-4 text-center py-12">
+                                <i class="fas fa-search text-5xl text-[#E5E5E5] mb-4"></i>
+                                <h3 class="text-xl font-semibold text-[#2B2B2B] mb-2">No pets match your filter criteria</h3>
+                                <p class="text-[#666]">Try adjusting your filters to find more pets.</p>
+                            </div>
+                        `;
+                    }
                 }
-            }
-
-            // Apply filters
-            function applyFilters() {
-                const selectedSpecies = speciesFilter.value;
-                const selectedBreed = breedFilter.value;
-                const selectedAge = ageFilter.value;
-                const selectedSize = sizeFilter.value;
-                const selectedGender = genderFilter.value;
-                const selectedLocation = locationFilter.value;
-
-                filteredPets = pets.filter(pet => {
-                    // Species filter
-                    if (selectedSpecies && pet.species !== selectedSpecies) {
-                        return false;
-                    }
-
-                    // Breed filter
-                    if (selectedBreed && pet.breed.toLowerCase().replace(/\s+/g, '_') !== selectedBreed) {
-                        return false;
-                    }
-
-                    // Age filter
-                    if (selectedAge && pet.ageCategory !== selectedAge) {
-                        return false;
-                    }
-
-                    // Size filter
-                    if (selectedSize && pet.size !== selectedSize) {
-                        return false;
-                    }
-
-                    // Gender filter
-                    if (selectedGender && pet.gender !== selectedGender) {
-                        return false;
-                    }
-
-                    // Location filter
-                    if (selectedLocation && pet.location !== selectedLocation) {
-                        return false;
-                    }
-
-                    return true;
-                });
-
-                currentPage = 1;
-                renderPets();
-                updatePagination();
             }
 
             // Reset filters
             function resetFilters() {
-                speciesFilter.value = '';
-                breedFilter.value = '';
-                ageFilter.value = '';
-                sizeFilter.value = '';
-                genderFilter.value = '';
-                locationFilter.value = '';
-                filteredPets = [...pets];
-                currentPage = 1;
-                renderPets();
-                updatePagination();
+                // Clear form inputs
+                document.querySelectorAll('#filterForm select, #filterForm input').forEach(element => {
+                    if (element.type === 'text') {
+                        element.value = '';
+                    } else if (element.tagName === 'SELECT') {
+                        element.value = '';
+                    }
+                });
+                
+                // Submit the form to reload page without filters
+                filterForm.submit();
             }
 
             // Attach event listeners
             function attachEventListeners() {
-                applyFilterBtn.addEventListener('click', applyFilters);
                 resetFilterBtn.addEventListener('click', resetFilters);
 
-                prevPageBtn.addEventListener('click', () => {
-                    if (currentPage > 1) {
-                        currentPage--;
-                        renderPets();
-                        updatePagination();
-                    }
-                });
-
-                nextPageBtn.addEventListener('click', () => {
-                    const totalPages = Math.ceil(filteredPets.length / itemsPerPage);
-                    if (currentPage < totalPages) {
-                        currentPage++;
-                        renderPets();
-                        updatePagination();
-                    }
-                });
-
-                // Add Enter key support for filters
-                [speciesFilter, breedFilter, ageFilter, sizeFilter, genderFilter, locationFilter].forEach(filter => {
-                    filter.addEventListener('keyup', (e) => {
+                // Add Enter key support for search
+                const searchFilter = document.getElementById('searchFilter');
+                if (searchFilter) {
+                    searchFilter.addEventListener('keyup', (e) => {
                         if (e.key === 'Enter') {
-                            applyFilters();
+                            filterForm.submit();
                         }
                     });
-                });
+                }
             }
         </script>
 
     </body>
 </html>
+
+<%!
+    // Helper method to get age category
+    private String getAgeCategory(Integer age) {
+        if (age == null) return "unknown";
+        if (age <= 1) return "baby";
+        if (age <= 3) return "young";
+        if (age <= 8) return "adult";
+        return "senior";
+    }
+    
+    // Helper method to get species icon - DIPERBAIKI: ganti switch dengan if-else
+    private String getSpeciesIcon(String species) {
+        if (species == null) return "fa-paw";
+        
+        String speciesLower = species.toLowerCase();
+        if ("dog".equals(speciesLower)) {
+            return "fa-paw";
+        } else if ("cat".equals(speciesLower)) {
+            return "fa-cat";
+        } else if ("rabbit".equals(speciesLower)) {
+            return "fa-rabbit";
+        } else if ("bird".equals(speciesLower)) {
+            return "fa-dove";
+        } else {
+            return "fa-paw";
+        }
+    }
+    
+    // Helper method to capitalize first letter
+    private String capitalizeFirstLetter(String input) {
+        if (input == null || input.isEmpty()) return "";
+        return input.substring(0, 1).toUpperCase() + input.substring(1).toLowerCase();
+    }
+    
+    // Helper method to escape HTML for safety
+    private String escapeHtml(String input) {
+        if (input == null) return "";
+        return input.replace("&", "&amp;")
+                   .replace("<", "&lt;")
+                   .replace(">", "&gt;")
+                   .replace("\"", "&quot;")
+                   .replace("'", "&#39;");
+    }
+    
+    // Helper method to escape JavaScript strings
+    private String escapeJavaScript(String input) {
+        if (input == null) return "";
+        return input.replace("\\", "\\\\")
+                   .replace("\"", "\\\"")
+                   .replace("'", "\\'")
+                   .replace("\n", "\\n")
+                   .replace("\r", "\\r")
+                   .replace("\t", "\\t");
+    }
+%>

@@ -4,7 +4,9 @@ import com.rimba.adopt.model.Pets;
 import com.rimba.adopt.util.DatabaseConnection;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class PetsDAO {
 
@@ -305,6 +307,66 @@ public class PetsDAO {
         }
     }
 
+    // Get pet with shelter info - FIXED VERSION
+    public Map<String, Object> getPetWithShelterInfo(int petId) throws SQLException {
+        String sql = "SELECT p.*, s.shelter_name, s.shelter_address, "
+                + "u.name as shelter_user_name, u.profile_photo_path as shelter_photo_path, "
+                + "u.phone as shelter_phone, u.email as shelter_email "
+                + "FROM pets p "
+                + "JOIN shelter s ON p.shelter_id = s.shelter_id "
+                + "JOIN users u ON s.shelter_id = u.user_id "
+                + "WHERE p.pet_id = ? AND s.approval_status = 'approved'";
+
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DatabaseConnection.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, petId);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                Map<String, Object> petData = new HashMap<String, Object>();
+
+                // Pet info
+                Pets pet = resultSetToPet(rs);
+                petData.put("pet", pet);
+
+                // Shelter info
+                petData.put("shelter_name", rs.getString("shelter_name"));
+                petData.put("shelter_address", rs.getString("shelter_address"));
+                petData.put("shelter_user_name", rs.getString("shelter_user_name"));
+                petData.put("shelter_photo_path", rs.getString("shelter_photo_path"));
+                petData.put("shelter_phone", rs.getString("shelter_phone"));
+                petData.put("shelter_email", rs.getString("shelter_email"));
+
+                return petData;
+            }
+            return null;
+
+        } catch (SQLException e) {
+            System.err.println("ERROR in getPetWithShelterInfo: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        } finally {
+            if (rs != null) {
+                try {
+                    rs.close();
+                } catch (SQLException e) {
+                }
+            }
+            if (pstmt != null) {
+                try {
+                    pstmt.close();
+                } catch (SQLException e) {
+                }
+            }
+            DatabaseConnection.closeConnection(conn);
+        }
+    }
+
     // Update pet with adoption status
     public boolean updatePet(Pets pet) throws SQLException {
         String sql = "UPDATE pets SET name = ?, species = ?, breed = ?, age = ?, gender = ?, "
@@ -403,7 +465,7 @@ public class PetsDAO {
         }
     }
 
-// Update only adoption status (NEW) - VERSI STRICT
+    // Update only adoption status (NEW) - VERSI STRICT
     public boolean updateAdoptionStatus(int petId, int shelterId, String adoptionStatus) throws SQLException {
         // Validasi status - hanya terima 'available' atau 'adopted'
         if (adoptionStatus == null
@@ -639,9 +701,7 @@ public class PetsDAO {
             DatabaseConnection.closeConnection(conn);
         }
     }
-// ========== METHODS FOR DASHBOARD SHELTER ==========
 
-// GANTI method countPetsByShelter() dengan ini:
     // Get all available pets (for public adoption listing)
     public List<Pets> getAllAvailablePets() throws SQLException {
         List<Pets> pets = new ArrayList<Pets>();
@@ -768,4 +828,108 @@ public class PetsDAO {
             DatabaseConnection.closeConnection(conn);
         }
     }
+
+    // Get all unique breeds
+    public List<String> getAllUniqueBreeds() throws SQLException {
+        List<String> breeds = new ArrayList<String>();
+        String sql = "SELECT DISTINCT breed FROM pets WHERE breed IS NOT NULL AND breed != '' ORDER BY breed";
+
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DatabaseConnection.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String breed = rs.getString("breed");
+                if (breed != null && !breed.trim().isEmpty()) {
+                    breeds.add(breed);
+                }
+            }
+
+            return breeds;
+
+        } finally {
+            if (rs != null) {
+                rs.close();
+            }
+            if (pstmt != null) {
+                pstmt.close();
+            }
+            DatabaseConnection.closeConnection(conn);
+        }
+    }
+
+    // Get pets with filters
+    public List<Pets> getAvailablePetsWithFilters(String species, String breed, String size, String gender) throws SQLException {
+        List<Pets> pets = new ArrayList<Pets>();
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT p.* FROM pets p ");
+        sql.append("JOIN shelter s ON p.shelter_id = s.shelter_id ");
+        sql.append("WHERE p.adoption_status = 'available' AND s.approval_status = 'approved' ");
+
+        List<String> conditions = new ArrayList<String>();
+        List<Object> parameters = new ArrayList<Object>();
+
+        if (species != null && !species.isEmpty()) {
+            conditions.add("p.species = ?");
+            parameters.add(species);
+        }
+
+        if (breed != null && !breed.isEmpty()) {
+            conditions.add("p.breed = ?");
+            parameters.add(breed);
+        }
+
+        if (size != null && !size.isEmpty()) {
+            conditions.add("p.size = ?");
+            parameters.add(size);
+        }
+
+        if (gender != null && !gender.isEmpty()) {
+            conditions.add("p.gender = ?");
+            parameters.add(gender);
+        }
+
+        if (!conditions.isEmpty()) {
+            sql.append("AND ").append(String.join(" AND ", conditions)).append(" ");
+        }
+
+        sql.append("ORDER BY p.created_at DESC");
+
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DatabaseConnection.getConnection();
+            pstmt = conn.prepareStatement(sql.toString());
+
+            for (int i = 0; i < parameters.size(); i++) {
+                pstmt.setObject(i + 1, parameters.get(i));
+            }
+
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                Pets pet = resultSetToPet(rs);
+                pets.add(pet);
+            }
+
+            return pets;
+
+        } finally {
+            if (rs != null) {
+                rs.close();
+            }
+            if (pstmt != null) {
+                pstmt.close();
+            }
+            DatabaseConnection.closeConnection(conn);
+        }
+    }
+
 }
