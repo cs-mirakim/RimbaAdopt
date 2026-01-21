@@ -28,7 +28,6 @@ public class FeedbackServlet extends HttpServlet {
         feedbackDAO = new FeedbackDAO();
     }
 
-    // Dalam FeedbackServlet.java - Update doGet method untuk feedback:
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -157,7 +156,6 @@ public class FeedbackServlet extends HttpServlet {
         }
     }
 
-    // Dalam FeedbackServlet.java - Update doPost method: REMOVE THE CHECK
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -167,16 +165,26 @@ public class FeedbackServlet extends HttpServlet {
         response.setCharacterEncoding("UTF-8");
         PrintWriter out = response.getWriter();
 
-        if (!SessionUtil.isLoggedIn(session) || !SessionUtil.isAdopter(session)) {
+        System.out.println("DEBUG: doPost called - checking authentication");
+
+        if (!SessionUtil.isLoggedIn(session)) {
+            System.out.println("DEBUG: User not logged in");
+            sendJsonResponse(out, false, "Unauthorized access. Please login.", null);
+            return;
+        }
+
+        if (!SessionUtil.isAdopter(session)) {
+            System.out.println("DEBUG: User not adopter");
             sendJsonResponse(out, false, "Unauthorized access. Please login as adopter.", null);
             return;
         }
 
         try {
             String action = request.getParameter("action");
+            System.out.println("DEBUG: Action = " + action);
 
-            // Dalam doPost() - bahagian "submitFeedback":
             if ("submitFeedback".equals(action)) {
+                System.out.println("DEBUG: Processing submitFeedback...");
                 String shelterIdParam = request.getParameter("shelterId");
                 String ratingParam = request.getParameter("rating");
                 String comment = request.getParameter("comment");
@@ -238,10 +246,9 @@ public class FeedbackServlet extends HttpServlet {
                 } else {
                     sendJsonResponse(out, false, "Failed to submit feedback. Please try again.", null);
                 }
-                return; // FIX: Add return statement
-            }// Dalam doPost() method - TAMBAH case ini:
-            if ("updateFeedback".equals(action)) {
-                System.out.println("DEBUG: Updating feedback...");
+
+            } else if ("updateFeedback".equals(action)) {
+                System.out.println("DEBUG: Processing updateFeedback...");
 
                 String feedbackIdParam = request.getParameter("feedbackId");
                 String ratingParam = request.getParameter("rating");
@@ -251,8 +258,18 @@ public class FeedbackServlet extends HttpServlet {
                         + ", rating=" + ratingParam
                         + ", comment=" + (comment != null ? comment.substring(0, Math.min(50, comment.length())) + "..." : "null"));
 
-                if (feedbackIdParam == null || ratingParam == null || comment == null) {
-                    sendJsonResponse(out, false, "All fields are required", null);
+                if (feedbackIdParam == null || feedbackIdParam.isEmpty()) {
+                    sendJsonResponse(out, false, "Feedback ID is required", null);
+                    return;
+                }
+
+                if (ratingParam == null || ratingParam.isEmpty()) {
+                    sendJsonResponse(out, false, "Rating is required", null);
+                    return;
+                }
+
+                if (comment == null || comment.trim().isEmpty()) {
+                    sendJsonResponse(out, false, "Comment cannot be empty", null);
                     return;
                 }
 
@@ -267,12 +284,6 @@ public class FeedbackServlet extends HttpServlet {
                         return;
                     }
 
-                    // Validate comment
-                    if (comment.trim().isEmpty()) {
-                        sendJsonResponse(out, false, "Comment cannot be empty", null);
-                        return;
-                    }
-
                     // Check if feedback belongs to this adopter
                     Map<String, Object> feedbackDetails = feedbackDAO.getFeedbackDetailsForAdopter(feedbackId, adopterId);
                     if (feedbackDetails.isEmpty()) {
@@ -281,25 +292,23 @@ public class FeedbackServlet extends HttpServlet {
                     }
 
                     // Update feedback
-                    boolean success = feedbackDAO.updateFeedback(feedbackId, rating, comment);
+                    boolean success = feedbackDAO.updateFeedback(feedbackId, rating, comment.trim());
 
                     if (success) {
-                        // Redirect back to feedback page dengan success message
-                        session.setAttribute("message", "✓ Feedback updated successfully!");
-                        session.setAttribute("messageType", "success");
-
-                        // Return success response
-                        response.sendRedirect("feedback_list.jsp");
+                        System.out.println("DEBUG: Feedback updated successfully");
+                        sendJsonResponse(out, true, "✓ Feedback updated successfully!", null);
                     } else {
                         sendJsonResponse(out, false, "Failed to update feedback", null);
                     }
 
                 } catch (NumberFormatException e) {
+                    System.err.println("ERROR: Invalid number format in updateFeedback: " + e.getMessage());
                     sendJsonResponse(out, false, "Invalid parameter format", null);
                 } catch (Exception e) {
                     e.printStackTrace();
                     sendJsonResponse(out, false, "Error: " + e.getMessage(), null);
                 }
+
             } else {
                 sendJsonResponse(out, false, "Invalid action", null);
             }
@@ -317,6 +326,8 @@ public class FeedbackServlet extends HttpServlet {
     protected void doPut(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        System.out.println("DEBUG: doPut called");
+
         HttpSession session = request.getSession(false);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
@@ -330,9 +341,8 @@ public class FeedbackServlet extends HttpServlet {
         try {
             String action = request.getParameter("action");
 
-            // Dalam FeedbackServlet.doPost() - betulkan bahagian "updateFeedback":
             if ("updateFeedback".equals(action)) {
-                System.out.println("DEBUG: Updating feedback...");
+                System.out.println("DEBUG: Updating feedback via PUT...");
 
                 String feedbackIdParam = request.getParameter("feedbackId");
                 String ratingParam = request.getParameter("rating");
@@ -375,7 +385,6 @@ public class FeedbackServlet extends HttpServlet {
                     boolean success = feedbackDAO.updateFeedback(feedbackId, rating, comment);
 
                     if (success) {
-                        // SUCCESS: Return proper JSON response
                         sendJsonResponse(out, true, "✓ Feedback updated successfully!", null);
                     } else {
                         sendJsonResponse(out, false, "✗ Failed to update feedback", null);
@@ -387,7 +396,6 @@ public class FeedbackServlet extends HttpServlet {
                     e.printStackTrace();
                     sendJsonResponse(out, false, "Error: " + e.getMessage(), null);
                 }
-                return; // FIX: Add return statement
             } else {
                 sendJsonResponse(out, false, "Invalid action", null);
             }
@@ -403,6 +411,8 @@ public class FeedbackServlet extends HttpServlet {
     @Override
     protected void doDelete(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        System.out.println("DEBUG: doDelete called");
 
         HttpSession session = request.getSession(false);
         response.setContentType("application/json");
@@ -427,10 +437,10 @@ public class FeedbackServlet extends HttpServlet {
             boolean success = false;
 
             if (SessionUtil.isAdopter(session)) {
-                // Adopter deleting their own feedback
+                System.out.println("DEBUG: Adopter deleting feedback ID: " + feedbackId);
                 success = feedbackDAO.deleteFeedbackByAdopter(feedbackId, userId);
             } else if (SessionUtil.isShelter(session)) {
-                // Shelter deleting feedback about them
+                System.out.println("DEBUG: Shelter deleting feedback ID: " + feedbackId);
                 success = performDeleteFeedback(feedbackId, userId);
             } else {
                 sendJsonResponse(out, false, "Unauthorized access", null);
@@ -438,8 +448,10 @@ public class FeedbackServlet extends HttpServlet {
             }
 
             if (success) {
+                System.out.println("DEBUG: Feedback deleted successfully");
                 sendJsonResponse(out, true, "Feedback deleted successfully", null);
             } else {
+                System.out.println("DEBUG: Failed to delete feedback");
                 sendJsonResponse(out, false, "Failed to delete feedback or feedback not found", null);
             }
 

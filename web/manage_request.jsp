@@ -609,59 +609,189 @@
         </div>
 
         <script>
-            // --- STATE MANAGEMENT ---
-            var state = {
+            // =======================================================
+            // 1. CONFIGURATION AND STATE MANAGEMENT
+            // =======================================================
+            const DEBUG = false;
+            let state = {
                 currentId: null,
-                pendingAction: null
+                pendingAction: null,
+                imagesLoaded: false,
+                pageLoaded: false
             };
 
-            // --- MODAL FUNCTIONS ---
+            // =======================================================
+            // 2. IMAGE LOADING HANDLER (PENTING!)
+            // =======================================================
+            function handleAllImagesLoaded() {
+                return new Promise((resolve) => {
+                    const images = document.querySelectorAll('img');
+                    const totalImages = images.length;
+                    let loadedCount = 0;
+
+                    if (DEBUG)
+                        console.log(`Checking ${totalImages} images...`);
+
+                    if (totalImages === 0) {
+                        state.imagesLoaded = true;
+                        resolve();
+                        return;
+                    }
+
+                    // Function to track image loading
+                    function trackImageLoad(img) {
+                        if (img.complete && img.naturalHeight !== 0) {
+                            loadedCount++;
+                        } else {
+                            img.addEventListener('load', () => {
+                                loadedCount++;
+                                checkCompletion();
+                            });
+                            img.addEventListener('error', () => {
+                                loadedCount++; // Count errors as loaded
+                                checkCompletion();
+                            });
+                        }
+                    }
+
+                    function checkCompletion() {
+                        if (loadedCount >= totalImages) {
+                            state.imagesLoaded = true;
+                            if (DEBUG)
+                                console.log(`All images loaded: ${loadedCount}/${totalImages}`);
+                            resolve();
+                        }
+                    }
+
+                    // Track each image
+                    images.forEach(trackImageLoad);
+                    checkCompletion(); // Check if already all loaded
+
+                    // Fallback timeout (4 seconds)
+                    setTimeout(() => {
+                        if (!state.imagesLoaded) {
+                            state.imagesLoaded = true;
+                            if (DEBUG)
+                                console.warn(`Image loading timeout. Loaded: ${loadedCount}/${totalImages}`);
+                            resolve();
+                        }
+                    }, 4000);
+                });
+            }
+
+            // =======================================================
+            // 3. FORCE STOP LOADING INDICATOR (UTAMA!)
+            // =======================================================
+            function forceStopLoadingIndicator() {
+                try {
+                    if (state.pageLoaded)
+                        return;
+
+                    state.pageLoaded = true;
+
+                    if (DEBUG)
+                        console.log('Force stopping browser loading indicator...');
+
+                    // Method 1: window.stop() - stops all pending requests
+                    if (window.stop && typeof window.stop === 'function') {
+                        window.stop();
+                    }
+
+                    // Method 2: Mark page as fully loaded
+                    document.documentElement.setAttribute('data-page-loaded', 'true');
+                    document.body.classList.add('page-loaded-complete');
+
+                    // Method 3: Hide any loading animations
+                    const loadingAnimations = document.querySelectorAll('[class*="fa-spinner"], [class*="loading"]');
+                    loadingAnimations.forEach(el => {
+                        el.style.display = 'none';
+                    });
+
+                    if (DEBUG)
+                        console.log('Loading indicator stopped successfully');
+                } catch (e) {
+                    if (DEBUG)
+                        console.warn('Error stopping loading indicator:', e);
+                }
+            }
+
+            // =======================================================
+            // 4. MODAL FUNCTIONS - FIXED VERSION
+            // =======================================================
             function openReviewModal(button) {
-                // Get the parent row
-                var row = button.closest('tr');
-                if (!row)
+                // Prevent multiple clicks
+                if (button.disabled)
                     return;
+                button.disabled = true;
+
+                setTimeout(() => {
+                    button.disabled = false;
+                }, 1000);
+
+                // Get the parent row
+                const row = button.closest('tr');
+                if (!row) {
+                    if (DEBUG)
+                        console.error('No row found for button');
+                    return;
+                }
 
                 // Extract data from data attributes
-                var requestId = row.dataset.requestId;
-                var status = row.dataset.status;
+                const requestId = row.dataset.requestId;
+                const status = row.dataset.status;
+
+                if (DEBUG)
+                    console.log(`Opening review modal for request ${requestId}, status: ${status}`);
 
                 // Update modal dengan data dari row
                 document.getElementById('review-request-id').textContent = requestId;
                 document.getElementById('form-request-id').value = requestId;
 
                 // Update pet info
-                document.getElementById('review-pet-name').textContent = row.dataset.petName;
-                document.getElementById('review-pet-breed').textContent = row.dataset.petBreed + ' (' + row.dataset.petSpecies + ')';
-                document.getElementById('review-pet-gender').textContent = row.dataset.petGender;
-                document.getElementById('review-pet-age').textContent = row.dataset.petAge;
-                document.getElementById('review-pet-health').textContent = row.dataset.petHealth;
+                document.getElementById('review-pet-name').textContent = row.dataset.petName || 'Unknown';
+                document.getElementById('review-pet-breed').textContent = (row.dataset.petBreed || 'Unknown') + ' (' + (row.dataset.petSpecies || 'Unknown') + ')';
+                document.getElementById('review-pet-gender').textContent = row.dataset.petGender || 'Unknown';
+                document.getElementById('review-pet-age').textContent = row.dataset.petAge || 'Unknown';
+                document.getElementById('review-pet-health').textContent = row.dataset.petHealth || 'Unknown';
 
-                var petPhoto = row.dataset.petPhoto;
+                // Update pet photo dengan error handling
+                const petPhotoEl = document.getElementById('review-pet-photo');
+                const petPhoto = row.dataset.petPhoto;
                 if (petPhoto && petPhoto !== 'null' && petPhoto.trim() !== '') {
-                    document.getElementById('review-pet-photo').src = petPhoto;
+                    petPhotoEl.src = petPhoto;
+                    petPhotoEl.onerror = function () {
+                        this.src = 'https://via.placeholder.com/150?text=' + encodeURIComponent(row.dataset.petName || 'Pet');
+                    };
                 } else {
-                    document.getElementById('review-pet-photo').src = 'https://via.placeholder.com/150?text=' + encodeURIComponent(row.dataset.petName);
+                    petPhotoEl.src = 'https://via.placeholder.com/150?text=' + encodeURIComponent(row.dataset.petName || 'Pet');
                 }
 
                 // Update adopter info
-                document.getElementById('review-adopter-name').textContent = row.dataset.adopterName;
-                document.getElementById('review-adopter-email').textContent = row.dataset.adopterEmail;
-                document.getElementById('review-adopter-occupation').textContent = row.dataset.adopterOccupation;
-                document.getElementById('review-adopter-house').textContent = row.dataset.adopterHousehold.replace('_', ' ');
-                document.getElementById('review-adopter-notes').textContent = row.dataset.adopterNotes;
-                document.getElementById('review-adopter-message').textContent = row.dataset.adopterMessage;
+                document.getElementById('review-adopter-name').textContent = row.dataset.adopterName || 'Unknown';
+                document.getElementById('review-adopter-email').textContent = row.dataset.adopterEmail || 'Unknown';
+                document.getElementById('review-adopter-occupation').textContent = row.dataset.adopterOccupation || 'Not specified';
+                document.getElementById('review-adopter-house').textContent = (row.dataset.adopterHousehold || 'unknown').replace('_', ' ');
+                document.getElementById('review-adopter-notes').textContent = row.dataset.adopterNotes || 'No notes provided';
+                document.getElementById('review-adopter-message').textContent = row.dataset.adopterMessage || 'No message provided';
 
-                var adopterPhoto = row.dataset.adopterPhoto;
+                // Update adopter photo dengan error handling
+                const adopterPhotoEl = document.getElementById('review-adopter-photo');
+                const adopterPhoto = row.dataset.adopterPhoto;
                 if (adopterPhoto && adopterPhoto !== 'null' && adopterPhoto.trim() !== '') {
-                    document.getElementById('review-adopter-photo').src = adopterPhoto;
+                    adopterPhotoEl.src = adopterPhoto;
+                    adopterPhotoEl.onerror = function () {
+                        this.src = 'https://ui-avatars.com/api/?name=' +
+                                encodeURIComponent(row.dataset.adopterName || 'User') +
+                                '&background=2F5D50&color=fff';
+                    };
                 } else {
-                    document.getElementById('review-adopter-photo').src = 'https://ui-avatars.com/api/?name=' +
-                            encodeURIComponent(row.dataset.adopterName) + '&background=2F5D50&color=fff';
+                    adopterPhotoEl.src = 'https://ui-avatars.com/api/?name=' +
+                            encodeURIComponent(row.dataset.adopterName || 'User') +
+                            '&background=2F5D50&color=fff';
                 }
 
                 // Update existing pets
-                var petsElement = document.getElementById('review-adopter-pets');
+                const petsElement = document.getElementById('review-adopter-pets');
                 if (row.dataset.adopterPets === 'Yes, has pets') {
                     petsElement.textContent = "Yes, has pets";
                     petsElement.className = "font-bold text-yellow-600";
@@ -671,16 +801,16 @@
                 }
 
                 // Update timeline
-                document.getElementById('review-request-date').textContent = row.dataset.requestDate;
-                document.getElementById('review-request-time').textContent = row.dataset.requestTime;
+                document.getElementById('review-request-date').textContent = row.dataset.requestDate || 'N/A';
+                document.getElementById('review-request-time').textContent = row.dataset.requestTime || 'N/A';
 
                 // Update status badge
-                document.getElementById('review-status-badge').textContent = status.toUpperCase();
+                const statusBadgeEl = document.getElementById('review-status-badge');
+                const statusDot = document.getElementById('review-status-dot');
 
-                // Update status color (gunakan if-else bukan switch di JavaScript juga untuk consistency)
-                var statusBadgeEl = document.getElementById('review-status-badge');
-                var statusDot = document.getElementById('review-status-dot');
+                statusBadgeEl.textContent = (status || 'unknown').toUpperCase();
 
+                // Set status colors
                 if (status === 'pending') {
                     statusBadgeEl.className = 'inline-block mt-1 px-2 py-0.5 rounded text-xs font-bold text-white bg-chip-pending';
                     statusDot.className = 'absolute -left-[21px] top-1.5 w-3 h-3 rounded-full bg-chip-pending border-2 border-white shadow-sm';
@@ -696,10 +826,10 @@
                 }
 
                 // Show/hide action section based on status
-                var actionSec = document.getElementById('action-section');
-                var footerSec = document.getElementById('readonly-footer');
-                var responseBox = document.getElementById('shelter-response');
-                var readonlyResponse = document.getElementById('readonly-response-text');
+                const actionSec = document.getElementById('action-section');
+                const footerSec = document.getElementById('readonly-footer');
+                const responseBox = document.getElementById('shelter-response');
+                const readonlyResponse = document.getElementById('readonly-response-text');
 
                 if (status === 'pending') {
                     actionSec.classList.remove('hidden');
@@ -712,7 +842,7 @@
                     responseBox.required = false;
 
                     // Show existing shelter response if any
-                    var shelterResponse = row.dataset.shelterResponse;
+                    const shelterResponse = row.dataset.shelterResponse;
                     if (shelterResponse && shelterResponse !== 'null' && shelterResponse.trim() !== '') {
                         readonlyResponse.textContent = shelterResponse;
                     } else {
@@ -721,8 +851,8 @@
                 }
 
                 // Show/hide cancellation reason
-                var cancelBlock = document.getElementById('cancellation-block');
-                var cancelReason = row.dataset.cancellationReason;
+                const cancelBlock = document.getElementById('cancellation-block');
+                const cancelReason = row.dataset.cancellationReason;
                 if (status === 'cancelled' && cancelReason && cancelReason !== 'null' && cancelReason.trim() !== '') {
                     cancelBlock.classList.remove('hidden');
                     document.getElementById('review-cancellation-reason').textContent = cancelReason;
@@ -730,43 +860,62 @@
                     cancelBlock.classList.add('hidden');
                 }
 
+                // Store current state
                 state.currentId = requestId;
-                document.getElementById('reviewModal').classList.add('active');
 
-                // Prevent body scroll when modal is open
+                // Open modal
+                document.getElementById('reviewModal').classList.add('active');
                 document.body.style.overflow = 'hidden';
+
+                if (DEBUG)
+                    console.log('Review modal opened successfully');
             }
 
             function closeModal(modalId) {
-                document.getElementById(modalId).classList.remove('active');
-                // Restore body scroll
+                const modal = document.getElementById(modalId);
+                if (!modal)
+                    return;
+
+                modal.classList.remove('active');
                 document.body.style.overflow = '';
+
+                if (modalId === 'reviewModal') {
+                    // Reset state
+                    state.currentId = null;
+                    state.pendingAction = null;
+                }
+
+                if (DEBUG)
+                    console.log(`Modal ${modalId} closed`);
             }
 
             function promptConfirmation(type) {
-                var responseVal = document.getElementById('shelter-response').value.trim();
+                const responseVal = document.getElementById('shelter-response').value.trim();
                 if (!responseVal) {
                     showToast('Action Failed', 'Please write a response message first.', 'error');
                     document.getElementById('shelter-response').focus();
                     return;
                 }
+
                 state.pendingAction = type;
 
-                var title = document.getElementById('confirm-title');
-                var iconContainer = document.getElementById('confirm-icon-container');
-                var icon = document.getElementById('confirm-icon');
-                var confirmBtn = document.getElementById('confirm-yes-btn');
+                const title = document.getElementById('confirm-title');
+                const iconContainer = document.getElementById('confirm-icon-container');
+                const icon = document.getElementById('confirm-icon');
+                const confirmBtn = document.getElementById('confirm-yes-btn');
 
                 if (type === 'approve') {
                     title.innerText = "Approve Application?";
                     iconContainer.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-secondary";
                     icon.className = "fas fa-check text-3xl text-primary-dark";
                     confirmBtn.className = "flex-1 py-2.5 rounded-xl text-white font-bold shadow-md transition hover:opacity-90 bg-primary";
+                    confirmBtn.textContent = "Yes, Approve";
                 } else {
                     title.innerText = "Reject Application?";
                     iconContainer.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-chip-rejected";
                     icon.className = "fas fa-times text-3xl text-white";
                     confirmBtn.className = "flex-1 py-2.5 rounded-xl text-white font-bold shadow-md transition hover:opacity-90 bg-chip-rejected";
+                    confirmBtn.textContent = "Yes, Reject";
                 }
 
                 confirmBtn.onclick = executeAction;
@@ -774,17 +923,12 @@
                 document.body.style.overflow = 'hidden';
             }
 
-            // GANTI function executeAction() dengan ini:
-            // GANTI function executeAction() dengan versi yang lebih detail:
-            // GANTI function executeAction() dengan versi yang lebih detail:
             function executeAction() {
-                var action = state.pendingAction;
-                var form = document.getElementById('reviewForm');
-                var actionInput = document.getElementById('form-action');
-                var requestIdInput = document.getElementById('form-request-id');
-                var responseVal = document.getElementById('shelter-response').value.trim();
-                var requestId = state.currentId;
-                var action = state.pendingAction;
+                const action = state.pendingAction;
+                const form = document.getElementById('reviewForm');
+                const actionInput = document.getElementById('form-action');
+                const requestIdInput = document.getElementById('form-request-id');
+                const responseVal = document.getElementById('shelter-response').value.trim();
 
                 if (!responseVal) {
                     showToast('Action Failed', 'Please write a response message first.', 'error');
@@ -792,18 +936,36 @@
                     return;
                 }
 
+                if (!state.currentId) {
+                    showToast('Error', 'No request selected.', 'error');
+                    return;
+                }
+
+                // Set form values
                 actionInput.value = action;
                 requestIdInput.value = state.currentId;
 
-                // Submit the form
-                form.submit();
+                // Show loading state
+                const confirmBtn = document.getElementById('confirm-yes-btn');
+                const originalText = confirmBtn.textContent;
+                confirmBtn.disabled = true;
+                confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+
+                // Submit form after short delay
+                setTimeout(() => {
+                    if (DEBUG)
+                        console.log(`Submitting form: action=${action}, requestId=${state.currentId}`);
+                    form.submit();
+                }, 300);
             }
 
-            // GANTI function showToast():
+            // =======================================================
+            // 5. TOAST NOTIFICATION
+            // =======================================================
             function showToast(title, msg, type) {
-                var toast = document.getElementById('toast');
-                var bg = document.getElementById('toast-bg');
-                var icon = document.getElementById('toast-icon');
+                const toast = document.getElementById('toast');
+                const bg = document.getElementById('toast-bg');
+                const icon = document.getElementById('toast-icon');
 
                 document.getElementById('toast-title').innerText = title;
                 document.getElementById('toast-message').innerText = msg;
@@ -827,24 +989,46 @@
                 toast.classList.add('translate-x-0', 'opacity-100');
 
                 // Auto hide after 4 seconds
-                setTimeout(function () {
+                setTimeout(() => {
                     toast.classList.remove('translate-x-0', 'opacity-100');
                     toast.classList.add('translate-x-full', 'opacity-0');
                 }, 4000);
             }
 
-            // Filter button active state
+            // =======================================================
+            // 6. INITIALIZATION AND EVENT HANDLERS
+            // =======================================================
             document.addEventListener('DOMContentLoaded', function () {
-                var filterButtons = document.querySelectorAll('.filter-btn');
-                for (var i = 0; i < filterButtons.length; i++) {
-                    var btn = filterButtons[i];
+                if (DEBUG)
+                    console.log('Manage Requests page - DOM loaded');
+
+                // Filter button active state
+                const filterButtons = document.querySelectorAll('.filter-btn');
+                filterButtons.forEach(btn => {
                     if (btn.classList.contains('active')) {
                         btn.classList.add('transform', 'scale-105');
                     }
-                }
+                });
+
+                // Handle image loading
+                handleAllImagesLoaded().then(() => {
+                    if (DEBUG)
+                        console.log('All images loaded successfully');
+                }).catch(err => {
+                    if (DEBUG)
+                        console.warn('Image loading issue:', err);
+                });
+
+                // Auto-hide toast messages if any
+                setTimeout(() => {
+                    const messages = document.querySelectorAll('.fixed.top-4');
+                    messages.forEach(msg => {
+                        msg.style.display = 'none';
+                    });
+                }, 5000);
 
                 // Close modal on ESC key
-                document.addEventListener('keydown', function (e) {
+                document.addEventListener('keydown', (e) => {
                     if (e.key === 'Escape') {
                         closeModal('reviewModal');
                         closeModal('confirmationModal');
@@ -852,11 +1036,83 @@
                 });
 
                 // Close modal when clicking outside
-                document.addEventListener('click', function (e) {
+                document.addEventListener('click', (e) => {
                     if (e.target.classList.contains('modal') && e.target.classList.contains('active')) {
                         closeModal(e.target.id);
                     }
                 });
+
+                // Disable double form submissions
+                const forms = document.querySelectorAll('form');
+                forms.forEach(form => {
+                    let isSubmitting = false;
+                    form.addEventListener('submit', (e) => {
+                        if (isSubmitting) {
+                            e.preventDefault();
+                            return;
+                        }
+                        isSubmitting = true;
+
+                        // Re-enable after 3 seconds (in case of error)
+                        setTimeout(() => {
+                            isSubmitting = false;
+                        }, 3000);
+                    });
+                });
+            });
+
+            // =======================================================
+            // 7. WINDOW LOAD EVENT - UTAMA UNTUK STOP LOADING ICON
+            // =======================================================
+            window.addEventListener('load', function () {
+                if (DEBUG)
+                    console.log('Manage Requests page - Window fully loaded');
+
+                // Force stop loading indicator after 500ms
+                setTimeout(() => {
+                    forceStopLoadingIndicator();
+                }, 500);
+            });
+
+            // =======================================================
+            // 8. FALLBACK TIMEOUT - JIKA WINDOW.LOAD TAK TRIGGER
+            // =======================================================
+            setTimeout(() => {
+                if (!state.pageLoaded) {
+                    if (DEBUG)
+                        console.warn('Fallback: Forcing page load completion after 7 seconds');
+                    forceStopLoadingIndicator();
+                }
+            }, 7000);
+
+            // =======================================================
+            // 9. ERROR HANDLING (PREVENT LOADING HANG)
+            // =======================================================
+            window.addEventListener('error', function (event) {
+                if (DEBUG)
+                    console.error('JavaScript error:', event.error);
+                // Prevent error from stopping page load
+                event.preventDefault();
+            });
+
+            window.addEventListener('unhandledrejection', function (event) {
+                if (DEBUG)
+                    console.error('Unhandled promise rejection:', event.reason);
+                event.preventDefault(); // Prevent browser error display
+            });
+
+            // =======================================================
+            // 10. PREVENT MULTIPLE MODAL OPENINGS
+            // =======================================================
+            document.addEventListener('click', function (e) {
+                // Prevent clicking review button multiple times
+                if (e.target.closest && e.target.closest('button[onclick*="openReviewModal"]')) {
+                    const button = e.target.closest('button[onclick*="openReviewModal"]');
+                    if (button.disabled) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                }
             });
         </script>
 

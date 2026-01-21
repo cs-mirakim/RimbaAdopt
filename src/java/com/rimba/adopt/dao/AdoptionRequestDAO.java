@@ -26,21 +26,21 @@ public class AdoptionRequestDAO {
 
         try {
             conn = DatabaseConnection.getConnection();
-            
+
             // Start transaction
             conn.setAutoCommit(false);
-            
+
             // First, check if pet is still available
             String checkPetSql = "SELECT adoption_status FROM pets WHERE pet_id = ?";
             PreparedStatement checkStmt = conn.prepareStatement(checkPetSql);
             checkStmt.setInt(1, request.getPetId());
             ResultSet rs = checkStmt.executeQuery();
-            
+
             if (!rs.next() || !"available".equals(rs.getString("adoption_status"))) {
                 conn.rollback();
                 return false; // Pet not available
             }
-            
+
             // Check if adopter already has pending request for this pet
             String checkRequestSql = "SELECT COUNT(*) FROM adoption_request "
                     + "WHERE adopter_id = ? AND pet_id = ? AND status = 'pending'";
@@ -48,26 +48,26 @@ public class AdoptionRequestDAO {
             checkRequestStmt.setInt(1, request.getAdopterId());
             checkRequestStmt.setInt(2, request.getPetId());
             ResultSet rs2 = checkRequestStmt.executeQuery();
-            
+
             if (rs2.next() && rs2.getInt(1) > 0) {
                 conn.rollback();
                 return false; // Already applied
             }
-            
+
             // Create new request
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, request.getAdopterId());
             pstmt.setInt(2, request.getPetId());
             pstmt.setInt(3, request.getShelterId());
-            
+
             if (request.getAdopterMessage() != null && !request.getAdopterMessage().isEmpty()) {
                 pstmt.setString(4, request.getAdopterMessage());
             } else {
                 pstmt.setNull(4, Types.CLOB);
             }
-            
+
             int affectedRows = pstmt.executeUpdate();
-            
+
             if (affectedRows > 0) {
                 conn.commit();
                 return true;
@@ -75,7 +75,7 @@ public class AdoptionRequestDAO {
                 conn.rollback();
                 return false;
             }
-            
+
         } catch (SQLException e) {
             if (conn != null) {
                 try {
@@ -87,7 +87,9 @@ public class AdoptionRequestDAO {
             logger.log(Level.SEVERE, "Error creating adoption request", e);
             throw e;
         } finally {
-            if (pstmt != null) pstmt.close();
+            if (pstmt != null) {
+                pstmt.close();
+            }
             if (conn != null) {
                 conn.setAutoCommit(true);
                 DatabaseConnection.closeConnection(conn);
@@ -554,8 +556,13 @@ public class AdoptionRequestDAO {
         return counts;
     }
 
-    public Map<String, Object> getMonthlyRequestStats(int shelterId) throws SQLException {
-        Map<String, Object> stats = new HashMap<String, Object>();
+    public Map<String, Object> getMonthlyRequestStats(int shelterId) {
+        Map<String, Object> result = new HashMap<>();
+        String sql = "SELECT MONTH(request_date) as month, status, COUNT(*) as count "
+                + "FROM adoption_request "
+                + "WHERE shelter_id = ? AND YEAR(request_date) = YEAR(CURRENT_DATE) "
+                + "GROUP BY MONTH(request_date), status "
+                + "ORDER BY MONTH(request_date)";
 
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -563,107 +570,79 @@ public class AdoptionRequestDAO {
 
         try {
             conn = DatabaseConnection.getConnection();
-
-            // Initialize data structures
-            List<String> months = Arrays.asList("Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
-            Map<String, int[]> monthlyData = new HashMap<String, int[]>();
-
-            // Initialize arrays for each status
-            monthlyData.put("approved", new int[12]);
-            monthlyData.put("pending", new int[12]);
-            monthlyData.put("rejected", new int[12]);
-            monthlyData.put("cancelled", new int[12]);
-
-            // Initialize all counts to 0
-            for (String status : monthlyData.keySet()) {
-                Arrays.fill(monthlyData.get(status), 0);
-            }
-
-            System.out.println("DEBUG DAO: Getting monthly stats for shelter ID: " + shelterId);
-
-            // Simple approach - get all requests for this year and process manually
-            String query = "SELECT ar.request_date, ar.status "
-                    + "FROM adoption_request ar "
-                    + "JOIN pets p ON ar.pet_id = p.pet_id "
-                    + "WHERE p.shelter_id = ?";
-
-            pstmt = conn.prepareStatement(query);
+            pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, shelterId);
-
             rs = pstmt.executeQuery();
 
-            java.util.Calendar cal = java.util.Calendar.getInstance();
-            int currentYear = cal.get(java.util.Calendar.YEAR);
+            // Initialize arrays for each status
+            int[] approved = new int[12];
+            int[] pending = new int[12];
+            int[] rejected = new int[12];
+            int[] cancelled = new int[12];
 
-            int totalRecords = 0;
-            int currentYearRecords = 0;
+            // Fill with zeros
+            Arrays.fill(approved, 0);
+            Arrays.fill(pending, 0);
+            Arrays.fill(rejected, 0);
+            Arrays.fill(cancelled, 0);
 
             while (rs.next()) {
-                totalRecords++;
-                Timestamp requestDate = rs.getTimestamp("request_date");
+                int month = rs.getInt("month") - 1; // Convert to 0-based index
                 String status = rs.getString("status");
+                int count = rs.getInt("count");
 
-                if (requestDate != null && status != null) {
-                    cal.setTime(requestDate);
-                    int year = cal.get(java.util.Calendar.YEAR);
-                    int month = cal.get(java.util.Calendar.MONTH); // 0-indexed (0=Jan, 11=Dec)
+                // Debug log
+                System.out.println("DEBUG - Month: " + month + ", Status: " + status + ", Count: " + count);
 
-                    // Only process current year data
-                    if (year == currentYear && month >= 0 && month < 12) {
-                        currentYearRecords++;
-                        String statusLower = status.toLowerCase();
-
-                        if (monthlyData.containsKey(statusLower)) {
-                            monthlyData.get(statusLower)[month]++;
-                            System.out.println("DEBUG DAO: Added " + statusLower + " for month " + month);
-                        }
-                    }
+                switch (status) {
+                    case "approved":
+                        approved[month] = count;
+                        break;
+                    case "pending":
+                        pending[month] = count;
+                        break;
+                    case "rejected":
+                        rejected[month] = count;
+                        break;
+                    case "cancelled":
+                        cancelled[month] = count;
+                        break;
                 }
             }
 
-            System.out.println("DEBUG DAO: Total records found: " + totalRecords);
-            System.out.println("DEBUG DAO: Current year records: " + currentYearRecords);
-            System.out.println("DEBUG DAO: Approved array: " + Arrays.toString(monthlyData.get("approved")));
-            System.out.println("DEBUG DAO: Pending array: " + Arrays.toString(monthlyData.get("pending")));
+            // Debug log arrays
+            System.out.println("DEBUG - Approved array: " + Arrays.toString(approved));
+            System.out.println("DEBUG - Pending array: " + Arrays.toString(pending));
 
-            stats.put("months", months);
-            stats.put("monthlyData", monthlyData);
+            // Put data into result map
+            Map<String, int[]> monthlyData = new HashMap<>();
+            monthlyData.put("approved", approved);
+            monthlyData.put("pending", pending);
+            monthlyData.put("rejected", rejected);
+            monthlyData.put("cancelled", cancelled);
 
-            return stats;
+            result.put("monthlyData", monthlyData);
+
+            return result;
 
         } catch (SQLException e) {
-            System.err.println("ERROR in getMonthlyRequestStats: " + e.getMessage());
+            System.err.println("Error getting monthly request stats: " + e.getMessage());
             e.printStackTrace();
-
-            // Return empty but valid structure instead of null
-            List<String> months = Arrays.asList("Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
-            Map<String, int[]> monthlyData = new HashMap<String, int[]>();
-            monthlyData.put("approved", new int[12]);
-            monthlyData.put("pending", new int[12]);
-            monthlyData.put("rejected", new int[12]);
-            monthlyData.put("cancelled", new int[12]);
-
-            stats.put("months", months);
-            stats.put("monthlyData", monthlyData);
-
-            return stats;
-
+            return null;
         } finally {
-            if (rs != null) {
-                try {
+            try {
+                if (rs != null) {
                     rs.close();
-                } catch (SQLException e) {
                 }
-            }
-            if (pstmt != null) {
-                try {
+                if (pstmt != null) {
                     pstmt.close();
-                } catch (SQLException e) {
                 }
+                if (conn != null) {
+                    conn.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
-            DatabaseConnection.closeConnection(conn);
         }
     }
 
@@ -761,30 +740,30 @@ public class AdoptionRequestDAO {
         request.setRequestDate((Timestamp) details.get("request_date"));
         request.setStatus((String) details.get("status"));
         request.setAdopterMessage((String) details.get("adopter_message"));
-            request.setShelterResponse((String) details.get("shelter_response"));
-            request.setCancellationReason((String) details.get("cancellation_reason"));
+        request.setShelterResponse((String) details.get("shelter_response"));
+        request.setCancellationReason((String) details.get("cancellation_reason"));
 
-            return request;
-        }
+        return request;
+    }
 
-        // Get adoption statistics for adopter
+    // Get adoption statistics for adopter
     public Map<String, Integer> getAdoptionStatsByAdopter(int adopterId) throws SQLException {
         Map<String, Integer> stats = new HashMap<String, Integer>();
-        
+
         // Initialize with all statuses
         String[] statuses = {"pending", "approved", "rejected", "cancelled"};
         for (String status : statuses) {
             stats.put(status, 0);
         }
-        
-        String query = "SELECT status, COUNT(*) as count " +
-                       "FROM adoption_request " +
-                       "WHERE adopter_id = ? " +
-                       "GROUP BY status";
-        
+
+        String query = "SELECT status, COUNT(*) as count "
+                + "FROM adoption_request "
+                + "WHERE adopter_id = ? "
+                + "GROUP BY status";
+
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
-            
+                PreparedStatement pstmt = conn.prepareStatement(query)) {
+
             pstmt.setInt(1, adopterId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
@@ -796,41 +775,41 @@ public class AdoptionRequestDAO {
                 }
             }
         }
-        
+
         // Calculate total
         int total = stats.values().stream().mapToInt(Integer::intValue).sum();
         stats.put("total", total);
-        
+
         return stats;
     }
 
     // Get monthly adoption stats for adopter
     public Map<String, List<Integer>> getMonthlyAdoptionStatsByAdopter(int adopterId) throws SQLException {
         Map<String, List<Integer>> monthlyStats = new HashMap<String, List<Integer>>();
-        
+
         // Initialize arrays for each status (12 months)
         String[] statuses = {"approved", "pending", "rejected", "cancelled"};
         for (String status : statuses) {
             List<Integer> monthlyData = new ArrayList<Integer>(Collections.nCopies(12, 0));
             monthlyStats.put(status, monthlyData);
         }
-        
-        String query = "SELECT MONTH(request_date) as month, status, COUNT(*) as count " +
-                       "FROM adoption_request " +
-                       "WHERE adopter_id = ? AND YEAR(request_date) = YEAR(CURDATE()) " +
-                       "GROUP BY MONTH(request_date), status " +
-                       "ORDER BY month";
-        
+
+        String query = "SELECT MONTH(request_date) as month, status, COUNT(*) as count "
+                + "FROM adoption_request "
+                + "WHERE adopter_id = ? AND YEAR(request_date) = YEAR(CURDATE()) "
+                + "GROUP BY MONTH(request_date), status "
+                + "ORDER BY month";
+
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
-            
+                PreparedStatement pstmt = conn.prepareStatement(query)) {
+
             pstmt.setInt(1, adopterId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     int month = rs.getInt("month") - 1; // Convert to 0-indexed
                     String status = rs.getString("status");
                     int count = rs.getInt("count");
-                    
+
                     if (month >= 0 && month < 12 && status != null) {
                         String statusLower = status.toLowerCase();
                         if (monthlyStats.containsKey(statusLower)) {
@@ -841,41 +820,41 @@ public class AdoptionRequestDAO {
                 }
             }
         }
-        
+
         return monthlyStats;
     }
 
     // Get adoption applications for adopter
     public List<Map<String, Object>> getApplicationsByAdopter(int adopterId) throws SQLException {
         List<Map<String, Object>> applications = new ArrayList<Map<String, Object>>();
-        
+
         String query = "SELECT ar.request_id, ar.request_date, ar.status, "
-                     + "       ar.adopter_message, ar.shelter_response, ar.cancellation_reason, "
-                     + "       p.pet_id, p.name as pet_name, p.species, p.breed, p.age, p.gender, "
-                     + "       p.health_status, p.photo_path as pet_photo, "
-                     + "       s.shelter_name, s.shelter_address, "
-                     + "       a.address, a.occupation, a.household_type, a.has_other_pets, a.notes "
-                     + "FROM adoption_request ar "
-                     + "JOIN pets p ON ar.pet_id = p.pet_id "
-                     + "JOIN shelter s ON p.shelter_id = s.shelter_id "
-                     + "LEFT JOIN adopter a ON ar.adopter_id = a.adopter_id "
-                     + "WHERE ar.adopter_id = ? "
-                     + "ORDER BY ar.request_date DESC";
-        
+                + "       ar.adopter_message, ar.shelter_response, ar.cancellation_reason, "
+                + "       p.pet_id, p.name as pet_name, p.species, p.breed, p.age, p.gender, "
+                + "       p.health_status, p.photo_path as pet_photo, "
+                + "       s.shelter_name, s.shelter_address, "
+                + "       a.address, a.occupation, a.household_type, a.has_other_pets, a.notes "
+                + "FROM adoption_request ar "
+                + "JOIN pets p ON ar.pet_id = p.pet_id "
+                + "JOIN shelter s ON p.shelter_id = s.shelter_id "
+                + "LEFT JOIN adopter a ON ar.adopter_id = a.adopter_id "
+                + "WHERE ar.adopter_id = ? "
+                + "ORDER BY ar.request_date DESC";
+
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
-        
+
         try {
             conn = DatabaseConnection.getConnection();
             pstmt = conn.prepareStatement(query);
             pstmt.setInt(1, adopterId);
-            
+
             rs = pstmt.executeQuery();
-            
+
             while (rs.next()) {
                 Map<String, Object> application = new HashMap<String, Object>();
-                
+
                 // Basic request info
                 application.put("request_id", rs.getInt("request_id"));
                 application.put("request_date", rs.getTimestamp("request_date"));
@@ -883,7 +862,7 @@ public class AdoptionRequestDAO {
                 application.put("adopter_message", rs.getString("adopter_message"));
                 application.put("shelter_response", rs.getString("shelter_response"));
                 application.put("cancellation_reason", rs.getString("cancellation_reason"));
-                
+
                 // Pet info
                 application.put("pet_id", rs.getInt("pet_id"));
                 application.put("pet_name", rs.getString("pet_name"));
@@ -893,24 +872,24 @@ public class AdoptionRequestDAO {
                 application.put("gender", rs.getString("gender"));
                 application.put("health_status", rs.getString("health_status"));
                 application.put("pet_photo", rs.getString("pet_photo"));
-                
+
                 // Shelter info
                 application.put("shelter_name", rs.getString("shelter_name"));
                 application.put("shelter_address", rs.getString("shelter_address"));
-                
+
                 // Adopter info
                 application.put("address", rs.getString("address"));
                 application.put("occupation", rs.getString("occupation"));
                 application.put("household_type", rs.getString("household_type"));
                 application.put("has_other_pets", rs.getInt("has_other_pets"));
                 application.put("notes", rs.getString("notes"));
-                
+
                 applications.add(application);
             }
-            
+
             logger.log(Level.INFO, "Found {0} applications for adopter ID: {1}",
                     new Object[]{applications.size(), adopterId});
-            
+
         } finally {
             if (rs != null) {
                 try {
@@ -926,15 +905,15 @@ public class AdoptionRequestDAO {
             }
             DatabaseConnection.closeConnection(conn);
         }
-        
+
         return applications;
     }
 
     // Cancel adoption request for adopter
     public boolean cancelRequestByAdopter(int requestId, int adopterId, String cancellationReason) throws SQLException {
         String query = "UPDATE adoption_request "
-                     + "SET status = 'cancelled', cancellation_reason = ?, request_date = CURRENT_TIMESTAMP "
-                     + "WHERE request_id = ? AND adopter_id = ? AND status = 'pending'";
+                + "SET status = 'cancelled', cancellation_reason = ?, request_date = CURRENT_TIMESTAMP "
+                + "WHERE request_id = ? AND adopter_id = ? AND status = 'pending'";
 
         Connection conn = null;
         PreparedStatement pstmt = null;

@@ -31,9 +31,9 @@ public class FeedbackDAO {
             }
 
             int rowsAffected = pstmt.executeUpdate();
-            System.out.println("DEBUG: Added feedback for shelter " + feedback.getShelterId() + 
-                              " by adopter " + feedback.getAdopterId() + 
-                              ", Rows affected: " + rowsAffected);
+            System.out.println("DEBUG: Added feedback for shelter " + feedback.getShelterId()
+                    + " by adopter " + feedback.getAdopterId()
+                    + ", Rows affected: " + rowsAffected);
             return rowsAffected > 0;
 
         } catch (SQLException e) {
@@ -66,13 +66,13 @@ public class FeedbackDAO {
             int offset = (page - 1) * pageSize;
 
             // Use Derby syntax for pagination
-            String sql = "SELECT f.* FROM feedback f " +
-                        "WHERE f.shelter_id = ? " +
-                        "ORDER BY f.created_at DESC " +
-                        "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+            String sql = "SELECT f.* FROM feedback f "
+                    + "WHERE f.shelter_id = ? "
+                    + "ORDER BY f.created_at DESC "
+                    + "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
 
-            System.out.println("DEBUG: Getting feedback for shelter " + shelterId + 
-                              ", page " + page + ", pageSize " + pageSize);
+            System.out.println("DEBUG: Getting feedback for shelter " + shelterId
+                    + ", page " + page + ", pageSize " + pageSize);
 
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, shelterId);
@@ -294,17 +294,12 @@ public class FeedbackDAO {
 // ========== FIX THIS METHOD IN FeedbackDAO.java ==========
 // Get monthly feedback statistics
     public Map<String, Object> getMonthlyFeedbackStats(int shelterId) {
-        Map<String, Object> stats = new HashMap<>();
-
-        // Initialize arrays
-        List<String> months = Arrays.asList("Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
-        double[] monthlyRatings = new double[12];
-
-        // Initialize all ratings to 0
-        for (int i = 0; i < 12; i++) {
-            monthlyRatings[i] = 0.0;
-        }
+        Map<String, Object> result = new HashMap<>();
+        String sql = "SELECT MONTH(created_at) as month, AVG(rating) as avg_rating "
+                + "FROM feedback "
+                + "WHERE shelter_id = ? AND YEAR(created_at) = YEAR(CURRENT_DATE) "
+                + "GROUP BY MONTH(created_at) "
+                + "ORDER BY MONTH(created_at)";
 
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -312,97 +307,51 @@ public class FeedbackDAO {
 
         try {
             conn = DatabaseConnection.getConnection();
-
-            // CUBE PostgreSQL syntax first
-            String query = "SELECT "
-                    + "    EXTRACT(MONTH FROM created_at) as month_num, "
-                    + "    AVG(rating::float) as avg_rating "
-                    + "FROM feedback "
-                    + "WHERE shelter_id = ? "
-                    + "    AND EXTRACT(YEAR FROM created_at) = EXTRACT(YEAR FROM CURRENT_DATE) "
-                    + "GROUP BY EXTRACT(MONTH FROM created_at) "
-                    + "ORDER BY month_num";
-
-            pstmt = conn.prepareStatement(query);
+            pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, shelterId);
-
             rs = pstmt.executeQuery();
 
+            // Initialize array with zeros
+            double[] monthlyRatings = new double[12];
+            Arrays.fill(monthlyRatings, 0.0);
+
             while (rs.next()) {
-                int monthNum = rs.getInt("month_num") - 1; // Convert to 0-indexed
+                int month = rs.getInt("month") - 1; // Convert to 0-based index
                 double avgRating = rs.getDouble("avg_rating");
 
-                if (monthNum >= 0 && monthNum < 12) {
-                    monthlyRatings[monthNum] = avgRating;
+                // Debug log
+                System.out.println("DEBUG Feedback - Month: " + month + ", Avg Rating: " + avgRating);
+
+                if (!rs.wasNull()) {
+                    monthlyRatings[month] = avgRating;
                 }
             }
 
-            stats.put("months", months);
-            stats.put("monthlyRatings", monthlyRatings);
+            // Debug log array
+            System.out.println("DEBUG Feedback - Ratings array: " + Arrays.toString(monthlyRatings));
+
+            result.put("monthlyRatings", monthlyRatings);
+            return result;
 
         } catch (SQLException e) {
+            System.err.println("Error getting monthly feedback stats: " + e.getMessage());
             e.printStackTrace();
-
-            // If PostgreSQL fails, try simple approach
-            try {
-                // Simple approach - just get all feedback and calculate manually
-                String simpleQuery = "SELECT rating, created_at FROM feedback WHERE shelter_id = ?";
-                pstmt = conn.prepareStatement(simpleQuery);
-                pstmt.setInt(1, shelterId);
-
-                rs = pstmt.executeQuery();
-
-                // Reset arrays
-                monthlyRatings = new double[12];
-                int[] monthCounts = new int[12];
-
-                java.util.Calendar cal = java.util.Calendar.getInstance();
-                int currentYear = cal.get(java.util.Calendar.YEAR);
-
-                while (rs.next()) {
-                    Timestamp createdAt = rs.getTimestamp("created_at");
-                    int rating = rs.getInt("rating");
-
-                    cal.setTime(createdAt);
-                    int year = cal.get(java.util.Calendar.YEAR);
-                    int month = cal.get(java.util.Calendar.MONTH); // 0-indexed
-
-                    if (year == currentYear && month >= 0 && month < 12) {
-                        monthlyRatings[month] += rating;
-                        monthCounts[month]++;
-                    }
-                }
-
-                // Calculate averages
-                for (int i = 0; i < 12; i++) {
-                    if (monthCounts[i] > 0) {
-                        monthlyRatings[i] = monthlyRatings[i] / monthCounts[i];
-                    }
-                }
-
-                stats.put("months", months);
-                stats.put("monthlyRatings", monthlyRatings);
-
-            } catch (SQLException e2) {
-                e2.printStackTrace();
-            }
+            return null;
         } finally {
-            if (rs != null) {
-                try {
+            try {
+                if (rs != null) {
                     rs.close();
-                } catch (SQLException e) {
                 }
-            }
-            if (pstmt != null) {
-                try {
+                if (pstmt != null) {
                     pstmt.close();
-                } catch (SQLException e) {
                 }
+                if (conn != null) {
+                    conn.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
-            DatabaseConnection.closeConnection(conn);
         }
-
-        return stats;
     }
 // Get recent feedback with adopter names - NEW METHOD (optional)
 
@@ -502,7 +451,7 @@ public class FeedbackDAO {
 
         return name;
     }
-    
+
     // Get feedback by adopter ID with shelter details
     public List<Object[]> getFeedbackByAdopterId(int adopterId) {
         Connection conn = null;
@@ -513,18 +462,18 @@ public class FeedbackDAO {
         try {
             conn = DatabaseConnection.getConnection();
             String sql = "SELECT f.feedback_id, s.shelter_name, f.rating, f.comment, f.created_at, "
-                       + "u.profile_photo_path "
-                       + "FROM feedback f "
-                       + "JOIN shelter s ON f.shelter_id = s.shelter_id "
-                       + "JOIN users u ON s.shelter_id = u.user_id "
-                       + "WHERE f.adopter_id = ? "
-                       + "ORDER BY f.created_at DESC";
-            
+                    + "u.profile_photo_path "
+                    + "FROM feedback f "
+                    + "JOIN shelter s ON f.shelter_id = s.shelter_id "
+                    + "JOIN users u ON s.shelter_id = u.user_id "
+                    + "WHERE f.adopter_id = ? "
+                    + "ORDER BY f.created_at DESC";
+
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, adopterId);
-            
+
             rs = pstmt.executeQuery();
-            
+
             while (rs.next()) {
                 Object[] feedback = new Object[6];
                 feedback[0] = rs.getInt("feedback_id");
@@ -533,47 +482,49 @@ public class FeedbackDAO {
                 feedback[3] = rs.getString("comment");
                 feedback[4] = rs.getTimestamp("created_at");
                 feedback[5] = rs.getString("profile_photo_path");
-                
+
                 feedbackList.add(feedback);
             }
-            
+
         } catch (SQLException e) {
             e.printStackTrace();
         } finally {
             if (rs != null) {
                 try {
                     rs.close();
-                } catch (SQLException e) {}
+                } catch (SQLException e) {
+                }
             }
             if (pstmt != null) {
                 try {
                     pstmt.close();
-                } catch (SQLException e) {}
+                } catch (SQLException e) {
+                }
             }
             DatabaseConnection.closeConnection(conn);
         }
-        
+
         return feedbackList;
     }
-    
+
     // Update feedback by adopter
     public boolean updateFeedback(int feedbackId, int rating, String comment) {
         Connection conn = null;
         PreparedStatement pstmt = null;
-        
+
         try {
             conn = DatabaseConnection.getConnection();
             String sql = "UPDATE feedback SET rating = ?, comment = ?, created_at = CURRENT_TIMESTAMP "
-                       + "WHERE feedback_id = ?";
-            
+                    + "WHERE feedback_id = ?";
+
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, rating);
             pstmt.setString(2, comment);
             pstmt.setInt(3, feedbackId);
-            
+
             int rowsAffected = pstmt.executeUpdate();
             return rowsAffected > 0;
-            
+
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
@@ -581,28 +532,29 @@ public class FeedbackDAO {
             if (pstmt != null) {
                 try {
                     pstmt.close();
-                } catch (SQLException e) {}
+                } catch (SQLException e) {
+                }
             }
             DatabaseConnection.closeConnection(conn);
         }
     }
-    
+
     // Delete feedback by adopter
     public boolean deleteFeedbackByAdopter(int feedbackId, int adopterId) {
         Connection conn = null;
         PreparedStatement pstmt = null;
-        
+
         try {
             conn = DatabaseConnection.getConnection();
             String sql = "DELETE FROM feedback WHERE feedback_id = ? AND adopter_id = ?";
-            
+
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, feedbackId);
             pstmt.setInt(2, adopterId);
-            
+
             int rowsAffected = pstmt.executeUpdate();
             return rowsAffected > 0;
-            
+
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
@@ -610,33 +562,34 @@ public class FeedbackDAO {
             if (pstmt != null) {
                 try {
                     pstmt.close();
-                } catch (SQLException e) {}
+                } catch (SQLException e) {
+                }
             }
             DatabaseConnection.closeConnection(conn);
         }
     }
-    
+
     // Get feedback details by ID for adopter
     public Map<String, Object> getFeedbackDetailsForAdopter(int feedbackId, int adopterId) {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         Map<String, Object> feedbackDetails = new HashMap<>();
-        
+
         try {
             conn = DatabaseConnection.getConnection();
             String sql = "SELECT f.*, s.shelter_name, u.profile_photo_path "
-                       + "FROM feedback f "
-                       + "JOIN shelter s ON f.shelter_id = s.shelter_id "
-                       + "JOIN users u ON s.shelter_id = u.user_id "
-                       + "WHERE f.feedback_id = ? AND f.adopter_id = ?";
-            
+                    + "FROM feedback f "
+                    + "JOIN shelter s ON f.shelter_id = s.shelter_id "
+                    + "JOIN users u ON s.shelter_id = u.user_id "
+                    + "WHERE f.feedback_id = ? AND f.adopter_id = ?";
+
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, feedbackId);
             pstmt.setInt(2, adopterId);
-            
+
             rs = pstmt.executeQuery();
-            
+
             if (rs.next()) {
                 feedbackDetails.put("feedbackId", rs.getInt("feedback_id"));
                 feedbackDetails.put("shelterId", rs.getInt("shelter_id"));
@@ -646,23 +599,25 @@ public class FeedbackDAO {
                 feedbackDetails.put("shelterName", rs.getString("shelter_name"));
                 feedbackDetails.put("shelterPhoto", rs.getString("profile_photo_path"));
             }
-            
+
         } catch (SQLException e) {
             e.printStackTrace();
         } finally {
             if (rs != null) {
                 try {
                     rs.close();
-                } catch (SQLException e) {}
+                } catch (SQLException e) {
+                }
             }
             if (pstmt != null) {
                 try {
                     pstmt.close();
-                } catch (SQLException e) {}
+                } catch (SQLException e) {
+                }
             }
             DatabaseConnection.closeConnection(conn);
         }
-        
+
         return feedbackDetails;
     }
 
@@ -680,14 +635,14 @@ public class FeedbackDAO {
             int offset = (page - 1) * pageSize;
 
             // Use Derby syntax for pagination
-            String sql = "SELECT f.*, u.name as adopter_name FROM feedback f " +
-                        "JOIN users u ON f.adopter_id = u.user_id " +
-                        "WHERE f.shelter_id = ? " +
-                        "ORDER BY f.created_at DESC " +
-                        "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+            String sql = "SELECT f.*, u.name as adopter_name FROM feedback f "
+                    + "JOIN users u ON f.adopter_id = u.user_id "
+                    + "WHERE f.shelter_id = ? "
+                    + "ORDER BY f.created_at DESC "
+                    + "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
 
-            System.out.println("DEBUG: Getting feedback for shelter " + shelterId + 
-                              ", page " + page + ", pageSize " + pageSize);
+            System.out.println("DEBUG: Getting feedback for shelter " + shelterId
+                    + ", page " + page + ", pageSize " + pageSize);
 
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, shelterId);

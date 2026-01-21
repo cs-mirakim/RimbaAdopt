@@ -6,15 +6,15 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 
 <%
-    // Check if user is logged in and is shelter
+    // Check if user is logged in and is shelter - FIX: Added return statements
     if (!SessionUtil.isLoggedIn(session)) {
         response.sendRedirect("index.jsp");
-        return;
+        return; // CRITICAL FIX: Stop execution after redirect
     }
 
     if (!SessionUtil.isShelter(session)) {
         response.sendRedirect("index.jsp");
-        return;
+        return; // CRITICAL FIX: Stop execution after redirect
     }
 
     // ===== FIX: Load pets data directly in JSP if not already set =====
@@ -46,7 +46,6 @@
     int age3_5 = 0;
     int age5plus = 0;
     int availableCount = 0;
-    int pendingCount = 0;
     int adoptedCount = 0;
 
     if (petsList != null) {
@@ -123,7 +122,6 @@
 
             /* Adoption Status Chip Styles - NEW */
             .chip-available { background-color: #d1fae5; color: #065f46; border: 1px solid #10b981; }
-            .chip-pending { background-color: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
             .chip-adopted { background-color: #dbeafe; color: #1e40af; border: 1px solid #3b82f6; }
 
             /* Modal Styles */
@@ -146,27 +144,23 @@
                 text-align: center;
             }
 
-            /* Status indicator */
-            .status-indicator {
-                display: inline-block;
-                width: 10px;
-                height: 10px;
-                border-radius: 50%;
-                margin-right: 6px;
-            }
-
             /* Active filter styles */
             .active-filter {
                 box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             }
 
-            /* Quick status update dropdown */
-            .status-dropdown {
-                padding: 0.25rem 0.5rem;
-                font-size: 0.75rem;
-                border-radius: 0.375rem;
-                border: 1px solid #e5e7eb;
-                background-color: white;
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            .animate-slideIn {
+                animation: slideIn 0.3s ease-out;
             }
         </style>
     </head>
@@ -208,7 +202,7 @@
                 </div>
                 <hr style="border-top: 1px solid #E5E5E5; margin-bottom: 1.5rem; margin-top: 1.5rem;" />
 
-                <!-- Stats Cards for Adoption Status - DIPERBAIKI -->
+                <!-- Stats Cards for Adoption Status -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div class="bg-green-50 border border-green-200 rounded-xl p-4">
                         <div class="flex justify-between items-center">
@@ -319,7 +313,7 @@
                     </div>
                 </div>
 
-                <!-- Pets Table - USING JSTL DIRECTLY (NO JAVASCRIPT DUMMY DATA) -->
+                <!-- Pets Table -->
                 <div class="overflow-x-auto rounded-xl border shadow-lg" style="border-color: #E5E5E5;">
                     <table class="min-w-full divide-y" style="border-color: #E5E5E5;">
                         <thead style="background-color: #F6F3E7;">
@@ -332,7 +326,7 @@
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 7%;">Age</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 8%;">Gender</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 8%;">Size</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 12%;">Adoption Status</th> <!-- NEW COLUMN -->
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 12%;">Adoption Status</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Color</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style="color: #2F5D50;">Health Status</th>
                                 <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider" style="color: #2F5D50; width: 12%;">Actions</th>
@@ -346,7 +340,7 @@
                                             data-gender="${pet.gender}"
                                             data-size="${pet.size}"
                                             data-age="${pet.age != null ? pet.age : ''}"
-                                            data-status="${pet.adoptionStatus}"> <!-- NEW: status data attribute -->
+                                            data-status="${pet.adoptionStatus}">
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color: #2B2B2B;">${pet.petId}</td>
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <div class="flex-shrink-0 h-12 w-12">
@@ -374,9 +368,8 @@
                                                     ${pet.size}
                                                 </span>
                                             </td>
-                                            <!-- Adoption Status Column - NEW -->
+                                            <!-- Adoption Status Column -->
                                             <td class="px-6 py-4 whitespace-nowrap">
-                                                <!-- Status Display Badge SAHAJA (TANPA dropdown) -->
                                                 <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
                                                       ${pet.adoptionStatus == 'available' ? 'chip-available' : 'chip-adopted'}">
                                                     <c:choose>
@@ -410,7 +403,7 @@
                                 </c:when>
                                 <c:otherwise>
                                     <tr>
-                                        <td colspan="12" class="px-6 py-8 text-center text-gray-500"> <!-- Changed colspan from 11 to 12 -->
+                                        <td colspan="12" class="px-6 py-8 text-center text-gray-500">
                                             <i class="fas fa-paw text-4xl mb-2"></i>
                                             <p class="text-lg">No pets found. Add your first pet!</p>
                                         </td>
@@ -508,7 +501,7 @@
                             </div>
                         </div>
 
-                        <!-- Adoption Status Field - DIPERBAIKI -->
+                        <!-- Adoption Status Field -->
                         <div>
                             <label for="adoptionStatus" class="block text-sm font-medium" style="color: #2B2B2B;">Adoption Status: <span class="text-red-500">*</span></label>
                             <div class="mt-2 space-x-4">
@@ -528,7 +521,7 @@
                             <textarea id="description" name="description" rows="3" class="mt-1 block w-full border rounded-lg shadow-sm p-3 transition duration-150 custom-focus" style="border-color: #E5E5E5; color: #2B2B2B;" placeholder="Describe the pet's personality, behavior, special needs, etc."></textarea>
                         </div>
 
-                        <!-- Pet Photo Section - dengan remove photo option -->
+                        <!-- Pet Photo Section -->
                         <div>
                             <label for="petPhoto" class="block text-sm font-medium" style="color: #2B2B2B;">Pet Photo:</label>
                             <div class="mt-2 flex items-center space-x-4">
@@ -603,15 +596,112 @@
         <jsp:include page="includes/footer.jsp" />
         <jsp:include page="includes/sidebar.jsp" />
         <script src="includes/sidebar.js"></script>
+
         <script>
                         // =======================================================
-                        // FILTER FUNCTIONS (CLIENT-SIDE)
+                        // CONFIGURATION AND TRACKING
                         // =======================================================
-
                         let currentFilter = 'all';
                         let currentAgeFilter = 'all';
                         let currentSearchTerm = '';
+                        let activeAjaxRequests = 0;
 
+                        // Debug mode
+                        const DEBUG = false;
+
+                        // =======================================================
+                        // 1. IMAGE LOADING HANDLER (PENTING UNTUK STOP LOADING ICON)
+                        // =======================================================
+                        function handleAllImagesLoaded() {
+                            return new Promise(function (resolve) {
+                                const images = document.querySelectorAll('img');
+                                const totalImages = images.length;
+                                let loadedCount = 0;
+
+                                if (DEBUG)
+                                    console.log(`Checking ${totalImages} images...`);
+
+                                if (totalImages === 0) {
+                                    resolve();
+                                    return;
+                                }
+
+                                // Function to track each image
+                                function imageLoaded() {
+                                    loadedCount++;
+                                    this.removeEventListener('load', imageLoaded);
+                                    this.removeEventListener('error', imageLoaded);
+
+                                    if (DEBUG && loadedCount % 5 === 0) {
+                                        console.log(`Images loaded: ${loadedCount}/${totalImages}`);
+                                    }
+
+                                    if (loadedCount === totalImages) {
+                                        clearTimeout(timeoutId);
+                                        if (DEBUG)
+                                            console.log('All images loaded successfully');
+                                        resolve();
+                                    }
+                                }
+
+                                // Check each image
+                                images.forEach(img => {
+                                    if (img.complete) {
+                                        loadedCount++;
+                                    } else {
+                                        img.addEventListener('load', imageLoaded);
+                                        img.addEventListener('error', imageLoaded);
+                                    }
+                                });
+
+                                // Check if all already loaded
+                                if (loadedCount === totalImages) {
+                                    if (DEBUG)
+                                        console.log('All images already loaded from cache');
+                                    resolve();
+                                    return;
+                                }
+
+                                // Fallback timeout (3 seconds)
+                                const timeoutId = setTimeout(() => {
+                                    if (DEBUG)
+                                        console.warn(`Image loading timeout. Loaded: ${loadedCount}/${totalImages}`);
+                                    resolve();
+                                }, 3000);
+                            });
+                        }
+
+                        // =======================================================
+                        // 2. FORCE STOP LOADING INDICATOR (UTAMA!)
+                        // =======================================================
+                        function forceStopLoadingIndicator() {
+                            try {
+                                console.log('Force stopping browser loading indicator...');
+
+                                // Method 1: window.stop() - stops all pending requests
+                                if (window.stop && typeof window.stop === 'function') {
+                                    window.stop();
+                                }
+
+                                // Method 2: Mark page as fully loaded
+                                document.documentElement.setAttribute('data-page-loaded', 'true');
+                                document.body.classList.add('page-loaded');
+
+                                // Method 3: Stop any pending animations
+                                const animations = document.querySelectorAll('.animate-slideIn');
+                                animations.forEach(el => {
+                                    el.style.animation = 'none';
+                                });
+
+                                console.log('Loading indicator stopped successfully');
+                            } catch (e) {
+                                console.warn('Error stopping loading indicator:', e);
+                            }
+                        }
+
+                        // =======================================================
+                        // 3. FILTER FUNCTIONS (CLIENT-SIDE)
+                        // =======================================================
                         function applyFilter(filterType) {
                             currentFilter = filterType;
 
@@ -619,7 +709,7 @@
                             document.querySelectorAll('.filter-btn').forEach(btn => {
                                 btn.classList.remove('bg-primary', 'text-white', 'shadow-md', 'active-filter',
                                         'chip-male', 'chip-female', 'chip-small', 'chip-medium', 'chip-large',
-                                        'chip-available', 'chip-pending', 'chip-adopted');
+                                        'chip-available', 'chip-adopted');
                                 btn.classList.add('border', 'text-[#2B2B2B]', 'hover:bg-[#F6F3E7]');
 
                                 if (btn.getAttribute('data-filter') === filterType) {
@@ -640,8 +730,6 @@
                                         btn.classList.add('chip-large', 'shadow-md');
                                     } else if (filterType === 'status-available') {
                                         btn.classList.add('chip-available', 'shadow-md');
-                                    } else if (filterType === 'status-pending') {
-                                        btn.classList.add('chip-pending', 'shadow-md');
                                     } else if (filterType === 'status-adopted') {
                                         btn.classList.add('chip-adopted', 'shadow-md');
                                     }
@@ -761,14 +849,14 @@
                                     const tableBody = document.getElementById('petsTableBody');
                                     const messageRow = document.createElement('tr');
                                     messageRow.innerHTML = `
-                            <td colspan="12" class="px-6 py-8 text-center text-gray-500">
-                                <i class="fas fa-filter text-4xl mb-2"></i>
-                                <p class="text-lg">No pets match the current filters.</p>
-                                <button onclick="clearAllFilters()" class="mt-2 px-4 py-2 text-sm rounded-xl border border-[#2F5D50] text-[#2F5D50] hover:bg-[#F6F3E7] transition duration-150">
-                                    Clear Filters
-                                </button>
-                            </td>
-                        `;
+                    <td colspan="12" class="px-6 py-8 text-center text-gray-500">
+                        <i class="fas fa-filter text-4xl mb-2"></i>
+                        <p class="text-lg">No pets match the current filters.</p>
+                        <button onclick="clearAllFilters()" class="mt-2 px-4 py-2 text-sm rounded-xl border border-[#2F5D50] text-[#2F5D50] hover:bg-[#F6F3E7] transition duration-150">
+                            Clear Filters
+                        </button>
+                    </td>
+                `;
                                     tableBody.appendChild(messageRow);
                                 }
                             } else if (noPetsRow) {
@@ -783,13 +871,16 @@
                             currentSearchTerm = '';
 
                             // Reset search input
-                            document.getElementById('searchInput').value = '';
+                            const searchInput = document.getElementById('searchInput');
+                            if (searchInput) {
+                                searchInput.value = '';
+                            }
 
                             // Reset button styles
                             document.querySelectorAll('.filter-btn').forEach(btn => {
                                 btn.classList.remove('bg-primary', 'text-white', 'shadow-md', 'active-filter',
                                         'chip-male', 'chip-female', 'chip-small', 'chip-medium', 'chip-large',
-                                        'chip-available', 'chip-pending', 'chip-adopted');
+                                        'chip-available', 'chip-adopted');
                                 btn.classList.add('border', 'text-[#2B2B2B]', 'hover:bg-[#F6F3E7]');
 
                                 if (btn.getAttribute('data-filter') === 'all') {
@@ -813,7 +904,7 @@
                         }
 
                         // =======================================================
-                        // MODAL FUNCTIONS
+                        // 4. MODAL FUNCTIONS
                         // =======================================================
 
                         // Image preview function
@@ -823,11 +914,25 @@
                             const previewImage = document.getElementById('previewImage');
 
                             if (input.files && input.files[0]) {
+                                // Validate file size (max 5MB)
+                                const fileSize = input.files[0].size / 1024 / 1024; // in MB
+                                if (fileSize > 5) {
+                                    alert('File size exceeds 5MB limit. Please choose a smaller file.');
+                                    input.value = '';
+                                    previewContainer.classList.add('hidden');
+                                    return;
+                                }
+
                                 const reader = new FileReader();
 
                                 reader.onload = function (e) {
                                     previewImage.src = e.target.result;
                                     previewContainer.classList.remove('hidden');
+                                }
+
+                                reader.onerror = function () {
+                                    console.error('Error reading image file');
+                                    previewContainer.classList.add('hidden');
                                 }
 
                                 reader.readAsDataURL(input.files[0]);
@@ -848,11 +953,12 @@
                             document.getElementById('previewImage').src = '';
                             document.getElementById('petPhoto').value = '';
                             document.getElementById('statusAvailable').checked = true;
+                            document.getElementById('removePhotoContainer').classList.add('hidden');
 
                             openModal('createModal');
                         }
 
-                        // Open Edit Modal - update untuk show/hide remove photo option
+                        // Open Edit Modal
                         function openEditModal(petId, name, species, breed, age, gender, size, color, healthStatus, description, photoPath, adoptionStatus) {
                             document.getElementById('modalTitle').textContent = 'Edit Pet Details';
                             document.getElementById('formAction').value = 'update';
@@ -880,8 +986,16 @@
                             if (photoPath && photoPath !== 'null' && !photoPath.includes('default.png')) {
                                 const previewContainer = document.getElementById('imagePreview');
                                 const previewImage = document.getElementById('previewImage');
+
+                                // Set image with onload/onerror handling
+                                previewImage.onload = function () {
+                                    previewContainer.classList.remove('hidden');
+                                };
+                                previewImage.onerror = function () {
+                                    console.warn('Failed to load existing image:', photoPath);
+                                    previewContainer.classList.add('hidden');
+                                };
                                 previewImage.src = photoPath;
-                                previewContainer.classList.remove('hidden');
 
                                 // Show remove photo option
                                 removePhotoContainer.classList.remove('hidden');
@@ -890,24 +1004,6 @@
                                 // Hide remove photo option if no photo or default photo
                                 removePhotoContainer.classList.add('hidden');
                             }
-
-                            openModal('createModal');
-                        }
-
-//                      Open Create Modal - hide remove photo option
-                        function openCreateModal() {
-                            document.getElementById('modalTitle').textContent = 'Add New Pet';
-                            document.getElementById('formAction').value = 'create';
-                            document.getElementById('formPetId').value = '';
-                            document.getElementById('formExistingPhotoPath').value = '';
-                            document.getElementById('petForm').reset();
-                            document.getElementById('imagePreview').classList.add('hidden');
-                            document.getElementById('previewImage').src = '';
-                            document.getElementById('petPhoto').value = '';
-                            document.getElementById('statusAvailable').checked = true;
-
-                            // Hide remove photo option for create mode
-                            document.getElementById('removePhotoContainer').classList.add('hidden');
 
                             openModal('createModal');
                         }
@@ -939,15 +1035,39 @@
                                     document.getElementById('petForm').reset();
                                     document.getElementById('imagePreview').classList.add('hidden');
                                     document.getElementById('previewImage').src = '';
+                                    document.getElementById('removePhotoContainer').classList.add('hidden');
                                 }
                             }, 300);
                         }
 
                         // =======================================================
-                        // INITIALIZATION
+                        // 5. FORM SUBMISSION HANDLING (PENTING!)
+                        // =======================================================
+                        function handleFormSubmission(event) {
+                            // Only handle if form has file upload
+                            if (event.target.id === 'petForm') {
+                                const formData = new FormData(event.target);
+                                const submitBtn = event.target.querySelector('button[type="submit"]');
+                                const originalText = submitBtn.innerHTML;
+
+                                // Disable button and show loading
+                                submitBtn.disabled = true;
+                                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+
+                                // Submit normally (no AJAX) - let the form submit
+                                // Button will be re-enabled on page reload
+                                return true;
+                            }
+                            return true;
+                        }
+
+                        // =======================================================
+                        // 6. INITIALIZATION AND LOADING HANDLERS (PENTING!)
                         // =======================================================
 
                         document.addEventListener('DOMContentLoaded', function () {
+                            console.log('Manage Pets page - DOM loaded');
+
                             // File input preview
                             const photoInput = document.getElementById('petPhoto');
                             if (photoInput) {
@@ -974,6 +1094,12 @@
                                 });
                             }
 
+                            // Form submission handler
+                            const petForm = document.getElementById('petForm');
+                            if (petForm) {
+                                petForm.addEventListener('submit', handleFormSubmission);
+                            }
+
                             // Auto-hide success/error messages after 5 seconds
                             setTimeout(() => {
                                 const messages = document.querySelectorAll('.fixed.top-4');
@@ -993,24 +1119,60 @@
                             if (urlAgeFilter) {
                                 applyAgeFilter(urlAgeFilter);
                             }
+
+                            // Initial filter display
+                            filterAndDisplayPets();
+
+                            // Handle image loading
+                            handleAllImagesLoaded().then(() => {
+                                console.log('All pet images loaded');
+                            }).catch(err => {
+                                console.warn('Image loading issue:', err);
+                            });
+                        });
+
+                        // =======================================================
+                        // 7. WINDOW LOAD EVENT - UTAMA UNTUK STOP LOADING ICON
+                        // =======================================================
+                        window.addEventListener('load', function () {
+                            console.log('Manage Pets page - Window fully loaded');
+
+                            // Force stop loading indicator after 500ms
+                            setTimeout(() => {
+                                forceStopLoadingIndicator();
+
+                                // Check for any issues
+                                if (document.querySelectorAll('img:not([src])').length > 0) {
+                                    console.warn('Some images have empty src attributes');
+                                }
+                            }, 500);
+                        });
+
+                        // =======================================================
+                        // 8. FALLBACK TIMEOUT - JIKA WINDOW.LOAD TAK TRIGGER
+                        // =======================================================
+                        setTimeout(() => {
+                            if (!document.documentElement.hasAttribute('data-page-loaded')) {
+                                console.warn('Fallback: Forcing page load completion after 6 seconds');
+                                forceStopLoadingIndicator();
+                            }
+                        }, 6000);
+
+                        // =======================================================
+                        // 9. ERROR HANDLING
+                        // =======================================================
+                        // Catch unhandled errors that might cause loading to hang
+                        window.addEventListener('error', function (event) {
+                            console.error('JavaScript error:', event.error);
+                            // Don't prevent default, just log
+                        });
+
+                        // Catch unhandled promise rejections
+                        window.addEventListener('unhandledrejection', function (event) {
+                            console.error('Unhandled promise rejection:', event.reason);
+                            event.preventDefault(); // Prevent browser error display
                         });
         </script>
 
-        <!-- Animation for messages -->
-        <style>
-            @keyframes slideIn {
-                from {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
-            }
-            .animate-slideIn {
-                animation: slideIn 0.3s ease-out;
-            }
-        </style>
     </body>
 </html>

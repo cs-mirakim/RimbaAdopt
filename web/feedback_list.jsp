@@ -1,30 +1,35 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="com.rimba.adopt.util.SessionUtil" %>
 <%@ page import="com.rimba.adopt.dao.FeedbackDAO" %>
-<%@ page import="com.rimba.adopt.model.Feedback" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.sql.Timestamp" %>
-<%@ page import="java.util.Map" %>
-<%@ page import="java.util.HashMap" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 
 <%
+    // Debug log
+    System.out.println("DEBUG feedback_list.jsp - Starting...");
+    System.out.println("DEBUG - isLoggedIn: " + SessionUtil.isLoggedIn(session));
+    System.out.println("DEBUG - isAdopter: " + SessionUtil.isAdopter(session));
+
     // Check if user is logged in and is adopter
     if (!SessionUtil.isLoggedIn(session)) {
+        System.out.println("DEBUG - User not logged in, redirecting to index.jsp");
         response.sendRedirect("index.jsp");
-        return;
+        return; // CRITICAL: Stop execution
     }
 
     if (!SessionUtil.isAdopter(session)) {
+        System.out.println("DEBUG - User not adopter, redirecting to index.jsp");
         response.sendRedirect("index.jsp");
-        return;
+        return; // CRITICAL: Stop execution
     }
 
     // Get adopter ID
     int adopterId = SessionUtil.getUserId(session);
     FeedbackDAO feedbackDAO = new FeedbackDAO();
 
-    // Initialize variables - GUNA SYNTAX JAVA 5
+    // Initialize variables
     List feedbackList = new ArrayList();
     int totalCount = 0;
     int[] ratingCounts = new int[6]; // index 0 not used, 1-5 for ratings
@@ -33,6 +38,8 @@
     try {
         feedbackList = feedbackDAO.getFeedbackByAdopterId(adopterId);
         totalCount = feedbackList.size();
+
+        System.out.println("DEBUG - Total feedback found: " + totalCount);
 
         // Calculate rating distribution
         for (int i = 0; i < ratingCounts.length; i++) {
@@ -46,9 +53,17 @@
                 ratingCounts[rating]++;
             }
         }
+
+        // Store in request scope untuk JSTL
+        request.setAttribute("feedbackList", feedbackList);
+
     } catch (Exception e) {
         e.printStackTrace();
+        System.out.println("DEBUG - Error loading feedback: " + e.getMessage());
+        request.setAttribute("error", "Failed to load feedback data: " + e.getMessage());
     }
+
+    System.out.println("DEBUG feedback_list.jsp - Finished loading data");
 %>
 
 <!DOCTYPE html>
@@ -100,11 +115,48 @@
             .rating-star.empty {
                 color: #E5E5E5;
             }
+
+            /* Animation for messages */
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            .animate-slideIn {
+                animation: slideIn 0.3s ease-out;
+            }
         </style>
     </head>
     <body class="flex flex-col min-h-screen relative bg-[#F6F3E7] text-main">
+        <!-- Success/Error Messages -->
+        <c:if test="${not empty sessionScope.success}">
+            <div class="fixed top-4 right-4 z-50 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-lg animate-slideIn">
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    <span>${sessionScope.success}</span>
+                </div>
+            </div>
+            <% session.removeAttribute("success"); %>
+        </c:if>
+
+        <c:if test="${not empty sessionScope.error}">
+            <div class="fixed top-4 right-4 z-50 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg animate-slideIn">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    <span>${sessionScope.error}</span>
+                </div>
+            </div>
+            <% session.removeAttribute("error");%>
+        </c:if>
+
         <!-- Header container -->
         <jsp:include page="includes/header.jsp" />
+
         <main class="flex-1 p-4 pt-6 relative z-10 flex justify-center items-start mb-2" style="background-color: #F6F3E7;">
             <div class="w-full bg-white py-8 px-6 rounded-3xl shadow-xl border" style="max-width: 1450px; border-color: #E5E5E5;">
                 <div class="mb-8">
@@ -112,9 +164,10 @@
                     <p class="mt-2 text-lg" style="color: #2B2B2B;">View and manage your feedback to shelters here.</p>
                 </div>
                 <hr style="border-top: 1px solid #E5E5E5; margin-bottom: 1.5rem; margin-top: 1.5rem;" />
+
                 <div class="flex flex-col md:flex-row justify-between items-center mb-6 space-y-4 md:space-y-0">
                     <div class="flex flex-wrap gap-2 text-sm font-medium">
-                        <button class="px-5 py-2 rounded-full text-white hover:bg-[#24483E] transition duration-150 shadow-md filter-btn bg-primary" data-rating="all">All (<%= totalCount%>)</button>
+                        <button class="px-5 py-2 rounded-full text-white hover:bg-[#24483E] transition duration-150 shadow-md filter-btn bg-primary active-filter" data-rating="all">All (<%= totalCount%>)</button>
                         <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#FFD700] text-[#2B2B2B]" data-rating="5">⭐ 5 Stars (<%= ratingCounts[5]%>)</button>
                         <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#FFD700] text-[#2B2B2B]" data-rating="4">⭐ 4 Stars (<%= ratingCounts[4]%>)</button>
                         <button class="px-5 py-2 rounded-full border hover:bg-[#F6F3E7] transition duration-150 filter-btn border-[#FFD700] text-[#2B2B2B]" data-rating="3">⭐ 3 Stars (<%= ratingCounts[3]%>)</button>
@@ -126,6 +179,7 @@
                         <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                     </div>
                 </div>
+
                 <div class="overflow-x-auto rounded-xl border shadow-lg" style="border-color: #E5E5E5;">
                     <table class="min-w-full divide-y" style="border-color: #E5E5E5;">
                         <thead style="background-color: #F6F3E7;">
@@ -139,74 +193,90 @@
                             </tr>
                         </thead>
                         <tbody id="feedback-list" class="bg-white divide-y" style="border-color: #E5E5E5;">
-                            <%
-                                int counter = 0;
-                                for (int i = 0; i < feedbackList.size(); i++) {
-                                    counter++;
-                                    Object[] feedback = (Object[]) feedbackList.get(i);
-                                    Integer feedbackId = (Integer) feedback[0];
-                                    String shelterName = (String) feedback[1];
-                                    Integer rating = (Integer) feedback[2];
-                                    String comment = (String) feedback[3];
-                                    Timestamp createdAt = (Timestamp) feedback[4];
-                                    String shelterLogo = (String) feedback[5];
+                            <c:choose>
+                                <c:when test="${not empty feedbackList}">
+                                    <c:forEach var="feedbackItem" items="${feedbackList}" varStatus="loop">
+                                        <%
+                                            // Get data from list
+                                            Object[] feedback = (Object[]) pageContext.getAttribute("feedbackItem");
+                                            Integer feedbackId = (Integer) feedback[0];
+                                            String shelterName = (String) feedback[1];
+                                            Integer rating = (Integer) feedback[2];
+                                            String comment = (String) feedback[3];
+                                            Timestamp createdAt = (Timestamp) feedback[4];
+                                            String shelterLogo = (String) feedback[5];
 
-                                    // Format date
-                                    String formattedDate = createdAt.toString().split(" ")[0];
-                                    String truncatedComment = comment.length() > 80 ? comment.substring(0, 80) + "..." : comment;
+                                            // Format date
+                                            String formattedDate = createdAt.toString().split(" ")[0];
+                                            String truncatedComment = comment.length() > 80 ? comment.substring(0, 80) + "..." : comment;
 
-                                    // Generate stars HTML
-                                    StringBuffer starsHtml = new StringBuffer();
-                                    for (int j = 1; j <= 5; j++) {
-                                        if (j <= rating) {
-                                            starsHtml.append("<i class=\"fas fa-star star-display\"></i>");
-                                        } else {
-                                            starsHtml.append("<i class=\"far fa-star\" style=\"color: #E5E5E5;\"></i>");
-                                        }
-                                    }
-                            %>
-                            <tr class="hover:bg-gray-50 transition duration-100" data-rating="<%= rating%>">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color: #2B2B2B;"><%= counter%></td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10">
-                                            <img class="h-10 w-10 rounded-full object-cover" src="<%= shelterLogo != null ? shelterLogo : "https://via.placeholder.com/40x40?text=Shelter"%>" alt="<%= shelterName%>" onerror="this.src='https://via.placeholder.com/40x40?text=Shelter'">
-                                        </div>
-                                        <div class="ml-4">
-                                            <div class="text-sm font-medium" style="color: #2B2B2B;"><%= shelterName%></div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center space-x-1">
-                                        <%= starsHtml.toString()%>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 text-sm max-w-xs" style="color: #2B2B2B;">
-                                    <%= truncatedComment%>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #2B2B2B;"><%= formattedDate%></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-center">
-                                    <div class="flex flex-col items-center space-y-2">
-                                        <button onclick="openEditModal(<%= feedbackId%>)" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View/Edit</button>
-                                        <button onclick="openDeleteModal(<%= feedbackId%>)" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-red-700" style="background-color: #B84A4A;">Delete</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <% } %>
-
-                            <% if (feedbackList.isEmpty()) { %>
-                            <tr>
-                                <td colspan="6" class="px-6 py-8 text-center text-gray-500">
-                                    <i class="fas fa-comment-slash text-4xl mb-2"></i>
-                                    <p class="text-lg">No feedback found.</p>
-                                    <p class="text-sm">You haven't submitted any feedback to shelters yet.</p>
-                                </td>
-                            </tr>
-                            <% }%>
+                                            // Store in page scope for JSTL
+                                            pageContext.setAttribute("feedbackId", feedbackId);
+                                            pageContext.setAttribute("shelterName", shelterName);
+                                            pageContext.setAttribute("rating", rating);
+                                            pageContext.setAttribute("truncatedComment", truncatedComment);
+                                            pageContext.setAttribute("fullComment", comment);
+                                            pageContext.setAttribute("formattedDate", formattedDate);
+                                            pageContext.setAttribute("shelterLogo", shelterLogo);
+                                        %>
+                                        <tr class="hover:bg-gray-50 transition duration-100 feedback-row" 
+                                            data-rating="${rating}"
+                                            data-feedbackid="${feedbackId}"
+                                            data-sheltername="${shelterName}"
+                                            data-fullcomment="${fullComment}"
+                                            data-date="${formattedDate}">
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color: #2B2B2B;">${loop.index + 1}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="flex items-center">
+                                                    <div class="flex-shrink-0 h-10 w-10">
+                                                        <img class="h-10 w-10 rounded-full object-cover" src="${shelterLogo != null ? shelterLogo : 'https://via.placeholder.com/40x40?text=Shelter'}" alt="${shelterName}" onerror="this.src='https://via.placeholder.com/40x40?text=Shelter'">
+                                                    </div>
+                                                    <div class="ml-4">
+                                                        <div class="text-sm font-medium shelter-name" style="color: #2B2B2B;">${shelterName}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="flex items-center space-x-1">
+                                                    <c:forEach begin="1" end="5" var="star">
+                                                        <c:choose>
+                                                            <c:when test="${star <= rating}">
+                                                                <i class="fas fa-star star-display"></i>
+                                                            </c:when>
+                                                            <c:otherwise>
+                                                                <i class="far fa-star" style="color: #E5E5E5;"></i>
+                                                            </c:otherwise>
+                                                        </c:choose>
+                                                    </c:forEach>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 text-sm max-w-xs feedback-comment" style="color: #2B2B2B;">
+                                                ${truncatedComment}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm feedback-date" style="color: #2B2B2B;">${formattedDate}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                                <div class="flex flex-col items-center space-y-2">
+                                                    <button onclick="openEditModal(${feedbackId})" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-[#24483E]" style="background-color: #2F5D50;">View/Edit</button>
+                                                    <button onclick="openDeleteModal(${feedbackId})" class="action-button px-3 py-1 rounded-lg font-semibold text-white hover:bg-red-700" style="background-color: #B84A4A;">Delete</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </c:forEach>
+                                </c:when>
+                                <c:otherwise>
+                                    <tr>
+                                        <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                                            <i class="fas fa-comment-slash text-4xl mb-2"></i>
+                                            <p class="text-lg">No feedback found.</p>
+                                            <p class="text-sm">You haven't submitted any feedback to shelters yet.</p>
+                                        </td>
+                                    </tr>
+                                </c:otherwise>
+                            </c:choose>
                         </tbody>
                     </table>
                 </div>
+
                 <div id="pagination-controls" class="flex justify-between items-center mt-6">
                     <div class="text-sm" style="color: #2B2B2B;">
                         Showing <span id="start-index" class="font-semibold">1</span> to <span id="end-index" class="font-semibold"><%= Math.min(totalCount, 10)%></span> of <span id="total-items" class="font-semibold"><%= totalCount%></span> feedback
@@ -233,9 +303,8 @@
                     </button>
                 </div>
                 <div class="max-h-[70vh] overflow-y-auto pr-2">
-                    <!-- FORM YANG BETUL - SUBMIT DIRECT KE SERVLET -->
-                    <form id="editForm" method="POST" action="FeedbackServlet" class="space-y-4">
-                        <!-- HIDDEN INPUTS -->
+                    <!-- GUNA AJAX untuk form submission -->
+                    <form id="editForm" method="POST" class="space-y-4" onsubmit="return submitEditForm(event)">
                         <input type="hidden" name="action" value="updateFeedback">
                         <input type="hidden" id="editFeedbackId" name="feedbackId">
                         <input type="hidden" id="editRating" name="rating" value="5">
@@ -268,12 +337,11 @@
                             <p class="text-xs text-gray-500 mt-1">Your feedback helps other adopters make informed decisions.</p>
                         </div>
 
-                        <!-- BUTTONS -->
                         <div class="flex justify-end pt-4 space-x-3">
                             <button type="button" onclick="closeModal('editModal')" class="px-5 py-2 rounded-xl border text-[#2B2B2B] hover:bg-gray-100 transition duration-150 font-medium" style="border-color: #E5E5E5;">
                                 Cancel
                             </button>
-                            <button type="submit" class="px-6 py-2 rounded-xl text-white font-medium hover:bg-[#24483E] transition duration-150 shadow-md" style="background-color: #2F5D50;">
+                            <button type="submit" class="px-6 py-2 rounded-xl text-white font-medium hover:bg-[#24483E] transition duration-150 shadow-md" style="background-color: #2F5D50;" id="submitEditBtn">
                                 Save Changes
                             </button>
                         </div>
@@ -327,7 +395,10 @@
                         var currentFeedbackId = null;
 
                         // Debug flag
-                        var DEBUG = true;
+                        var DEBUG = false;
+
+                        // Track AJAX requests
+                        var activeAjaxRequests = 0;
 
                         // =======================================================
                         // 1. MODAL FUNCTIONS
@@ -335,34 +406,20 @@
                         function openEditModal(feedbackId) {
                             if (DEBUG)
                                 console.log('openEditModal called:', feedbackId);
-
                             currentFeedbackId = feedbackId;
 
-                            // Get data from table row
-                            var feedbackRow = findFeedbackRow(feedbackId);
+                            // Get data from table row menggunakan data attributes
+                            var feedbackRow = document.querySelector(`.feedback-row[data-feedbackid="${feedbackId}"]`);
                             if (feedbackRow) {
-                                var shelterName = feedbackRow.cells[1].querySelector('.text-sm').textContent;
-                                var date = feedbackRow.cells[4].textContent;
-
-                                // Get full comment from original data (not truncated)
-                                var commentCell = feedbackRow.cells[3];
-                                var comment = commentCell.textContent;
-
-                                // If comment was truncated, we need to get the full version
-                                // Since we only have truncated version in table, we'll use what we have
-                                if (comment.indexOf('...') !== -1) {
-                                    comment = comment.replace('...', '');
-                                }
-
-                                // Get rating from data attribute
+                                var shelterName = feedbackRow.getAttribute('data-sheltername');
+                                var date = feedbackRow.getAttribute('data-date');
+                                var fullComment = feedbackRow.getAttribute('data-fullcomment');
                                 var rating = parseInt(feedbackRow.getAttribute('data-rating'));
-                                if (DEBUG)
-                                    console.log('Rating from table:', rating);
 
                                 // Populate form
                                 document.getElementById('formShelterName').textContent = shelterName;
                                 document.getElementById('formSubmittedDate').textContent = date;
-                                document.getElementById('feedbackComment').value = comment;
+                                document.getElementById('feedbackComment').value = fullComment;
                                 document.getElementById('editFeedbackId').value = feedbackId;
 
                                 // Update stars
@@ -370,26 +427,22 @@
 
                                 // Show modal
                                 openModal('editModal');
+                            } else {
+                                alert('Error: Could not find feedback data');
                             }
                         }
 
                         function openDeleteModal(feedbackId) {
                             if (DEBUG)
                                 console.log('openDeleteModal called:', feedbackId);
-
                             currentFeedbackId = feedbackId;
 
-                            // Get shelter name from table
-                            var feedbackRow = findFeedbackRow(feedbackId);
+                            // Get shelter name from table row
+                            var feedbackRow = document.querySelector(`.feedback-row[data-feedbackid="${feedbackId}"]`);
                             if (feedbackRow) {
-                                var shelterName = feedbackRow.cells[1].querySelector('.text-sm').textContent;
+                                var shelterName = feedbackRow.getAttribute('data-sheltername');
                                 document.getElementById('deleteShelterName').textContent = shelterName;
                             }
-
-                            // Set delete button action
-                            document.getElementById('confirmDeleteBtn').onclick = function () {
-                                deleteFeedback(feedbackId);
-                            };
 
                             // Show modal
                             openModal('deleteModal');
@@ -416,88 +469,180 @@
                         function updateFormRating(rating) {
                             if (DEBUG)
                                 console.log('updateFormRating called with rating:', rating);
-
-                            // Update hidden input
                             document.getElementById('editRating').value = rating;
 
-                            // Update stars display
                             var stars = document.querySelectorAll('#ratingStars .rating-star');
                             for (var i = 0; i < stars.length; i++) {
                                 var star = stars[i];
                                 var starRating = parseInt(star.getAttribute('data-rating'));
 
                                 if (starRating <= rating) {
-                                    star.style.color = '#FFD700'; // Gold for filled stars
+                                    star.style.color = '#FFD700';
                                     star.classList.add('filled');
                                     star.classList.remove('empty');
                                 } else {
-                                    star.style.color = '#E5E5E5'; // Light gray for empty stars
+                                    star.style.color = '#E5E5E5';
                                     star.classList.add('empty');
                                     star.classList.remove('filled');
                                 }
                             }
                         }
 
-                        function findFeedbackRow(feedbackId) {
-                            var rows = document.querySelectorAll('#feedback-list tr');
-                            for (var i = 0; i < rows.length; i++) {
-                                var row = rows[i];
-                                if (row.cells.length <= 1)
-                                    continue; // Skip empty row
-
-                                // Check if any button in this row has this feedbackId
-                                var buttons = row.querySelectorAll('button');
-                                for (var j = 0; j < buttons.length; j++) {
-                                    var button = buttons[j];
-                                    var onclickAttr = button.getAttribute('onclick');
-                                    if (onclickAttr && onclickAttr.indexOf(feedbackId.toString()) !== -1) {
-                                        return row;
-                                    }
-                                }
-                            }
-                            return null;
-                        }
-
                         // =======================================================
-                        // 2. AJAX Functions (for delete only)
+                        // 2. AJAX Functions - FIXED WITH TIMEOUT
                         // =======================================================
-                        function deleteFeedback(feedbackId) {
-                            if (DEBUG)
-                                console.log('deleteFeedback called:', feedbackId);
+                        function submitEditForm(event) {
+                            event.preventDefault();
 
-                            if (!confirm('Are you sure you want to delete this feedback?')) {
-                                return;
+                            // Disable button untuk elak double click
+                            var submitBtn = event.target.querySelector('#submitEditBtn');
+                            var originalBtnText = submitBtn ? submitBtn.innerHTML : 'Save Changes';
+
+                            if (submitBtn) {
+                                submitBtn.disabled = true;
+                                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
                             }
 
+                            var formData = new FormData(event.target);
                             var xhr = new XMLHttpRequest();
-                            xhr.open('DELETE', 'FeedbackServlet?feedbackId=' + feedbackId, true);
 
-                            xhr.onreadystatechange = function () {
-                                if (xhr.readyState === 4) {
-                                    if (DEBUG)
-                                        console.log('Delete response:', xhr.status, xhr.responseText);
+                            // SET TIMEOUT - INI PENTING!
+                            xhr.timeout = 10000; // 10 seconds
 
-                                    if (xhr.status === 200) {
-                                        try {
-                                            var response = JSON.parse(xhr.responseText);
-                                            if (response.success) {
-                                                alert('✓ Feedback deleted successfully!');
-                                                closeModal('deleteModal');
+                            activeAjaxRequests++;
+                            console.log('AJAX Request started (active: ' + activeAjaxRequests + ')');
+
+                            xhr.open('POST', 'FeedbackServlet', true);
+                            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+                            xhr.onload = function () {
+                                activeAjaxRequests--;
+                                console.log('AJAX Request completed (active: ' + activeAjaxRequests + ')');
+
+                                if (submitBtn) {
+                                    submitBtn.disabled = false;
+                                    submitBtn.innerHTML = originalBtnText;
+                                }
+
+                                if (xhr.status === 200) {
+                                    try {
+                                        var response = JSON.parse(xhr.responseText);
+                                        if (response.success) {
+                                            alert('✓ Feedback updated successfully!');
+                                            closeModal('editModal');
+                                            setTimeout(function () {
                                                 location.reload();
-                                            } else {
-                                                alert('✗ Error: ' + response.message);
-                                            }
-                                        } catch (e) {
-                                            console.error('JSON Parse Error:', e);
-                                            alert('Server returned invalid response.');
+                                            }, 800);
+                                        } else {
+                                            alert('✗ Error: ' + response.message);
                                         }
-                                    } else {
-                                        alert('Network error. Status: ' + xhr.status);
+                                    } catch (e) {
+                                        console.error('JSON Parse Error:', e);
+                                        alert('Server returned invalid response.');
                                     }
+                                } else {
+                                    alert('Network error. Status: ' + xhr.status);
                                 }
                             };
 
+                            xhr.ontimeout = function () {
+                                activeAjaxRequests--;
+                                console.warn('AJAX Request timeout after 10s (active: ' + activeAjaxRequests + ')');
+
+                                if (submitBtn) {
+                                    submitBtn.disabled = false;
+                                    submitBtn.innerHTML = originalBtnText;
+                                }
+                                alert('Request timeout. Please try again.');
+                            };
+
                             xhr.onerror = function () {
+                                activeAjaxRequests--;
+                                console.error('AJAX Request network error (active: ' + activeAjaxRequests + ')');
+
+                                if (submitBtn) {
+                                    submitBtn.disabled = false;
+                                    submitBtn.innerHTML = originalBtnText;
+                                }
+                                alert('Network error occurred.');
+                            };
+
+                            var encodedData = new URLSearchParams(formData).toString();
+                            xhr.send(encodedData);
+                            return false;
+                        }
+
+                        function deleteFeedback(feedbackId) {
+                            if (!confirm('Are you sure you want to delete this feedback?'))
+                                return;
+
+                            var confirmBtn = document.getElementById('confirmDeleteBtn');
+                            var originalBtnText = confirmBtn ? confirmBtn.innerHTML : 'Yes, Delete Feedback';
+
+                            if (confirmBtn) {
+                                confirmBtn.disabled = true;
+                                confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Deleting...';
+                            }
+
+                            var xhr = new XMLHttpRequest();
+
+                            // SET TIMEOUT - INI PENTING!
+                            xhr.timeout = 10000; // 10 seconds
+
+                            activeAjaxRequests++;
+                            console.log('DELETE Request started (active: ' + activeAjaxRequests + ')');
+
+                            xhr.open('DELETE', 'FeedbackServlet?feedbackId=' + feedbackId, true);
+
+                            xhr.onload = function () {
+                                activeAjaxRequests--;
+                                console.log('DELETE Request completed (active: ' + activeAjaxRequests + ')');
+
+                                if (confirmBtn) {
+                                    confirmBtn.disabled = false;
+                                    confirmBtn.innerHTML = originalBtnText;
+                                }
+
+                                if (xhr.status === 200) {
+                                    try {
+                                        var response = JSON.parse(xhr.responseText);
+                                        if (response.success) {
+                                            alert('✓ Feedback deleted successfully!');
+                                            closeModal('deleteModal');
+                                            setTimeout(function () {
+                                                location.reload();
+                                            }, 800);
+                                        } else {
+                                            alert('✗ Error: ' + response.message);
+                                        }
+                                    } catch (e) {
+                                        console.error('JSON Parse Error:', e);
+                                        alert('Server returned invalid response.');
+                                    }
+                                } else {
+                                    alert('Network error. Status: ' + xhr.status);
+                                }
+                            };
+
+                            xhr.ontimeout = function () {
+                                activeAjaxRequests--;
+                                console.warn('DELETE Request timeout after 10s (active: ' + activeAjaxRequests + ')');
+
+                                if (confirmBtn) {
+                                    confirmBtn.disabled = false;
+                                    confirmBtn.innerHTML = originalBtnText;
+                                }
+                                alert('Request timeout. Please try again.');
+                            };
+
+                            xhr.onerror = function () {
+                                activeAjaxRequests--;
+                                console.error('DELETE Request network error (active: ' + activeAjaxRequests + ')');
+
+                                if (confirmBtn) {
+                                    confirmBtn.disabled = false;
+                                    confirmBtn.innerHTML = originalBtnText;
+                                }
                                 alert('Network error occurred.');
                             };
 
@@ -509,34 +654,26 @@
                         // =======================================================
                         function filterTable() {
                             var searchTerm = document.getElementById('searchInput').value.toLowerCase();
-                            var rows = document.querySelectorAll('#feedback-list tr');
+                            var rows = document.querySelectorAll('.feedback-row');
                             var visibleCount = 0;
 
                             for (var i = 0; i < rows.length; i++) {
                                 var row = rows[i];
-                                if (row.cells.length <= 1)
-                                    continue; // Skip empty message row
-
-                                var shelterName = row.cells[1].querySelector('.text-sm').textContent.toLowerCase();
+                                var shelterName = row.getAttribute('data-sheltername').toLowerCase();
                                 var rating = row.getAttribute('data-rating');
                                 var shouldShow = true;
 
-                                // Apply search filter
-                                if (searchTerm && shelterName.indexOf(searchTerm) === -1) {
+                                if (searchTerm && !shelterName.includes(searchTerm)) {
                                     shouldShow = false;
                                 }
 
-                                // Apply rating filter
                                 if (currentRatingFilter !== 'all' && rating !== currentRatingFilter) {
                                     shouldShow = false;
                                 }
 
-                                if (shouldShow) {
-                                    row.style.display = '';
+                                row.style.display = shouldShow ? '' : 'none';
+                                if (shouldShow)
                                     visibleCount++;
-                                } else {
-                                    row.style.display = 'none';
-                                }
                             }
 
                             updatePaginationInfo(visibleCount);
@@ -550,18 +687,8 @@
                             document.getElementById('start-index').textContent = start;
                             document.getElementById('end-index').textContent = end;
 
-                            // Update button states
                             document.getElementById('prev-btn').disabled = currentPage === 1;
                             document.getElementById('next-btn').disabled = currentPage * ITEMS_PER_PAGE >= visibleCount;
-
-                            // Show/hide empty message
-                            var emptyRow = document.querySelector('#feedback-list tr:only-child');
-                            if (visibleCount === 0) {
-                                if (!emptyRow || emptyRow.cells.length > 1) {
-                                    var tbody = document.getElementById('feedback-list');
-                                    tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-comment-slash text-4xl mb-2"></i><p class="text-lg">No matching feedback found.</p><p class="text-sm">Try adjusting your filters.</p></td></tr>';
-                                }
-                            }
                         }
 
                         function updateFilterButtonStyles() {
@@ -571,13 +698,14 @@
                                 var btn = filterButtons[i];
                                 var btnRating = btn.getAttribute('data-rating');
 
+                                // Reset classes
                                 btn.className = 'px-5 py-2 rounded-full text-sm font-medium transition duration-150 filter-btn';
 
                                 if (btnRating === currentRatingFilter) {
                                     if (btnRating === 'all') {
-                                        btn.classList.add('bg-primary', 'text-white', 'shadow-md');
+                                        btn.classList.add('bg-primary', 'text-white', 'shadow-md', 'active-filter');
                                     } else {
-                                        btn.classList.add('star-filter', 'shadow-md');
+                                        btn.classList.add('star-filter', 'shadow-md', 'active-filter');
                                     }
                                 } else {
                                     btn.classList.add('border', 'hover:bg-[#F6F3E7]');
@@ -591,62 +719,196 @@
                         }
 
                         // =======================================================
-                        // 4. Event Listeners Setup
+                        // 4. IMAGE LOADING HANDLER - FIXED VERSION
+                        // =======================================================
+                        function handleAllImagesLoaded() {
+                            return new Promise(function (resolve) {
+                                var images = document.querySelectorAll('img');
+                                var totalImages = images.length;
+                                var loadedCount = 0;
+
+                                if (totalImages === 0) {
+                                    resolve();
+                                    return;
+                                }
+
+                                // Check each image
+                                images.forEach(function (img) {
+                                    if (img.complete) {
+                                        loadedCount++;
+                                    } else {
+                                        img.addEventListener('load', imageLoaded);
+                                        img.addEventListener('error', imageLoaded);
+                                    }
+                                });
+
+                                // Check initial state
+                                if (loadedCount === totalImages) {
+                                    resolve();
+                                    return;
+                                }
+
+                                // Fallback timeout
+                                var timeoutId = setTimeout(function () {
+                                    console.warn('Image loading timeout - forcing continue');
+                                    resolve();
+                                }, 3000);
+
+                                function imageLoaded() {
+                                    loadedCount++;
+                                    this.removeEventListener('load', imageLoaded);
+                                    this.removeEventListener('error', imageLoaded);
+
+                                    if (loadedCount === totalImages) {
+                                        clearTimeout(timeoutId);
+                                        resolve();
+                                    }
+                                }
+                            });
+                        }
+
+                        // =======================================================
+                        // 5. FORCE STOP LOADING INDICATOR - PENTING!
+                        // =======================================================
+                        function forceStopLoadingIndicator() {
+                            console.log('Force stopping loading indicator...');
+
+                            try {
+                                // Method 1: Use window.stop() if available
+                                if (window.stop && typeof window.stop === 'function') {
+                                    window.stop();
+                                }
+
+                                // Method 2: Mark page as loaded
+                                document.documentElement.setAttribute('data-page-loaded', 'true');
+
+                                // Method 3: Stop any animations/transitions
+                                document.body.classList.add('page-loaded-complete');
+
+                                console.log('Loading indicator stopped successfully');
+                            } catch (e) {
+                                console.warn('Error stopping loading indicator:', e);
+                            }
+                        }
+
+                        // =======================================================
+                        // 6. Event Listeners Setup
                         // =======================================================
                         document.addEventListener('DOMContentLoaded', function () {
                             if (DEBUG)
                                 console.log('DOM loaded, setting up event listeners');
 
+                            // Auto-hide messages after 5 seconds
+                            setTimeout(function () {
+                                var messages = document.querySelectorAll('.fixed.top-4');
+                                messages.forEach(function (msg) {
+                                    msg.style.display = 'none';
+                                });
+                            }, 5000);
+
                             // Search input
-                            document.getElementById('searchInput').addEventListener('input', function () {
-                                currentPage = 1;
-                                filterTable();
-                            });
+                            var searchInput = document.getElementById('searchInput');
+                            if (searchInput) {
+                                searchInput.addEventListener('input', function () {
+                                    currentPage = 1;
+                                    filterTable();
+                                });
+                            }
 
                             // Filter buttons
                             var filterButtons = document.querySelectorAll('.filter-btn');
-                            for (var i = 0; i < filterButtons.length; i++) {
-                                filterButtons[i].addEventListener('click', function (e) {
+                            filterButtons.forEach(function (btn) {
+                                btn.addEventListener('click', function (e) {
                                     currentRatingFilter = e.target.getAttribute('data-rating');
                                     currentPage = 1;
                                     updateFilterButtonStyles();
                                     filterTable();
                                 });
-                            }
+                            });
 
                             // Pagination buttons
-                            document.getElementById('prev-btn').addEventListener('click', function () {
-                                if (currentPage > 1) {
-                                    currentPage--;
-                                    filterTable();
-                                }
-                            });
+                            var prevBtn = document.getElementById('prev-btn');
+                            var nextBtn = document.getElementById('next-btn');
 
-                            document.getElementById('next-btn').addEventListener('click', function () {
-                                var rows = document.querySelectorAll('#feedback-list tr');
-                                var visibleCount = 0;
-                                for (var i = 0; i < rows.length; i++) {
-                                    if (rows[i].style.display !== 'none' && rows[i].cells.length > 1) {
-                                        visibleCount++;
+                            if (prevBtn) {
+                                prevBtn.addEventListener('click', function () {
+                                    if (currentPage > 1) {
+                                        currentPage--;
+                                        filterTable();
                                     }
-                                }
+                                });
+                            }
 
-                                var totalPages = Math.ceil(visibleCount / ITEMS_PER_PAGE);
-                                if (currentPage < totalPages) {
-                                    currentPage++;
-                                    filterTable();
-                                }
-                            });
+                            if (nextBtn) {
+                                nextBtn.addEventListener('click', function () {
+                                    var rows = document.querySelectorAll('.feedback-row');
+                                    var visibleCount = 0;
+                                    for (var i = 0; i < rows.length; i++) {
+                                        if (rows[i].style.display !== 'none')
+                                            visibleCount++;
+                                    }
+
+                                    var totalPages = Math.ceil(visibleCount / ITEMS_PER_PAGE);
+                                    if (currentPage < totalPages) {
+                                        currentPage++;
+                                        filterTable();
+                                    }
+                                });
+                            }
+
+                            // Delete button event listener
+                            var confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+                            if (confirmDeleteBtn) {
+                                confirmDeleteBtn.addEventListener('click', function () {
+                                    deleteFeedback(currentFeedbackId);
+                                });
+                            }
 
                             // Initial setup
                             updateFilterButtonStyles();
                             filterTable();
 
+                            // Handle image loading
+                            handleAllImagesLoaded().then(function () {
+                                console.log('All images processed');
+                            }).catch(function (error) {
+                                console.warn('Image loading error:', error);
+                            });
+
                             if (DEBUG)
                                 console.log('Event listeners setup complete');
                         });
 
-                        // Make functions available globally
+                        // =======================================================
+                        // 7. WINDOW LOAD EVENT - UTAMA UNTUK STOP LOADING ICON
+                        // =======================================================
+                        window.addEventListener('load', function () {
+                            console.log('Window load event fired - page fully loaded');
+
+                            // Wait a bit then force stop loading
+                            setTimeout(function () {
+                                forceStopLoadingIndicator();
+
+                                // Check if any AJAX still pending
+                                if (activeAjaxRequests > 0) {
+                                    console.warn('Still ' + activeAjaxRequests + ' active AJAX requests');
+                                }
+                            }, 500);
+                        });
+
+                        // =======================================================
+                        // 8. FALLBACK TIMEOUT - JIKA WINDOW.LOAD TAK TRIGGER
+                        // =======================================================
+                        setTimeout(function () {
+                            if (!document.documentElement.hasAttribute('data-page-loaded')) {
+                                console.warn('Fallback: Forcing page load after 5 seconds');
+                                forceStopLoadingIndicator();
+                            }
+                        }, 5000);
+
+                        // =======================================================
+                        // 9. Make functions available globally
+                        // =======================================================
                         window.openEditModal = openEditModal;
                         window.openDeleteModal = openDeleteModal;
                         window.closeModal = closeModal;
