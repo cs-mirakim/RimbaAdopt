@@ -1,8 +1,15 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" isELIgnored="true"%>
 <%@ page import="com.rimba.adopt.util.SessionUtil" %>
+<%@ page import="com.rimba.adopt.dao.ShelterDAO" %>
+<%@ page import="com.rimba.adopt.dao.FeedbackDAO" %>
+<%@ page import="com.rimba.adopt.model.Shelter" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
+<%@ page import="java.util.HashMap" %>
+<%@ page import="java.util.Iterator" %>
 
 <%
-    // Check if user is logged in and is admin
+    // Check if user is logged in and is adopter
     if (!SessionUtil.isLoggedIn(session)) {
         response.sendRedirect("index.jsp");
         return;
@@ -12,13 +19,75 @@
         response.sendRedirect("index.jsp");
         return;
     }
+
+    // Get all approved shelters with ratings
+    ShelterDAO shelterDAO = new ShelterDAO();
+    List shelters = shelterDAO.getSheltersForPublic();
+    FeedbackDAO feedbackDAO = new FeedbackDAO();
+
+    // Get filter parameters
+    String searchTerm = request.getParameter("search");
+    String minRatingParam = request.getParameter("minRating");
+    double minRating = 0.0;
+
+    if (minRatingParam != null && !minRatingParam.trim().isEmpty()) {
+        try {
+            minRating = Double.parseDouble(minRatingParam);
+        } catch (NumberFormatException e) {
+            minRating = 0.0;
+        }
+    }
+
+    // Count shelters by rating for display (NO BACKEND FILTERING)
+    int countAny = shelters.size();
+    Map ratingCounts = new HashMap();
+    ratingCounts.put("5plus", Integer.valueOf(0));  // 5.0+
+    ratingCounts.put("4plus", Integer.valueOf(0));  // 4.0-4.9
+    ratingCounts.put("3plus", Integer.valueOf(0));  // 3.0-3.9
+    ratingCounts.put("2plus", Integer.valueOf(0));  // 2.0-2.9
+    ratingCounts.put("1plus", Integer.valueOf(0));  // 1.0-1.9
+    ratingCounts.put("0plus", Integer.valueOf(0));  // 0.0-0.9 or no reviews
+
+    for (Iterator it = shelters.iterator(); it.hasNext();) {
+        Shelter shelter = (Shelter) it.next();
+        double rating = feedbackDAO.getAverageRatingByShelterId(shelter.getShelterId());
+        int reviewCount = feedbackDAO.getFeedbackCountByShelterId(shelter.getShelterId());
+
+        // Update shelter object dengan data terkini
+        shelter.setAvgRating(rating);
+        shelter.setReviewCount(reviewCount);
+
+        // Count by rating range
+        if (reviewCount == 0) {
+            Integer current = (Integer) ratingCounts.get("0plus");
+            ratingCounts.put("0plus", Integer.valueOf(current.intValue() + 1));
+        } else if (rating >= 5.0) {
+            Integer current = (Integer) ratingCounts.get("5plus");
+            ratingCounts.put("5plus", Integer.valueOf(current.intValue() + 1));
+        } else if (rating >= 4.0) {
+            Integer current = (Integer) ratingCounts.get("4plus");
+            ratingCounts.put("4plus", Integer.valueOf(current.intValue() + 1));
+        } else if (rating >= 3.0) {
+            Integer current = (Integer) ratingCounts.get("3plus");
+            ratingCounts.put("3plus", Integer.valueOf(current.intValue() + 1));
+        } else if (rating >= 2.0) {
+            Integer current = (Integer) ratingCounts.get("2plus");
+            ratingCounts.put("2plus", Integer.valueOf(current.intValue() + 1));
+        } else if (rating >= 1.0) {
+            Integer current = (Integer) ratingCounts.get("1plus");
+            ratingCounts.put("1plus", Integer.valueOf(current.intValue() + 1));
+        } else {
+            Integer current = (Integer) ratingCounts.get("0plus");
+            ratingCounts.put("0plus", Integer.valueOf(current.intValue() + 1));
+        }
+    }
 %>
 <!DOCTYPE html>
 <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Shelter List</title>
+        <title>Shelter List - Rimba Adopt</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <style>
@@ -55,6 +124,37 @@
             ::-webkit-scrollbar-thumb:hover {
                 background: #a8a8a8;
             }
+
+            .line-clamp-2 {
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+
+            /* Filter button styles */
+            .filter-rating-btn {
+                padding: 8px 16px;
+                border-radius: 9999px;
+                font-weight: 500;
+                transition: all 0.2s;
+                cursor: pointer;
+                border: 1px solid #E5E5E5;
+            }
+
+            .filter-rating-btn:hover {
+                background-color: #F6F3E7;
+            }
+
+            .filter-rating-btn.active {
+                background-color: #2F5D50;
+                color: white;
+                border-color: #2F5D50;
+            }
+
+            .filter-rating-btn.active:hover {
+                background-color: #24483E;
+            }
         </style>
     </head>
     <body class="flex flex-col min-h-screen relative bg-[#F6F3E7]">
@@ -75,41 +175,44 @@
                 <!-- Filter Section -->
                 <div class="mb-8 p-6 bg-[#F9F9F9] rounded-lg border border-[#E5E5E5]">
                     <h2 class="text-xl font-semibold text-[#2F5D50] mb-4">Filter Shelters</h2>
-                    <div class="flex flex-wrap gap-6">
-                        <!-- State Filter -->
-                        <div class="flex-1 min-w-[250px]">
-                            <label class="block text-[#2B2B2B] mb-2 font-medium">State</label>
-                            <select id="stateFilter" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]">
-                                <option value="">All States</option>
-                                <option value="kuala_lumpur">Kuala Lumpur</option>
-                                <option value="selangor">Selangor</option>
-                                <option value="johor">Johor</option>
-                                <option value="penang">Penang</option>
-                                <option value="perak">Perak</option>
-                                <option value="sabah">Sabah</option>
-                                <option value="sarawak">Sarawak</option>
-                            </select>
-                        </div>
 
-                        <!-- Rating Filter -->
-                        <div class="flex-1 min-w-[250px]">
-                            <label class="block text-[#2B2B2B] mb-2 font-medium">Minimum Rating</label>
-                            <select id="ratingFilter" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]">
-                                <option value="0">Any Rating</option>
-                                <option value="4">4 Stars & Above</option>
-                                <option value="3">3 Stars & Above</option>
-                                <option value="2">2 Stars & Above</option>
-                                <option value="1">1 Star & Above</option>
-                            </select>
-                        </div>
-
-                        <!-- Filter Buttons -->
-                        <div class="flex items-end gap-3">
-                            <button id="applyFilter" class="px-6 py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">
-                                <i class="fas fa-filter mr-2"></i>Apply Filters
+                    <!-- Search Filter -->
+                    <div class="mb-6">
+                        <label class="block text-[#2B2B2B] mb-2 font-medium">Search</label>
+                        <div class="flex gap-3">
+                            <input type="text" id="searchFilter" 
+                                   class="flex-1 p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]" 
+                                   placeholder="Search by name or location...">
+                            <button id="searchBtn" class="px-6 py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">
+                                <i class="fas fa-search mr-2"></i>Search
                             </button>
-                            <button id="resetFilter" class="px-6 py-3 bg-[#E5E5E5] text-[#2B2B2B] font-medium rounded-lg hover:bg-[#D5D5D5] transition duration-300">
-                                <i class="fas fa-redo mr-2"></i>Reset
+                        </div>
+                    </div>
+
+                    <!-- Rating Filter Buttons -->
+                    <div>
+                        <label class="block text-[#2B2B2B] mb-2 font-medium">Filter by Rating</label>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="filter-rating-btn active" data-rating="all">
+                                All Shelters (<%= countAny%>)
+                            </button>
+                            <button class="filter-rating-btn" data-rating="5plus">
+                                ⭐⭐⭐⭐⭐ 5 Stars (<%= ((Integer) ratingCounts.get("5plus")).intValue()%>)
+                            </button>
+                            <button class="filter-rating-btn" data-rating="4plus">
+                                ⭐⭐⭐⭐ 4+ Stars (<%= ((Integer) ratingCounts.get("4plus")).intValue()%>)
+                            </button>
+                            <button class="filter-rating-btn" data-rating="3plus">
+                                ⭐⭐⭐ 3+ Stars (<%= ((Integer) ratingCounts.get("3plus")).intValue()%>)
+                            </button>
+                            <button class="filter-rating-btn" data-rating="2plus">
+                                ⭐⭐ 2+ Stars (<%= ((Integer) ratingCounts.get("2plus")).intValue()%>)
+                            </button>
+                            <button class="filter-rating-btn" data-rating="1plus">
+                                ⭐ 1+ Star (<%= ((Integer) ratingCounts.get("1plus")).intValue()%>)
+                            </button>
+                            <button class="filter-rating-btn" data-rating="0plus">
+                                No Reviews Yet (<%= ((Integer) ratingCounts.get("0plus")).intValue()%>)
                             </button>
                         </div>
                     </div>
@@ -118,77 +221,112 @@
                 <!-- Results Count -->
                 <div class="flex justify-between items-center mb-6">
                     <p class="text-[#2B2B2B]">
-                        Showing <span id="resultCount" class="font-semibold">8</span> shelters
+                        Showing <span id="resultCount" class="font-semibold"><%= shelters.size()%></span> shelters
                     </p>
-                    <div class="text-[#2B2B2B]">
-                        Page <span id="currentPage" class="font-semibold">1</span> of <span id="totalPages" class="font-semibold">3</span>
-                    </div>
+                    <button id="resetFilter" class="px-4 py-2 text-sm text-[#2F5D50] hover:text-[#24483E] font-medium">
+                        <i class="fas fa-redo mr-1"></i>Reset Filters
+                    </button>
                 </div>
 
                 <!-- Shelters Grid (4x2 layout) -->
                 <div id="sheltersContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <!-- Shelter cards will be dynamically generated here -->
-                    <!-- Example of one card structure -->
-                    <div class="shelter-card bg-white rounded-xl border border-[#E5E5E5] overflow-hidden card-hover">
+                    <%
+                        for (Iterator it = shelters.iterator(); it.hasNext();) {
+                            Shelter shelter = (Shelter) it.next();
+                            double rating = shelter.getAvgRating();
+                            int reviewCount = shelter.getReviewCount();
+
+                            // Get actual rating dari FeedbackDAO
+                            if (rating == 0.0 && reviewCount == 0) {
+                                rating = feedbackDAO.getAverageRatingByShelterId(shelter.getShelterId());
+                                reviewCount = feedbackDAO.getFeedbackCountByShelterId(shelter.getShelterId());
+
+                                if (rating > 0 || reviewCount > 0) {
+                                    shelter.setAvgRating(rating);
+                                    shelter.setReviewCount(reviewCount);
+                                }
+                            }
+
+                            // Determine rating category for data attribute
+                            String ratingCategory = "0plus";
+                            if (reviewCount == 0) {
+                                ratingCategory = "0plus";
+                            } else if (rating >= 5.0) {
+                                ratingCategory = "5plus";
+                            } else if (rating >= 4.0) {
+                                ratingCategory = "4plus";
+                            } else if (rating >= 3.0) {
+                                ratingCategory = "3plus";
+                            } else if (rating >= 2.0) {
+                                ratingCategory = "2plus";
+                            } else if (rating >= 1.0) {
+                                ratingCategory = "1plus";
+                            }
+
+                            String description = shelter.getShelterDescription();
+                    %>
+                    <div class="shelter-card bg-white rounded-xl border border-[#E5E5E5] overflow-hidden card-hover"
+                         data-name="<%= escapeHtml(shelter.getShelterName()).toLowerCase()%>"
+                         data-address="<%= escapeHtml(shelter.getShelterAddress()).toLowerCase()%>"
+                         data-rating="<%= rating%>"
+                         data-review-count="<%= reviewCount%>"
+                         data-rating-category="<%= ratingCategory%>">
                         <div class="relative">
-                            <img src="profile_picture/shelter/pic1.png" alt="Happy Paws Shelter" class="w-full h-48 object-cover">
+                            <img src="<%= shelter.getPhotoPath() != null ? shelter.getPhotoPath() : "profile_picture/shelter/default.png"%>" 
+                                 alt="<%= escapeHtml(shelter.getShelterName())%>" 
+                                 class="w-full h-48 object-cover"
+                                 onerror="this.src='https://via.placeholder.com/400x300?text=Shelter'">
                             <div class="absolute top-3 right-3 bg-[#6DBF89] text-[#06321F] px-3 py-1 rounded-full text-sm font-medium">
                                 <i class="fas fa-check-circle mr-1"></i> Approved
                             </div>
                         </div>
                         <div class="p-5">
-                            <h3 class="text-xl font-bold text-[#2B2B2B] mb-2">Happy Paws Shelter</h3>
+                            <h3 class="text-xl font-bold text-[#2B2B2B] mb-2"><%= escapeHtml(shelter.getShelterName())%></h3>
                             <div class="flex items-center mb-3">
                                 <i class="fas fa-map-marker-alt text-[#2F5D50] mr-2"></i>
-                                <span class="text-[#2B2B2B]">Kuala Lumpur</span>
+                                <span class="text-[#2B2B2B]"><%= escapeHtml(shelter.getShelterAddress())%></span>
                             </div>
                             <div class="flex items-center mb-4">
                                 <div class="star-rating mr-2">
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star-half-alt"></i>
+                                    <%= generateStars(rating)%>
                                 </div>
-                                <span class="text-[#2B2B2B] font-medium">4.5</span>
-                                <span class="text-[#888] ml-1">(42 reviews)</span>
+                                <% if (reviewCount > 0) {%>
+                                <span class="text-[#2B2B2B] font-medium"><%= String.format("%.1f", rating)%></span>
+                                <span class="text-[#888] ml-1">(<%= reviewCount%> <%= reviewCount == 1 ? "review" : "reviews"%>)</span>
+                                <% } else { %>
+                                <span class="text-[#888] font-medium">No reviews yet</span>
+                                <% }%>
                             </div>
                             <div class="mb-4">
                                 <span class="inline-block bg-[#A8E6CF] text-[#2B2B2B] px-3 py-1 rounded-full text-sm mr-2 mb-2">
-                                    <i class="fas fa-paw mr-1"></i> Dogs
-                                </span>
-                                <span class="inline-block bg-[#A8E6CF] text-[#2B2B2B] px-3 py-1 rounded-full text-sm mr-2 mb-2">
-                                    <i class="fas fa-cat mr-1"></i> Cats
+                                    <i class="fas fa-paw mr-1"></i> Shelter
                                 </span>
                             </div>
-                            <a href="shelter_info.jsp" class="block w-full text-center py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">
+                            <p class="text-[#666] text-sm mb-4 line-clamp-2">
+                                <%= description != null && !description.isEmpty() ? escapeHtml(description.length() > 150 ? description.substring(0, 150) + "..." : description) : "Animal shelter providing care and adoption services."%>
+                            </p>
+                            <a href="shelter_info.jsp?id=<%= shelter.getShelterId()%>" 
+                               class="block w-full text-center px-4 py-2 bg-[#2F5D50] text-white rounded-lg hover:bg-[#24483E] transition duration-300">
                                 View Details
                             </a>
                         </div>
                     </div>
+                    <% } %>
 
-                    <!-- More cards will be generated by JavaScript -->
+                    <% if (shelters.isEmpty()) { %>
+                    <div class="col-span-4 text-center py-8">
+                        <i class="fas fa-home text-4xl text-[#E5E5E5] mb-4"></i>
+                        <p class="text-[#888]">No shelters available at the moment.</p>
+                    </div>
+                    <% } %>
                 </div>
 
-                <!-- Pagination -->
-                <div class="flex justify-center items-center mt-8">
-                    <nav class="flex items-center space-x-2">
-                        <button id="prevPage" class="p-3 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7] disabled:opacity-50 disabled:cursor-not-allowed">
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
-
-                        <div id="pageNumbers" class="flex space-x-2">
-                            <!-- Page numbers will be generated here -->
-                            <button class="page-btn w-10 h-10 rounded-lg border border-[#2F5D50] bg-[#2F5D50] text-white">1</button>
-                            <button class="page-btn w-10 h-10 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]">2</button>
-                            <button class="page-btn w-10 h-10 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]">3</button>
-                        </div>
-
-                        <button id="nextPage" class="p-3 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]">
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </nav>
+                <!-- Simple Pagination Note -->
+                <% if (shelters.size() > 0) {%>
+                <div class="text-center text-[#888] mt-4">
+                    <p>Found <span id="filteredCount"><%= shelters.size()%></span> shelters matching your criteria</p>
                 </div>
+                <% }%>
 
             </div>
         </main>
@@ -203,508 +341,484 @@
         <script src="includes/sidebar.js"></script>
 
         <script>
-            // Dummy shelter data
-            const shelters = [
-                {
-                    id: 1,
-                    name: "Happy Paws Shelter",
-                    location: "Kuala Lumpur",
-                    state: "kuala_lumpur",
-                    rating: 4.5,
-                    reviewCount: 42,
-                    pets: ["Dogs", "Cats"],
-                    description: "Dedicated to rescuing and rehoming stray animals in KL area.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 2,
-                    name: "Furry Friends Haven",
-                    location: "Selangor",
-                    state: "selangor",
-                    rating: 4.2,
-                    reviewCount: 28,
-                    pets: ["Dogs", "Cats", "Rabbits"],
-                    description: "Providing safe haven for abandoned pets since 2010.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 3,
-                    name: "Second Chance Sanctuary",
-                    location: "Johor",
-                    state: "johor",
-                    rating: 4.8,
-                    reviewCount: 56,
-                    pets: ["Dogs", "Cats"],
-                    description: "Specializing in rehabilitation of abused animals.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 4,
-                    name: "Whisker Woods Shelter",
-                    location: "Penang",
-                    state: "penang",
-                    rating: 4.0,
-                    reviewCount: 35,
-                    pets: ["Cats", "Birds"],
-                    description: "Focused on feline rescue and adoption services.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 5,
-                    name: "Barkville Rescue Center",
-                    location: "Selangor",
-                    state: "selangor",
-                    rating: 3.8,
-                    reviewCount: 22,
-                    pets: ["Dogs"],
-                    description: "Canine-focused shelter with training programs.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 6,
-                    name: "Paws & Claws Shelter",
-                    location: "Kuala Lumpur",
-                    state: "kuala_lumpur",
-                    rating: 4.6,
-                    reviewCount: 47,
-                    pets: ["Dogs", "Cats", "Small Animals"],
-                    description: "Comprehensive animal care and adoption services.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 7,
-                    name: "Sunshine Animal Refuge",
-                    location: "Sabah",
-                    state: "sabah",
-                    rating: 4.3,
-                    reviewCount: 31,
-                    pets: ["Dogs", "Cats", "Others"],
-                    description: "Serving East Malaysia with compassion and care.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 8,
-                    name: "Rainbow Rescue Home",
-                    location: "Sarawak",
-                    state: "sarawak",
-                    rating: 4.1,
-                    reviewCount: 19,
-                    pets: ["Cats", "Birds"],
-                    description: "Small shelter making big differences in pets' lives.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 9,
-                    name: "Gentle Giants Sanctuary",
-                    location: "Perak",
-                    state: "perak",
-                    rating: 4.7,
-                    reviewCount: 39,
-                    pets: ["Dogs", "Large Animals"],
-                    description: "Specializing in large breed dog rescue.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 10,
-                    name: "Urban Animal Allies",
-                    location: "Kuala Lumpur",
-                    state: "kuala_lumpur",
-                    rating: 4.4,
-                    reviewCount: 52,
-                    pets: ["Dogs", "Cats"],
-                    description: "City-focused rescue and community education.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 11,
-                    name: "Coastal Critter Care",
-                    location: "Johor",
-                    state: "johor",
-                    rating: 3.9,
-                    reviewCount: 24,
-                    pets: ["Dogs", "Cats", "Marine Animals"],
-                    description: "Coastal rescue and rehabilitation center.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 12,
-                    name: "Mountainview Animal Shelter",
-                    location: "Sabah",
-                    state: "sabah",
-                    rating: 4.5,
-                    reviewCount: 33,
-                    pets: ["Dogs", "Cats", "Wildlife"],
-                    description: "Shelter in the highlands helping all creatures.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 13,
-                    name: "Heartwarming Homes",
-                    location: "Selangor",
-                    state: "selangor",
-                    rating: 4.2,
-                    reviewCount: 41,
-                    pets: ["Dogs", "Cats"],
-                    description: "Creating loving matches between pets and families.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 14,
-                    name: "Precious Paws Project",
-                    location: "Penang",
-                    state: "penang",
-                    rating: 4.8,
-                    reviewCount: 67,
-                    pets: ["Cats"],
-                    description: "Exclusively feline rescue with TNR programs.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 15,
-                    name: "Loyal Companions Shelter",
-                    location: "Kuala Lumpur",
-                    state: "kuala_lumpur",
-                    rating: 4.0,
-                    reviewCount: 29,
-                    pets: ["Dogs"],
-                    description: "Focus on senior dog rescue and adoption.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 16,
-                    name: "Island Animal Oasis",
-                    location: "Sarawak",
-                    state: "sarawak",
-                    rating: 4.3,
-                    reviewCount: 18,
-                    pets: ["Dogs", "Cats", "Birds"],
-                    description: "Island community shelter serving remote areas.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 17,
-                    name: "Hope Haven for Animals",
-                    location: "Johor",
-                    state: "johor",
-                    rating: 4.6,
-                    reviewCount: 44,
-                    pets: ["Dogs", "Cats", "Small Animals"],
-                    description: "Providing hope and healing for abandoned pets.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 18,
-                    name: "Tender Care Shelter",
-                    location: "Perak",
-                    state: "perak",
-                    rating: 4.1,
-                    reviewCount: 26,
-                    pets: ["Cats", "Rabbits", "Guinea Pigs"],
-                    description: "Specializing in small animal rescue and care.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 19,
-                    name: "Forever Friends Foundation",
-                    location: "Selangor",
-                    state: "selangor",
-                    rating: 4.7,
-                    reviewCount: 58,
-                    pets: ["Dogs", "Cats"],
-                    description: "Committed to finding forever homes for all pets.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 20,
-                    name: "New Beginnings Animal Rescue",
-                    location: "Kuala Lumpur",
-                    state: "kuala_lumpur",
-                    rating: 4.4,
-                    reviewCount: 37,
-                    pets: ["Dogs", "Cats"],
-                    description: "Helping pets start their new life chapters.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 21,
-                    name: "Pawsitive Outcomes",
-                    location: "Penang",
-                    state: "penang",
-                    rating: 4.2,
-                    reviewCount: 32,
-                    pets: ["Dogs", "Cats"],
-                    description: "Creating positive outcomes for homeless pets.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 22,
-                    name: "Critter Comforts Shelter",
-                    location: "Sabah",
-                    state: "sabah",
-                    rating: 3.7,
-                    reviewCount: 21,
-                    pets: ["Dogs", "Cats", "Reptiles"],
-                    description: "Caring for all types of animals in need.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 23,
-                    name: "Safe Haven Sanctuary",
-                    location: "Sarawak",
-                    state: "sarawak",
-                    rating: 4.5,
-                    reviewCount: 28,
-                    pets: ["Dogs", "Cats"],
-                    description: "Providing safe haven for abused and neglected animals.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 24,
-                    name: "Loving Paws Rescue",
-                    location: "Johor",
-                    state: "johor",
-                    rating: 4.3,
-                    reviewCount: 46,
-                    pets: ["Dogs", "Cats"],
-                    description: "Rescue with focus on medical care and rehabilitation.",
-                    image: "profile_picture/shelter/pic1.png"
-                }
-            ];
+            // =======================================================
+            // CONFIGURATION AND STATE MANAGEMENT
+            // =======================================================
+            var currentRatingFilter = 'all';
+            var currentSearchTerm = '';
+            var allSheltersCount = <%= shelters.size()%>;
+            var pageLoaded = false;
+            var DEBUG = false;
 
-            // Pagination variables
-            let currentPage = 1;
-            const itemsPerPage = 8;
-            let filteredShelters = [...shelters];
+            // =======================================================
+            // 1. IMAGE LOADING HANDLER (UNTUK STOP LOADING ICON)
+            // =======================================================
+            function handleAllImagesLoaded() {
+                return new Promise(function (resolve) {
+                    var images = document.querySelectorAll('.shelter-card img');
+                    var totalImages = images.length;
+                    var loadedCount = 0;
 
-            // DOM Elements
-            const sheltersContainer = document.getElementById('sheltersContainer');
-            const resultCount = document.getElementById('resultCount');
-            const currentPageSpan = document.getElementById('currentPage');
-            const totalPagesSpan = document.getElementById('totalPages');
-            const prevPageBtn = document.getElementById('prevPage');
-            const nextPageBtn = document.getElementById('nextPage');
-            const pageNumbers = document.getElementById('pageNumbers');
-            const applyFilterBtn = document.getElementById('applyFilter');
-            const resetFilterBtn = document.getElementById('resetFilter');
-            const stateFilter = document.getElementById('stateFilter');
-            const ratingFilter = document.getElementById('ratingFilter');
+                    if (DEBUG)
+                        console.log('Checking ' + totalImages + ' shelter images...');
 
-            // Initialize
-            document.addEventListener('DOMContentLoaded', function () {
-                renderShelters();
-                updatePagination();
-                attachEventListeners();
-            });
+                    if (totalImages === 0) {
+                        resolve();
+                        return;
+                    }
 
-            // Render shelters for current page
-            function renderShelters() {
-                const startIndex = (currentPage - 1) * itemsPerPage;
-                const endIndex = startIndex + itemsPerPage;
-                const pageShelters = filteredShelters.slice(startIndex, endIndex);
+                    function checkCompletion() {
+                        loadedCount++;
+                        if (DEBUG && loadedCount % 5 === 0) {
+                            console.log('Images loaded: ' + loadedCount + '/' + totalImages);
+                        }
 
-                sheltersContainer.innerHTML = '';
+                        if (loadedCount >= totalImages) {
+                            if (DEBUG)
+                                console.log('All shelter images loaded');
+                            resolve();
+                        }
+                    }
 
-                pageShelters.forEach(shelter => {
-                    const card = createShelterCard(shelter);
-                    sheltersContainer.appendChild(card);
+                    for (var i = 0; i < images.length; i++) {
+                        var img = images[i];
+
+                        if (img.complete && img.naturalHeight !== 0) {
+                            checkCompletion();
+                        } else {
+                            img.addEventListener('load', checkCompletion);
+                            img.addEventListener('error', checkCompletion);
+                        }
+                    }
+
+                    // Check if all already loaded
+                    if (loadedCount === totalImages) {
+                        resolve();
+                        return;
+                    }
+
+                    // Fallback timeout (3 seconds)
+                    setTimeout(function () {
+                        if (DEBUG)
+                            console.warn('Image loading timeout. Loaded: ' + loadedCount + '/' + totalImages);
+                        resolve();
+                    }, 3000);
                 });
-
-                resultCount.textContent = filteredShelters.length;
             }
 
-            // Create shelter card HTML
-            function createShelterCard(shelter) {
-                const card = document.createElement('div');
-                card.className = 'shelter-card bg-white rounded-xl border border-[#E5E5E5] overflow-hidden card-hover';
+            // =======================================================
+            // 2. FORCE STOP LOADING INDICATOR (PENTING!)
+            // =======================================================
+            function forceStopLoadingIndicator() {
+                try {
+                    if (pageLoaded)
+                        return;
 
-                // Generate star HTML
-                const starsHTML = generateStars(shelter.rating);
+                    pageLoaded = true;
+                    if (DEBUG)
+                        console.log('Force stopping loading indicator...');
 
-                // Generate pet tags HTML
-                const petTagsHTML = shelter.pets.map(pet =>
-                    '<span class="inline-block bg-[#A8E6CF] text-[#2B2B2B] px-3 py-1 rounded-full text-sm mr-2 mb-2">' +
-                            '<i class="fas ' + getPetIcon(pet) + ' mr-1"></i> ' + pet +
-                            '</span>'
-                ).join('');
-
-                card.innerHTML =
-                        '<div class="relative">' +
-                        '<img src="' + shelter.image + '" alt="' + shelter.name + '" class="w-full h-48 object-cover">' +
-                        '<div class="absolute top-3 right-3 bg-[#6DBF89] text-[#06321F] px-3 py-1 rounded-full text-sm font-medium">' +
-                        '<i class="fas fa-check-circle mr-1"></i> Approved' +
-                        '</div>' +
-                        '</div>' +
-                        '<div class="p-5">' +
-                        '<h3 class="text-xl font-bold text-[#2B2B2B] mb-2">' + shelter.name + '</h3>' +
-                        '<div class="flex items-center mb-3">' +
-                        '<i class="fas fa-map-marker-alt text-[#2F5D50] mr-2"></i>' +
-                        '<span class="text-[#2B2B2B]">' + shelter.location + '</span>' +
-                        '</div>' +
-                        '<div class="flex items-center mb-4">' +
-                        '<div class="star-rating mr-2">' +
-                        starsHTML +
-                        '</div>' +
-                        '<span class="text-[#2B2B2B] font-medium">' + shelter.rating + '</span>' +
-                        '<span class="text-[#888] ml-1">(' + shelter.reviewCount + ' reviews)</span>' +
-                        '</div>' +
-                        '<div class="mb-4">' +
-                        petTagsHTML +
-                        '</div>' +
-                        '<p class="text-[#666] text-sm mb-4 line-clamp-2">' + shelter.description + '</p>' +
-                        '<a href="shelter_info.jsp" class="block w-full text-center py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">' +
-                        'View Details' +
-                        '</a>' +
-                        '</div>';
-
-                return card;
-            }
-
-            // Generate star rating HTML
-            function generateStars(rating) {
-                let starsHTML = '';
-                const fullStars = Math.floor(rating);
-                const hasHalfStar = rating % 1 >= 0.5;
-
-                for (let i = 1; i <= 5; i++) {
-                    if (i <= fullStars) {
-                        starsHTML += '<i class="fas fa-star"></i>';
-                    } else if (i === fullStars + 1 && hasHalfStar) {
-                        starsHTML += '<i class="fas fa-star-half-alt"></i>';
-                    } else {
-                        starsHTML += '<i class="far fa-star"></i>';
-                    }
-                }
-
-                return starsHTML;
-            }
-
-            // Get icon for pet type
-            function getPetIcon(petType) {
-                switch (petType.toLowerCase()) {
-                    case 'dogs':
-                        return 'fa-paw';
-                    case 'cats':
-                        return 'fa-cat';
-                    case 'rabbits':
-                        return 'fa-rabbit';
-                    case 'birds':
-                        return 'fa-dove';
-                    case 'small animals':
-                        return 'fa-otter';
-                    case 'large animals':
-                        return 'fa-horse';
-                    case 'marine animals':
-                        return 'fa-fish';
-                    case 'wildlife':
-                        return 'fa-hippo';
-                    case 'reptiles':
-                        return 'fa-dragon';
-                    default:
-                        return 'fa-paw';
-                }
-            }
-
-            // Update pagination controls
-            function updatePagination() {
-                const totalPages = Math.ceil(filteredShelters.length / itemsPerPage);
-
-                currentPageSpan.textContent = currentPage;
-                totalPagesSpan.textContent = totalPages;
-
-                // Update button states
-                prevPageBtn.disabled = currentPage === 1;
-                nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
-
-                // Generate page number buttons
-                pageNumbers.innerHTML = '';
-                const maxVisiblePages = 5;
-                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-                if (endPage - startPage + 1 < maxVisiblePages) {
-                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
-                }
-
-                for (let i = startPage; i <= endPage; i++) {
-                    const pageBtn = document.createElement('button');
-                    pageBtn.className = 'page-btn w-10 h-10 rounded-lg border ' +
-                            (i === currentPage ? 'border-[#2F5D50] bg-[#2F5D50] text-white' : 'border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]');
-                    pageBtn.textContent = i;
-                    pageBtn.addEventListener('click', () => {
-                        currentPage = i;
-                        renderShelters();
-                        updatePagination();
-                    });
-                    pageNumbers.appendChild(pageBtn);
-                }
-            }
-
-            // Apply filters
-            function applyFilters() {
-                const selectedState = stateFilter.value;
-                const minRating = parseFloat(ratingFilter.value);
-
-                filteredShelters = shelters.filter(shelter => {
-                    // State filter
-                    if (selectedState && shelter.state !== selectedState) {
-                        return false;
+                    // Method 1: window.stop() - stops all pending requests
+                    if (window.stop && typeof window.stop === 'function') {
+                        window.stop();
                     }
 
-                    // Rating filter
-                    if (minRating > 0 && shelter.rating < minRating) {
-                        return false;
+                    // Method 2: Mark page as fully loaded
+                    document.documentElement.setAttribute('data-page-loaded', 'true');
+                    document.body.classList.add('page-loaded-complete');
+
+                    // Method 3: Hide any loading animations
+                    var loadingAnimations = document.querySelectorAll('.fa-spinner, [class*="loading"]');
+                    for (var i = 0; i < loadingAnimations.length; i++) {
+                        loadingAnimations[i].style.display = 'none';
                     }
 
-                    return true;
-                });
-
-                currentPage = 1;
-                renderShelters();
-                updatePagination();
+                    if (DEBUG)
+                        console.log('Loading indicator stopped');
+                } catch (e) {
+                    if (DEBUG)
+                        console.warn('Error stopping loading indicator:', e);
+                }
             }
 
-            // Reset filters
-            function resetFilters() {
-                stateFilter.value = '';
-                ratingFilter.value = '0';
-                filteredShelters = [...shelters];
-                currentPage = 1;
-                renderShelters();
-                updatePagination();
-            }
+            // =======================================================
+            // 3. FILTER FUNCTIONS (SAMA TAPI DITAMBAH ERROR HANDLING)
+            // =======================================================
 
             // Attach event listeners
             function attachEventListeners() {
-                applyFilterBtn.addEventListener('click', applyFilters);
-                resetFilterBtn.addEventListener('click', resetFilters);
-
-                prevPageBtn.addEventListener('click', () => {
-                    if (currentPage > 1) {
-                        currentPage--;
-                        renderShelters();
-                        updatePagination();
+                try {
+                    // Search button
+                    var searchBtn = document.getElementById('searchBtn');
+                    if (searchBtn) {
+                        searchBtn.addEventListener('click', function () {
+                            currentSearchTerm = document.getElementById('searchFilter').value.trim().toLowerCase();
+                            filterShelters();
+                        });
                     }
-                });
 
-                nextPageBtn.addEventListener('click', () => {
-                    const totalPages = Math.ceil(filteredShelters.length / itemsPerPage);
-                    if (currentPage < totalPages) {
-                        currentPage++;
-                        renderShelters();
-                        updatePagination();
+                    // Search input - Enter key
+                    var searchFilter = document.getElementById('searchFilter');
+                    if (searchFilter) {
+                        searchFilter.addEventListener('keyup', function (e) {
+                            if (e.key === 'Enter') {
+                                currentSearchTerm = this.value.trim().toLowerCase();
+                                filterShelters();
+                            }
+                        });
+
+                        // Search input - real-time filtering (optional)
+                        searchFilter.addEventListener('input', function () {
+                            currentSearchTerm = this.value.trim().toLowerCase();
+                            filterShelters();
+                        });
                     }
-                });
 
-                // Add Enter key support for filters
-                [stateFilter, ratingFilter].forEach(filter => {
-                    filter.addEventListener('keyup', (e) => {
-                        if (e.key === 'Enter') {
-                            applyFilters();
-                        }
-                    });
-                });
+                    // Rating filter buttons
+                    var filterButtons = document.querySelectorAll('.filter-rating-btn');
+                    for (var i = 0; i < filterButtons.length; i++) {
+                        filterButtons[i].addEventListener('click', function () {
+                            // Update active button
+                            var allButtons = document.querySelectorAll('.filter-rating-btn');
+                            for (var j = 0; j < allButtons.length; j++) {
+                                allButtons[j].classList.remove('active');
+                            }
+                            this.classList.add('active');
+
+                            // Set current filter
+                            currentRatingFilter = this.getAttribute('data-rating');
+
+                            // Apply filter
+                            filterShelters();
+                        });
+                    }
+
+                    // Reset filter button
+                    var resetBtn = document.getElementById('resetFilter');
+                    if (resetBtn) {
+                        resetBtn.addEventListener('click', function () {
+                            resetFilters();
+                        });
+                    }
+                } catch (e) {
+                    console.error('Error attaching event listeners:', e);
+                }
             }
+
+            // Apply initial filters from URL parameters (optional)
+            function applyInitialFiltersFromURL() {
+                try {
+                    var urlParams = new URLSearchParams(window.location.search);
+                    var searchParam = urlParams.get('search');
+                    var ratingParam = urlParams.get('minRating');
+
+                    if (searchParam) {
+                        document.getElementById('searchFilter').value = searchParam;
+                        currentSearchTerm = searchParam.toLowerCase();
+                    }
+
+                    if (ratingParam) {
+                        // Convert backend rating param to frontend category
+                        var rating = parseFloat(ratingParam);
+                        var ratingCategory = 'all';
+
+                        if (rating === -1) {
+                            ratingCategory = '0plus';
+                        } else if (rating >= 5.0) {
+                            ratingCategory = '5plus';
+                        } else if (rating >= 4.0) {
+                            ratingCategory = '4plus';
+                        } else if (rating >= 3.0) {
+                            ratingCategory = '3plus';
+                        } else if (rating >= 2.0) {
+                            ratingCategory = '2plus';
+                        } else if (rating >= 1.0) {
+                            ratingCategory = '1plus';
+                        }
+
+                        // Activate corresponding button
+                        var buttons = document.querySelectorAll('.filter-rating-btn');
+                        for (var i = 0; i < buttons.length; i++) {
+                            var btn = buttons[i];
+                            btn.classList.remove('active');
+                            if (btn.getAttribute('data-rating') === ratingCategory) {
+                                btn.classList.add('active');
+                                currentRatingFilter = ratingCategory;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error applying initial filters:', e);
+                }
+            }
+
+            // Main filtering function
+            function filterShelters() {
+                try {
+                    var shelterCards = document.querySelectorAll('.shelter-card');
+                    var visibleCount = 0;
+
+                    for (var i = 0; i < shelterCards.length; i++) {
+                        var card = shelterCards[i];
+                        var shouldShow = true;
+
+                        // Get card data
+                        var shelterName = card.getAttribute('data-name');
+                        var shelterAddress = card.getAttribute('data-address');
+                        var shelterRating = parseFloat(card.getAttribute('data-rating'));
+                        var reviewCount = parseInt(card.getAttribute('data-review-count'));
+                        var ratingCategory = card.getAttribute('data-rating-category');
+
+                        // Apply search filter
+                        if (currentSearchTerm && currentSearchTerm.trim() !== '') {
+                            if (shelterName.indexOf(currentSearchTerm) === -1 &&
+                                    shelterAddress.indexOf(currentSearchTerm) === -1) {
+                                shouldShow = false;
+                            }
+                        }
+
+                        // Apply rating filter
+                        if (currentRatingFilter !== 'all') {
+                            if (currentRatingFilter === '0plus') {
+                                // No reviews filter
+                                if (reviewCount > 0) {
+                                    shouldShow = false;
+                                }
+                            } else {
+                                // Rating range filter
+                                if (ratingCategory !== currentRatingFilter) {
+                                    shouldShow = false;
+                                }
+                            }
+                        }
+
+                        // Show/hide card
+                        if (shouldShow) {
+                            card.style.display = 'block';
+                            visibleCount++;
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    }
+
+                    // Update counts
+                    var resultCount = document.getElementById('resultCount');
+                    var filteredCount = document.getElementById('filteredCount');
+
+                    if (resultCount)
+                        resultCount.textContent = visibleCount;
+                    if (filteredCount)
+                        filteredCount.textContent = visibleCount;
+
+                    // Show no results message
+                    var container = document.getElementById('sheltersContainer');
+                    if (!container)
+                        return;
+
+                    var noResultsMsg = container.querySelector('.no-results-message');
+
+                    if (visibleCount === 0 && allSheltersCount > 0) {
+                        if (!noResultsMsg) {
+                            var messageDiv = document.createElement('div');
+                            messageDiv.className = 'no-results-message col-span-4 text-center py-8';
+                            messageDiv.innerHTML = '\
+                        <i class="fas fa-search text-4xl text-[#E5E5E5] mb-4"></i>\
+                        <p class="text-[#888] text-lg mb-2">No shelters found matching your criteria</p>\
+                        <p class="text-[#888] text-sm mb-4">Try different search terms or rating filters</p>\
+                        <button onclick="resetFilters()" class="px-4 py-2 bg-[#2F5D50] text-white rounded-lg hover:bg-[#24483E] transition duration-300">\
+                            Reset All Filters\
+                        </button>\
+                    ';
+                            container.appendChild(messageDiv);
+                        }
+                    } else if (noResultsMsg) {
+                        container.removeChild(noResultsMsg);
+                    }
+
+                    // Update URL without reloading (optional)
+                    updateURLWithoutReload();
+
+                    if (DEBUG)
+                        console.log('Filter applied. Showing ' + visibleCount + ' of ' + allSheltersCount + ' shelters');
+                } catch (e) {
+                    console.error('Error filtering shelters:', e);
+                }
+            }
+
+            // Update URL with current filters (optional - for sharing)
+            function updateURLWithoutReload() {
+                try {
+                    var url = new URL(window.location);
+
+                    if (currentSearchTerm) {
+                        url.searchParams.set('search', currentSearchTerm);
+                    } else {
+                        url.searchParams.delete('search');
+                    }
+
+                    // Convert frontend rating category to backend minRating
+                    var minRatingParam = '0';
+                    if (currentRatingFilter === '0plus') {
+                        minRatingParam = '-1';
+                    } else if (currentRatingFilter === '5plus') {
+                        minRatingParam = '5';
+                    } else if (currentRatingFilter === '4plus') {
+                        minRatingParam = '4';
+                    } else if (currentRatingFilter === '3plus') {
+                        minRatingParam = '3';
+                    } else if (currentRatingFilter === '2plus') {
+                        minRatingParam = '2';
+                    } else if (currentRatingFilter === '1plus') {
+                        minRatingParam = '1';
+                    }
+
+                    if (currentRatingFilter !== 'all') {
+                        url.searchParams.set('minRating', minRatingParam);
+                    } else {
+                        url.searchParams.delete('minRating');
+                    }
+
+                    // Update URL tanpa reload page
+                    window.history.replaceState({}, '', url);
+                } catch (e) {
+                    console.error('Error updating URL:', e);
+                }
+            }
+
+            // Reset all filters
+            function resetFilters() {
+                try {
+                    // Reset search
+                    var searchFilter = document.getElementById('searchFilter');
+                    if (searchFilter)
+                        searchFilter.value = '';
+                    currentSearchTerm = '';
+
+                    // Reset rating filter
+                    var buttons = document.querySelectorAll('.filter-rating-btn');
+                    for (var i = 0; i < buttons.length; i++) {
+                        var btn = buttons[i];
+                        btn.classList.remove('active');
+                        if (btn.getAttribute('data-rating') === 'all') {
+                            btn.classList.add('active');
+                        }
+                    }
+                    currentRatingFilter = 'all';
+
+                    // Apply filter (show all)
+                    filterShelters();
+
+                    // Clear URL parameters
+                    var url = new URL(window.location);
+                    url.search = '';
+                    window.history.replaceState({}, '', url);
+                } catch (e) {
+                    console.error('Error resetting filters:', e);
+                }
+            }
+
+            // =======================================================
+            // 4. INITIALIZATION WITH LOADING HANDLING
+            // =======================================================
+            document.addEventListener('DOMContentLoaded', function () {
+                if (DEBUG)
+                    console.log('Shelter List page - DOM loaded. Total shelters:', allSheltersCount);
+
+                try {
+                    // Attach event listeners
+                    attachEventListeners();
+
+                    // Apply initial filter jika ada URL parameters
+                    applyInitialFiltersFromURL();
+
+                    // Apply initial filtering
+                    filterShelters();
+
+                    // Handle image loading
+                    handleAllImagesLoaded().then(function () {
+                        if (DEBUG)
+                            console.log('All images processed successfully');
+                    }).catch(function (error) {
+                        console.warn('Image loading issue:', error);
+                    });
+                } catch (e) {
+                    console.error('Error during initialization:', e);
+                }
+            });
+
+            // =======================================================
+            // 5. WINDOW LOAD EVENT - UTAMA UNTUK STOP LOADING ICON
+            // =======================================================
+            window.addEventListener('load', function () {
+                if (DEBUG)
+                    console.log('Shelter List page - Window fully loaded');
+
+                // Force stop loading indicator after 500ms
+                setTimeout(function () {
+                    forceStopLoadingIndicator();
+                }, 500);
+            });
+
+            // =======================================================
+            // 6. FALLBACK TIMEOUT - JIKA WINDOW.LOAD TAK TRIGGER
+            // =======================================================
+            setTimeout(function () {
+                if (!pageLoaded) {
+                    if (DEBUG)
+                        console.warn('Fallback: Forcing page load completion after 6 seconds');
+                    forceStopLoadingIndicator();
+                }
+            }, 6000);
+
+            // =======================================================
+            // 7. ERROR HANDLING (PREVENT LOADING HANG)
+            // =======================================================
+            window.addEventListener('error', function (event) {
+                if (DEBUG)
+                    console.error('JavaScript error:', event.error);
+                // Prevent error from stopping page load
+                event.preventDefault();
+            });
+
+            window.addEventListener('unhandledrejection', function (event) {
+                if (DEBUG)
+                    console.error('Unhandled promise rejection:', event.reason);
+                event.preventDefault(); // Prevent browser error display
+            });
         </script>
 
     </body>
 </html>
+
+<%!
+    // Helper method to generate star HTML
+    private String generateStars(double rating) {
+        StringBuilder stars = new StringBuilder();
+        int fullStars = (int) Math.floor(rating);
+        boolean hasHalfStar = rating % 1 >= 0.5;
+
+        for (int i = 1; i <= 5; i++) {
+            if (i <= fullStars) {
+                stars.append("<i class='fas fa-star'></i>");
+            } else if (i == fullStars + 1 && hasHalfStar) {
+                stars.append("<i class='fas fa-star-half-alt'></i>");
+            } else {
+                stars.append("<i class='far fa-star'></i>");
+            }
+        }
+
+        return stars.toString();
+    }
+
+    // Helper method to escape HTML for safety
+    private String escapeHtml(String input) {
+        if (input == null) {
+            return "";
+        }
+        return input.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
+    }
+%>

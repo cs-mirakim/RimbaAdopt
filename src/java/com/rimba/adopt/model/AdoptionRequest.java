@@ -10,6 +10,7 @@ public class AdoptionRequest implements Serializable {
     private Integer requestId;
     private Integer adopterId;
     private Integer petId;
+    private Integer shelterId;  // NEW FIELD
     private Timestamp requestDate;
     private String status;
     private String adopterMessage;
@@ -19,6 +20,7 @@ public class AdoptionRequest implements Serializable {
     public AdoptionRequest() {
     }
 
+    // Getters and Setters
     public Integer getRequestId() {
         return requestId;
     }
@@ -41,6 +43,14 @@ public class AdoptionRequest implements Serializable {
 
     public void setPetId(Integer petId) {
         this.petId = petId;
+    }
+
+    public Integer getShelterId() {
+        return shelterId;
+    }
+
+    public void setShelterId(Integer shelterId) {
+        this.shelterId = shelterId;
     }
 
     public Timestamp getRequestDate() {
@@ -82,4 +92,5 @@ public class AdoptionRequest implements Serializable {
     public void setCancellationReason(String cancellationReason) {
         this.cancellationReason = cancellationReason;
     }
+
 }

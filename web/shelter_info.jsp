@@ -1,16 +1,119 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" isELIgnored="true"%>
 <%@ page import="com.rimba.adopt.util.SessionUtil" %>
+<%@ page import="com.rimba.adopt.dao.ShelterDAO" %>
+<%@ page import="com.rimba.adopt.model.Shelter" %>
+<%@ page import="com.rimba.adopt.dao.PetsDAO" %>
+<%@ page import="com.rimba.adopt.model.Pets" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.ArrayList" %>
+<%@ page import="java.sql.SQLException" %>
+<%@ page import="com.rimba.adopt.dao.UsersDao" %>
+<%@ page import="com.rimba.adopt.util.DatabaseConnection" %>
+<%@ page import="java.sql.Connection" %>
+<%@ page import="com.rimba.adopt.dao.FeedbackDAO" %>
+<%@ page import="com.rimba.adopt.model.Users" %>
 
 <%
-    // Check if user is logged in and is admin
+    // Debug: Check session
+    System.out.println("DEBUG: Starting shelter_info.jsp");
+    
+    // Check if user is logged in and is adopter
     if (!SessionUtil.isLoggedIn(session)) {
+        System.out.println("DEBUG: User not logged in, redirecting to index.jsp");
         response.sendRedirect("index.jsp");
         return;
     }
 
     if (!SessionUtil.isAdopter(session)) {
+        System.out.println("DEBUG: User is not adopter, redirecting to index.jsp");
         response.sendRedirect("index.jsp");
         return;
+    }
+    
+    // Get shelter ID from parameter
+    String shelterIdParam = request.getParameter("id");
+    System.out.println("DEBUG: shelterIdParam = " + shelterIdParam);
+    
+    int shelterId = 0;
+    Shelter shelter = null;
+    double avgRating = 0.0;
+    int reviewCount = 0;
+    int[] ratingDistribution = new int[5];
+    int currentUserId = 0;
+    
+    // Get current user ID
+    Users currentUser = (Users) session.getAttribute("user");
+    if (currentUser != null) {
+        currentUserId = currentUser.getUserId();
+        System.out.println("DEBUG: Current user ID = " + currentUserId);
+    }
+    
+    if (shelterIdParam != null && !shelterIdParam.isEmpty()) {
+        try {
+            shelterId = Integer.parseInt(shelterIdParam);
+            System.out.println("DEBUG: Parsed shelterId = " + shelterId);
+            
+            // Try multiple ways to get shelter data
+            Connection conn = null;
+            try {
+                conn = DatabaseConnection.getConnection();
+                ShelterDAO shelterDAO = new ShelterDAO();
+                FeedbackDAO feedbackDAO = new FeedbackDAO();
+                
+                // Try with new method first
+                shelter = shelterDAO.getShelterWithRating(shelterId);
+                System.out.println("DEBUG: After getShelterWithRating(), shelter = " + (shelter != null ? "found" : "null"));
+                
+                if (shelter == null) {
+                    // Fallback to old method
+                    System.out.println("DEBUG: Falling back to getShelterById()");
+                    shelter = shelterDAO.getShelterById(shelterId);
+                    System.out.println("DEBUG: After getShelterById(), shelter = " + (shelter != null ? "found" : "null"));
+                }
+                
+                // Get rating stats from FeedbackDAO
+                avgRating = feedbackDAO.getAverageRatingByShelterId(shelterId);
+                reviewCount = feedbackDAO.getFeedbackCountByShelterId(shelterId);
+                ratingDistribution = feedbackDAO.getRatingDistributionByShelterId(shelterId);
+                
+                System.out.println("DEBUG: Rating stats - avgRating = " + avgRating + ", reviewCount = " + reviewCount);
+                System.out.println("DEBUG: Rating distribution: " + java.util.Arrays.toString(ratingDistribution));
+                
+            } catch (Exception e) {
+                System.err.println("ERROR getting shelter data: " + e.getMessage());
+                e.printStackTrace();
+            } finally {
+                if (conn != null) {
+                    try { conn.close(); } catch (SQLException e) {}
+                }
+            }
+            
+            if (shelter == null) {
+                System.out.println("DEBUG: Shelter not found, redirecting to shelter_list.jsp");
+                response.sendRedirect("shelter_list.jsp");
+                return;
+            }
+            
+        } catch (NumberFormatException e) {
+            System.err.println("ERROR: Invalid shelter ID format: " + shelterIdParam);
+            response.sendRedirect("shelter_list.jsp");
+            return;
+        }
+    } else {
+        System.out.println("DEBUG: No shelter ID parameter, redirecting to shelter_list.jsp");
+        response.sendRedirect("shelter_list.jsp");
+        return;
+    }
+    
+    // Get available pets for this shelter
+    PetsDAO petsDAO = new PetsDAO();
+    List<Pets> pets = new ArrayList<Pets>();
+    try {
+        pets = petsDAO.getAvailablePetsByShelter(shelterId);
+        System.out.println("DEBUG: Found " + pets.size() + " available pets");
+    } catch (SQLException e) {
+        System.err.println("ERROR getting pets: " + e.getMessage());
+        e.printStackTrace();
     }
 %>
 <!DOCTYPE html>
@@ -18,46 +121,27 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Happy Paws Shelter - Rimba Adopt</title>
+        <title><%= shelter.getShelterName() %> - Rimba Adopt</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <style>
-            .pet-slide {
-                transition: all 0.5s ease;
-                transform: scale(0.85);
-                opacity: 0.6;
-                filter: blur(2px);
-            }
-
-            .pet-slide.active {
-                transform: scale(1);
-                opacity: 1;
-                filter: blur(0);
-                z-index: 10;
-            }
-
             .feedback-card {
                 border-left: 4px solid #2F5D50;
             }
-
             .star-rating {
                 color: #C49A6C;
             }
-
             .progress-bar {
                 height: 8px;
                 border-radius: 4px;
                 background-color: #E5E5E5;
                 overflow: hidden;
             }
-
             .progress-fill {
                 height: 100%;
                 background-color: #C49A6C;
                 border-radius: 4px;
             }
-
-            /* Modal styles */
             .modal-overlay {
                 display: none;
                 position: fixed;
@@ -70,7 +154,6 @@
                 justify-content: center;
                 align-items: center;
             }
-
             .modal-content {
                 background-color: white;
                 border-radius: 12px;
@@ -79,30 +162,27 @@
                 max-height: 90vh;
                 overflow-y: auto;
             }
-
-            /* Animation for modal */
-            @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-            }
-
-            @keyframes slideUp {
-                from { transform: translateY(50px); opacity: 0; }
-                to { transform: translateY(0); opacity: 1; }
-            }
-
-            .modal-overlay.show {
-                display: flex;
-                animation: fadeIn 0.3s ease;
-            }
-
-            .modal-content.show {
-                animation: slideUp 0.3s ease;
-            }
-
-            /* Hide horizontal scroll */
             body {
                 overflow-x: hidden;
+            }
+            .star-selector {
+                font-size: 32px;
+                margin: 10px 0;
+                cursor: pointer;
+            }
+            .select-star {
+                color: #ddd;
+                margin-right: 5px;
+                transition: color 0.2s;
+            }
+            .select-star:hover,
+            .select-star.active {
+                color: #f39c12;
+            }
+            #selected-rating-text {
+                color: #7f8c8d;
+                font-style: italic;
+                margin-top: 5px;
             }
         </style>
     </head>
@@ -115,14 +195,21 @@
         <main class="flex-1 p-4 pt-6 relative z-10 flex justify-center items-start mb-2">
             <div class="w-full bg-white py-8 px-6 rounded-xl shadow-md" style="max-width: 1450px;">
 
-                <!-- Back Button and Title - UPDATED LAYOUT -->
+                <!-- Back Button and Title -->
                 <div class="mb-8">
                     <div class="flex items-center justify-between mb-2">
                         <a href="shelter_list.jsp" class="flex items-center text-[#2F5D50] hover:text-[#24483E]">
                             <i class="fas fa-arrow-left mr-2"></i> Back to Shelters
                         </a>
                         <div class="bg-[#6DBF89] text-[#06321F] px-4 py-2 rounded-full text-sm font-medium">
-                            <i class="fas fa-check-circle mr-2"></i> Approved Shelter
+                            <i class="fas fa-check-circle mr-2"></i> 
+                            <% 
+                            if ("approved".equals(shelter.getApprovalStatus())) {
+                                out.print("Approved Shelter");
+                            } else {
+                                out.print("Pending Approval");
+                            }
+                            %>
                         </div>
                     </div>
                     <h1 class="text-3xl font-bold text-[#2F5D50]">Shelter Information</h1>
@@ -134,73 +221,60 @@
                         <!-- Left: Shelter Photo and Basic Info -->
                         <div class="lg:w-1/3">
                             <div class="mb-6">
-                                <img src="profile_picture/shelter/pic1.png" alt="Happy Paws Shelter" class="w-full h-64 object-cover rounded-xl">
+                                <img src="<%= shelter.getPhotoPath() != null ? shelter.getPhotoPath() : "profile_picture/shelter/default.png" %>" 
+                                     alt="<%= shelter.getShelterName() %>" 
+                                     class="w-full h-64 object-cover rounded-xl">
                             </div>
 
                             <div class="bg-[#F9F9F9] p-5 rounded-xl">
                                 <div class="flex items-center mb-4">
-                                    <div class="star-rating text-2xl mr-3">
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star-half-alt"></i>
+                                    <div id="averageStars" class="star-rating text-2xl mr-3">
+                                        <% 
+                                        // Generate stars based on average rating
+                                        int fullStars = (int) avgRating;
+                                        boolean hasHalfStar = (avgRating - fullStars) >= 0.5;
+                                        
+                                        for (int i = 1; i <= 5; i++) {
+                                            if (i <= fullStars) {
+                                                out.print("<i class='fas fa-star'></i>");
+                                            } else if (i == fullStars + 1 && hasHalfStar) {
+                                                out.print("<i class='fas fa-star-half-alt'></i>");
+                                            } else {
+                                                out.print("<i class='far fa-star'></i>");
+                                            }
+                                        }
+                                        %>
                                     </div>
                                     <div>
-                                        <span class="text-2xl font-bold text-[#2B2B2B]">4.5</span>
-                                        <span class="text-[#888] ml-1">(42 reviews)</span>
+                                        <span id="averageRating" class="text-2xl font-bold text-[#2B2B2B]"><%= String.format("%.1f", avgRating) %></span>
+                                        <span id="reviewCount" class="text-[#888] ml-1">(<%= reviewCount %> <%= reviewCount == 1 ? "review" : "reviews" %>)</span>
                                     </div>
                                 </div>
 
                                 <!-- Rating Distribution -->
-                                <div class="mb-4">
-                                    <div class="flex items-center justify-between mb-1">
-                                        <span class="text-sm">5 stars</span>
-                                        <span class="text-sm font-medium">24</span>
+                                <div id="ratingDistribution">
+                                    <%
+                                    int totalReviews = 0;
+                                    for (int count : ratingDistribution) {
+                                        totalReviews += count;
+                                    }
+                                    
+                                    for (int i = 5; i >= 1; i--) {
+                                        int count = ratingDistribution[i-1];
+                                        double percentage = totalReviews > 0 ? (count * 100.0 / totalReviews) : 0;
+                                    %>
+                                    <div class="mb-4">
+                                        <div class="flex items-center justify-between mb-1">
+                                            <span class="text-sm"><%= i %> star<%= i != 1 ? "s" : "" %></span>
+                                            <span class="text-sm font-medium"><%= count %></span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: <%= percentage %>%"></div>
+                                        </div>
                                     </div>
-                                    <div class="progress-bar">
-                                        <div class="progress-fill" style="width: 57%"></div>
-                                    </div>
-                                </div>
-
-                                <div class="mb-4">
-                                    <div class="flex items-center justify-between mb-1">
-                                        <span class="text-sm">4 stars</span>
-                                        <span class="text-sm font-medium">12</span>
-                                    </div>
-                                    <div class="progress-bar">
-                                        <div class="progress-fill" style="width: 29%"></div>
-                                    </div>
-                                </div>
-
-                                <div class="mb-4">
-                                    <div class="flex items-center justify-between mb-1">
-                                        <span class="text-sm">3 stars</span>
-                                        <span class="text-sm font-medium">4</span>
-                                    </div>
-                                    <div class="progress-bar">
-                                        <div class="progress-fill" style="width: 10%"></div>
-                                    </div>
-                                </div>
-
-                                <div class="mb-4">
-                                    <div class="flex items-center justify-between mb-1">
-                                        <span class="text-sm">2 stars</span>
-                                        <span class="text-sm font-medium">1</span>
-                                    </div>
-                                    <div class="progress-bar">
-                                        <div class="progress-fill" style="width: 2%"></div>
-                                    </div>
-                                </div>
-
-                                <div class="mb-6">
-                                    <div class="flex items-center justify-between mb-1">
-                                        <span class="text-sm">1 star</span>
-                                        <span class="text-sm font-medium">1</span>
-                                    </div>
-                                    <div class="progress-bar">
-                                        <div class="progress-fill" style="width: 2%"></div>
-                                    </div>
+                                    <%
+                                    }
+                                    %>
                                 </div>
 
                                 <button id="writeReviewBtn" class="w-full py-3 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300">
@@ -212,7 +286,7 @@
                         <!-- Right: Shelter Details -->
                         <div class="lg:w-2/3">
                             <div class="mb-6">
-                                <h2 class="text-2xl font-bold text-[#2B2B2B] mb-4">Happy Paws Shelter</h2>
+                                <h2 class="text-2xl font-bold text-[#2B2B2B] mb-4"><%= shelter.getShelterName() %></h2>
 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                     <div class="flex items-start">
@@ -221,8 +295,7 @@
                                         </div>
                                         <div>
                                             <h3 class="font-semibold text-[#2B2B2B] mb-1">Location</h3>
-                                            <p class="text-[#666]">123 Jalan Ampang, Kuala Lumpur</p>
-                                            <p class="text-[#666]">50450 Kuala Lumpur, Malaysia</p>
+                                            <p class="text-[#666]"><%= shelter.getShelterAddress() != null ? shelter.getShelterAddress() : "Address not available" %></p>
                                         </div>
                                     </div>
 
@@ -232,8 +305,8 @@
                                         </div>
                                         <div>
                                             <h3 class="font-semibold text-[#2B2B2B] mb-1">Contact</h3>
-                                            <p class="text-[#666]">+603-1234 5678</p>
-                                            <p class="text-[#666]">info@happypaws.org</p>
+                                            <p class="text-[#666]"><%= shelter.getPhone() != null ? shelter.getPhone() : "N/A" %></p>
+                                            <p class="text-[#666]"><%= shelter.getEmail() != null ? shelter.getEmail() : "N/A" %></p>
                                         </div>
                                     </div>
 
@@ -243,8 +316,7 @@
                                         </div>
                                         <div>
                                             <h3 class="font-semibold text-[#2B2B2B] mb-1">Operating Hours</h3>
-                                            <p class="text-[#666]">Mon-Fri: 9:00 AM - 6:00 PM</p>
-                                            <p class="text-[#666]">Sat-Sun: 10:00 AM - 4:00 PM</p>
+                                            <p class="text-[#666]"><%= shelter.getOperatingHours() != null ? shelter.getOperatingHours() : "Mon-Fri: 9:00 AM - 6:00 PM" %></p>
                                         </div>
                                     </div>
 
@@ -254,21 +326,15 @@
                                         </div>
                                         <div>
                                             <h3 class="font-semibold text-[#2B2B2B] mb-1">Website</h3>
-                                            <p class="text-[#666]">www.happypawsshelter.org</p>
-                                            <p class="text-[#666]">Facebook: @HappyPawsKL</p>
+                                            <p class="text-[#666]"><%= shelter.getWebsite() != null ? shelter.getWebsite() : "N/A" %></p>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div class="bg-white p-6 rounded-xl border border-[#E5E5E5]">
                                     <h3 class="text-xl font-bold text-[#2B2B2B] mb-4">About This Shelter</h3>
-                                    <div class="text-[#666] leading-relaxed space-y-4">
-                                        <p>
-                                            Happy Paws Shelter is a non-profit animal rescue organization dedicated to saving the lives of stray, abandoned, and abused animals in the Kuala Lumpur area. Founded in 2015, we have successfully rescued and rehomed over 1,200 animals to date.
-                                        </p>
-                                        <p>
-                                            Our mission is to provide a safe haven for animals in need while actively working to reduce the stray population through our spay/neuter programs. We believe every animal deserves a loving home and work tirelessly to match our rescues with compatible adopters.
-                                        </p>
+                                    <div class="text-[#666] leading-relaxed">
+                                        <p><%= shelter.getShelterDescription() != null ? shelter.getShelterDescription() : "No description available." %></p>
                                     </div>
                                 </div>
                             </div>
@@ -276,39 +342,78 @@
                     </div>
                 </div>
 
-                <!-- Container 2: Pets Available Grid with Pagination -->
+                <!-- Container 2: Pets Available Grid -->
                 <div class="mb-10 p-6 border border-[#E5E5E5] rounded-xl bg-white">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-bold text-[#2B2B2B]">Pets Available for Adoption</h2>
                         <div class="text-sm text-[#888]">
-                            <span id="petRangeText">1-3 of 6 pets</span>
+                            <span id="petCount"><%= pets.size() %> pets available</span>
                         </div>
                     </div>
 
                     <!-- Pets Grid -->
                     <div id="petsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-                        <!-- Pet cards will be generated by JavaScript -->
-                    </div>
-
-                    <!-- Pagination for Pets -->
-                    <div class="flex justify-center items-center">
-                        <nav class="flex items-center space-x-2">
-                            <button id="prevPetPage" class="p-3 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7] disabled:opacity-50 disabled:cursor-not-allowed">
-                                <i class="fas fa-chevron-left"></i>
-                            </button>
-
-                            <div id="petPageNumbers" class="flex space-x-2">
-                                <!-- Page numbers will be generated here -->
+                        <% 
+                        if (pets.isEmpty()) { 
+                        %>
+                        <div class="col-span-3 text-center py-8">
+                            <i class="fas fa-paw text-4xl text-[#E5E5E5] mb-4"></i>
+                            <p class="text-[#888]">No pets available for adoption at this shelter.</p>
+                        </div>
+                        <% 
+                        } else {
+                            for (Pets pet : pets) { 
+                                String petPhoto = pet.getPhotoPath() != null ? pet.getPhotoPath() : "profile_picture/pet/default.png";
+                                String breed = pet.getBreed() != null ? pet.getBreed() : "Mixed";
+                                String age = pet.getAge() != null ? pet.getAge().toString() + " years" : "N/A";
+                                String size = pet.getSize() != null ? pet.getSize() : "N/A";
+                                String description = pet.getDescription() != null ? pet.getDescription() : "No description available.";
+                        %>
+                        <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-[#E5E5E5] hover:shadow-xl transition duration-300">
+                            <div class="relative">
+                                <img src="<%= petPhoto %>" 
+                                     alt="<%= pet.getName() %>" 
+                                     class="w-full h-48 object-cover">
+                                <div class="absolute top-3 right-3 bg-[#2F5D50] text-white px-3 py-1 rounded-full text-sm font-medium">
+                                    Available
+                                </div>
                             </div>
-
-                            <button id="nextPetPage" class="p-3 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7] disabled:opacity-50 disabled:cursor-not-allowed">
-                                <i class="fas fa-chevron-right"></i>
-                            </button>
-                        </nav>
+                            <div class="p-4">
+                                <h3 class="text-xl font-bold text-[#2B2B2B] mb-2"><%= pet.getName() %></h3>
+                                <div class="grid grid-cols-2 gap-2 mb-3">
+                                    <div>
+                                        <p class="text-xs text-[#888]">Species</p>
+                                        <p class="font-medium text-sm"><%= pet.getSpecies() %></p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-[#888]">Breed</p>
+                                        <p class="font-medium text-sm"><%= breed %></p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-[#888]">Age</p>
+                                        <p class="font-medium text-sm"><%= age %></p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-[#888]">Size</p>
+                                        <p class="font-medium text-sm"><%= size %></p>
+                                    </div>
+                                </div>
+                                <p class="text-[#666] text-sm mb-4 line-clamp-2"><%= description %></p>
+                                <div class="text-center">
+                                    <a href="pet_info.jsp?id=<%= pet.getPetId() %>" class="inline-block w-full px-4 py-2 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300 text-sm">
+                                        <i class="fas fa-heart mr-1"></i> Adopt <%= pet.getName() %>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <% 
+                            } 
+                        } 
+                        %>
                     </div>
                 </div>
 
-                <!-- Container 3: Feedback Section - UPDATED WITH PAGINATION -->
+                <!-- Container 3: Feedback Section -->
                 <div class="p-6 border border-[#E5E5E5] rounded-xl bg-white">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-bold text-[#2B2B2B]">Reviews & Feedback</h2>
@@ -318,11 +423,15 @@
                     </div>
 
                     <!-- Reviews List -->
-                    <div id="reviewsContainer" class="space-y-6">
-                        <!-- Reviews will be loaded here -->
+                    <div id="reviewsContainer">
+                        <!-- Reviews will be loaded by JavaScript -->
+                        <div class="text-center py-8">
+                            <i class="fas fa-spinner fa-spin text-4xl text-[#2F5D50] mb-4"></i>
+                            <p class="text-[#888]">Loading reviews...</p>
+                        </div>
                     </div>
 
-                    <!-- Pagination for Reviews - UPDATED -->
+                    <!-- Pagination for Reviews -->
                     <div class="flex justify-center items-center mt-8">
                         <nav class="flex items-center space-x-2">
                             <button id="prevReviewPage" class="p-3 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7] disabled:opacity-50 disabled:cursor-not-allowed">
@@ -333,7 +442,7 @@
                                 <!-- Page numbers will be generated here -->
                             </div>
 
-                            <button id="nextReviewPage" class="p-3 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]">
+                            <button id="nextReviewPage" class="p-3 rounded-lg border border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7] disabled:opacity-50 disabled:cursor-not-allowed">
                                 <i class="fas fa-chevron-right"></i>
                             </button>
                         </nav>
@@ -354,26 +463,35 @@
                 </div>
 
                 <form id="reviewForm">
+                    <input type="hidden" id="shelterId" name="shelterId" value="<%= shelterId %>">
+                    <input type="hidden" name="action" value="submitFeedback">
+                    <input type="hidden" name="adopterId" value="<%= currentUserId %>">
+                    <!-- Tambah flag untuk bypass check -->
+                    <input type="hidden" name="forceSubmit" value="true">
+                    
                     <div class="mb-6">
-                        <label class="block text-[#2B2B2B] mb-3 font-medium">Rating</label>
-                        <div class="flex space-x-2" id="starRating">
-                            <i class="far fa-star text-3xl text-[#C49A6C] cursor-pointer rating-star" data-value="1"></i>
-                            <i class="far fa-star text-3xl text-[#C49A6C] cursor-pointer rating-star" data-value="2"></i>
-                            <i class="far fa-star text-3xl text-[#C49A6C] cursor-pointer rating-star" data-value="3"></i>
-                            <i class="far fa-star text-3xl text-[#C49A6C] cursor-pointer rating-star" data-value="4"></i>
-                            <i class="far fa-star text-3xl text-[#C49A6C] cursor-pointer rating-star" data-value="5"></i>
+                        <label class="block text-[#2B2B2B] mb-3 font-medium">Your Rating:</label>
+                        <div class="star-selector">
+                            <span class="select-star" data-value="1">☆</span>
+                            <span class="select-star" data-value="2">☆</span>
+                            <span class="select-star" data-value="3">☆</span>
+                            <span class="select-star" data-value="4">☆</span>
+                            <span class="select-star" data-value="5">☆</span>
                         </div>
+                        <p id="selected-rating-text">Select a star rating</p>
                         <input type="hidden" id="selectedRating" name="rating" value="0">
                     </div>
 
                     <div class="mb-6">
-                        <label for="reviewTitle" class="block text-[#2B2B2B] mb-2 font-medium">Review Title</label>
-                        <input type="text" id="reviewTitle" name="title" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]" placeholder="Summarize your experience">
+                        <label for="reviewerName" class="block text-[#2B2B2B] mb-2 font-medium">Your Name</label>
+                        <input type="text" id="reviewerName" name="reviewerName" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89] bg-gray-50" 
+                               value="<%= currentUser != null ? currentUser.getName() : "" %>" readonly>
                     </div>
 
                     <div class="mb-6">
                         <label for="reviewComment" class="block text-[#2B2B2B] mb-2 font-medium">Your Review</label>
-                        <textarea id="reviewComment" name="comment" rows="5" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]" placeholder="Share details of your experience with this shelter..."></textarea>
+                        <textarea id="reviewComment" name="comment" rows="5" class="w-full p-3 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6DBF89]" 
+                                  placeholder="Share your experience with this shelter..."></textarea>
                     </div>
 
                     <div class="flex justify-end space-x-3">
@@ -388,217 +506,27 @@
             </div>
         </div>
 
-        <!-- Footer container -->
+         <!-- Footer container -->
         <jsp:include page="includes/footer.jsp" />
 
         <!-- Sidebar container -->
         <jsp:include page="includes/sidebar.jsp" />
 
-        <!-- Load sidebar.js -->
+       
         <script src="includes/sidebar.js"></script>
 
         <script>
-            // Dummy pet data
-            const pets = [
-                {
-                    id: 1,
-                    name: "Buddy",
-                    species: "Dog",
-                    breed: "Golden Retriever",
-                    age: 3,
-                    gender: "Male",
-                    size: "Large",
-                    color: "Golden",
-                    description: "Friendly and energetic golden retriever. Loves playing fetch and going for walks.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 2,
-                    name: "Luna",
-                    species: "Cat",
-                    breed: "Domestic Shorthair",
-                    age: 2,
-                    gender: "Female",
-                    size: "Small",
-                    color: "Gray & White",
-                    description: "Calm and affectionate cat. Enjoys lounging in sunny spots and gentle petting.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 3,
-                    name: "Max",
-                    species: "Dog",
-                    breed: "Beagle Mix",
-                    age: 4,
-                    gender: "Male",
-                    size: "Medium",
-                    color: "Tri-color",
-                    description: "Curious and friendly beagle mix. Great with children and other dogs.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 4,
-                    name: "Whiskers",
-                    species: "Rabbit",
-                    breed: "Holland Lop",
-                    age: 1,
-                    gender: "Female",
-                    size: "Small",
-                    color: "White",
-                    description: "Gentle and playful bunny. Loves fresh vegetables and hopping around.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 5,
-                    name: "Rocky",
-                    species: "Dog",
-                    breed: "Siberian Husky",
-                    age: 2,
-                    gender: "Male",
-                    size: "Large",
-                    color: "Gray & White",
-                    description: "Energetic husky with striking blue eyes. Needs an active family.",
-                    image: "profile_picture/shelter/pic1.png"
-                },
-                {
-                    id: 6,
-                    name: "Coco",
-                    species: "Dog",
-                    breed: "Poodle",
-                    age: 5,
-                    gender: "Female",
-                    size: "Medium",
-                    color: "Brown",
-                    description: "Intelligent and gentle poodle. Great companion for seniors.",
-                    image: "profile_picture/shelter/pic1.png"
-                }
-            ];
-
-            // Dummy reviews data
-            const allReviews = [
-                {
-                    id: 1,
-                    user: "Sarah Chen",
-                    date: "2 weeks ago",
-                    rating: 5,
-                    title: "Wonderful experience adopting Milo",
-                    comment: "The staff at Happy Paws were incredibly helpful throughout the entire adoption process. They provided thorough information about Milo's health and background. Milo has settled into our home perfectly!",
-                    helpful: 12
-                },
-                {
-                    id: 2,
-                    user: "Ahmad Faris",
-                    date: "1 month ago",
-                    rating: 4,
-                    title: "Great shelter with caring staff",
-                    comment: "Adopted our cat Luna from here. The facility was clean and the animals well cared for. The adoption counselor took time to match us with the right pet. Only wish they had more parking space.",
-                    helpful: 8
-                },
-                {
-                    id: 3,
-                    user: "Priya Sharma",
-                    date: "2 months ago",
-                    rating: 5,
-                    title: "Forever grateful",
-                    comment: "We adopted our senior dog Charlie from Happy Paws. They were so honest about his medical needs and provided all his records. Their follow-up care is exceptional!",
-                    helpful: 15
-                },
-                {
-                    id: 4,
-                    user: "David Wong",
-                    date: "3 months ago",
-                    rating: 3,
-                    title: "Good but slow process",
-                    comment: "The shelter does good work but the adoption approval took longer than expected. Staff were friendly but seemed understaffed. Our rabbit Daisy is healthy and happy though.",
-                    helpful: 5
-                },
-                {
-                    id: 5,
-                    user: "Nurul Hasanah",
-                    date: "4 months ago",
-                    rating: 5,
-                    title: "Best decision we ever made",
-                    comment: "Adopted two kittens from Happy Paws. The staff educated us on proper cat care and even provided a starter kit. Highly recommend this shelter to anyone looking to adopt!",
-                    helpful: 21
-                },
-                {
-                    id: 6,
-                    user: "Michael Tan",
-                    date: "5 months ago",
-                    rating: 4,
-                    title: "Professional and caring",
-                    comment: "Adoption process was thorough but reasonable. They really care about where their animals go. Our dog Buddy is a perfect addition to our family.",
-                    helpful: 9
-                },
-                {
-                    id: 7,
-                    user: "Lisa Lim",
-                    date: "6 months ago",
-                    rating: 5,
-                    title: "Amazing rescue organization",
-                    comment: "They saved our dog from a bad situation and nursed him back to health. Forever thankful for their dedication to animal welfare.",
-                    helpful: 17
-                },
-                {
-                    id: 8,
-                    user: "Kevin Raj",
-                    date: "7 months ago",
-                    rating: 4,
-                    title: "Good experience overall",
-                    comment: "The adoption process was smooth and the staff were knowledgeable. Would recommend to friends and family.",
-                    helpful: 6
-                },
-                {
-                    id: 9,
-                    user: "Amanda Lee",
-                    date: "8 months ago",
-                    rating: 5,
-                    title: "Life-changing adoption",
-                    comment: "Our adopted cat has brought so much joy to our family. Thank you Happy Paws for your wonderful work!",
-                    helpful: 13
-                },
-                {
-                    id: 10,
-                    user: "Robert Chin",
-                    date: "9 months ago",
-                    rating: 3,
-                    title: "Average experience",
-                    comment: "Shelter does good work but communication could be better. Our pet is happy though.",
-                    helpful: 3
-                },
-                {
-                    id: 11,
-                    user: "Siti Aishah",
-                    date: "10 months ago",
-                    rating: 5,
-                    title: "Excellent service",
-                    comment: "Very professional team who really cares about animal welfare. Will support them in the future.",
-                    helpful: 11
-                },
-                {
-                    id: 12,
-                    user: "James Kumar",
-                    date: "11 months ago",
-                    rating: 4,
-                    title: "Happy with our adoption",
-                    comment: "Good facilities and caring staff. Our dog is adjusting well to his new home.",
-                    helpful: 7
-                }
-            ];
-
+            // Get shelter ID from JSP
+            const shelterId = <%= shelterId %>;
+            const currentUserId = <%= currentUserId %>;
+            
             // Pagination variables
-            let currentPetPage = 1;
             let currentReviewPage = 1;
-            const petsPerPage = 3;
             const reviewsPerPage = 4;
             let selectedRating = 0;
+            let totalReviewPages = 1;
 
             // DOM Elements
-            const petsGrid = document.getElementById('petsGrid');
-            const petRangeText = document.getElementById('petRangeText');
-            const prevPetPageBtn = document.getElementById('prevPetPage');
-            const nextPetPageBtn = document.getElementById('nextPetPage');
-            const petPageNumbers = document.getElementById('petPageNumbers');
             const reviewsContainer = document.getElementById('reviewsContainer');
             const prevReviewPageBtn = document.getElementById('prevReviewPage');
             const nextReviewPageBtn = document.getElementById('nextReviewPage');
@@ -609,338 +537,343 @@
             const closeModalBtn = document.getElementById('closeModal');
             const cancelReviewBtn = document.getElementById('cancelReview');
             const reviewForm = document.getElementById('reviewForm');
-            const starRatingElements = document.querySelectorAll('.rating-star');
             const selectedRatingInput = document.getElementById('selectedRating');
+            const selectedRatingText = document.getElementById('selected-rating-text');
 
-            // Initialize
-            document.addEventListener('DOMContentLoaded', function () {
-                renderPets();
-                updatePetPagination();
-                renderReviews();
-                updateReviewPagination();
-                attachEventListeners();
-            });
-
-            // Render pets for current page
-            function renderPets() {
-                petsGrid.innerHTML = '';
-
-                const startIndex = (currentPetPage - 1) * petsPerPage;
-                const endIndex = startIndex + petsPerPage;
-                const petsToShow = pets.slice(startIndex, endIndex);
-
-                // Update range text
-                const start = startIndex + 1;
-                const end = Math.min(endIndex, pets.length);
-                petRangeText.textContent = `${start}-${end} of ${pets.length} pets`;
-
-                petsToShow.forEach(pet => {
-                    const petCard = document.createElement('div');
-                    petCard.className = 'bg-white rounded-xl shadow-lg overflow-hidden border border-[#E5E5E5] hover:shadow-xl transition duration-300';
-
-                    petCard.innerHTML = `
-                <div class="relative">
-                    <img src="${pet.image}" alt="${pet.name}" class="w-full h-48 object-cover">
-                    <div class="absolute top-3 right-3 bg-[#2F5D50] text-white px-3 py-1 rounded-full text-sm font-medium">
-                        Available
-                    </div>
-                </div>
-                <div class="p-4">
-                    <h3 class="text-xl font-bold text-[#2B2B2B] mb-2">${pet.name}</h3>
-                    <div class="grid grid-cols-2 gap-2 mb-3">
-                        <div>
-                            <p class="text-xs text-[#888]">Species</p>
-                            <p class="font-medium text-sm">${pet.species}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-[#888]">Breed</p>
-                            <p class="font-medium text-sm">${pet.breed}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-[#888]">Age</p>
-                            <p class="font-medium text-sm">${pet.age} years</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-[#888]">Size</p>
-                            <p class="font-medium text-sm">${pet.size}</p>
-                        </div>
-                    </div>
-                    <p class="text-[#666] text-sm mb-4 line-clamp-2">${pet.description}</p>
-                    <div class="text-center">
-                        <a href="pet_info.jsp" class="inline-block w-full px-4 py-2 bg-[#2F5D50] text-white font-medium rounded-lg hover:bg-[#24483E] transition duration-300 text-sm">
-                            <i class="fas fa-heart mr-1"></i> Adopt ${pet.name}
-                        </a>
-                    </div>
-                </div>
-            `;
-
-                    petsGrid.appendChild(petCard);
+            // Star selector functionality
+            function updateStarSelector(rating) {
+                const starRatingElements = document.querySelectorAll('.select-star');
+                starRatingElements.forEach(star => {
+                    const starValue = parseInt(star.getAttribute('data-value'));
+                    if (starValue <= rating) {
+                        star.textContent = '★';
+                        star.classList.add('active');
+                    } else {
+                        star.textContent = '☆';
+                        star.classList.remove('active');
+                    }
                 });
             }
 
-            // Update pet pagination
-            function updatePetPagination() {
-                const totalPetPages = Math.ceil(pets.length / petsPerPage);
+            function updateRatingText(rating) {
+                const ratingPhrases = [
+                    "Select a star rating",
+                    "Poor",
+                    "Fair",
+                    "Good",
+                    "Very Good",
+                    "Excellent"
+                ];
+                if (selectedRatingText) {
+                    selectedRatingText.textContent = ratingPhrases[rating];
+                }
+            }
+
+            // Initialize
+            document.addEventListener('DOMContentLoaded', function () {
+                loadReviews();
+                attachEventListeners();
+                
+                // Initialize star selector events
+                const starRatingElements = document.querySelectorAll('.select-star');
+                if (starRatingElements) {
+                    starRatingElements.forEach(star => {
+                        star.addEventListener('click', function() {
+                            selectedRating = parseInt(this.getAttribute('data-value'));
+                            updateStarSelector(selectedRating);
+                            updateRatingText(selectedRating);
+                            if (selectedRatingInput) {
+                                selectedRatingInput.value = selectedRating.toString();
+                            }
+                        });
+                    });
+                }
+            });
+
+            // Load reviews for current page
+            function loadReviews() {
+                console.log("DEBUG: Loading reviews for page " + currentReviewPage);
+
+                fetch('FeedbackServlet?action=getFeedback&shelterId=' + shelterId + '&page=' + currentReviewPage + '&pageSize=' + reviewsPerPage)
+                    .then(function(response) {
+                        console.log("DEBUG: Response status: " + response.status);
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        console.log("DEBUG: Received data:", data);
+                        if (data.success) {
+                            renderReviews(data.feedbackList);
+                            updateReviewPagination(data.totalCount, data.currentPage, data.pageSize);
+                            totalReviewPages = data.totalPages;
+                        } else {
+                            console.error('Error loading reviews:', data.message);
+                            showNoReviews();
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Error:', error);
+                        showNoReviews();
+                    });
+            }
+
+            // Show no reviews message
+            function showNoReviews() {
+                if (reviewsContainer) {
+                    reviewsContainer.innerHTML = 
+                        '<div class="text-center py-8">' +
+                        '<i class="fas fa-comment-slash text-4xl text-[#E5E5E5] mb-4"></i>' +
+                        '<p class="text-[#888]">No reviews yet. Be the first to review this shelter!</p>' +
+                        '</div>';
+                }
+            }
+
+            // Update renderReviews() function:
+            function renderReviews(reviews) {
+                if (!reviewsContainer) return;
+
+                reviewsContainer.innerHTML = '';
+
+                if (!reviews || reviews.length === 0) {
+                    showNoReviews();
+                    return;
+                }
+
+                for (var i = 0; i < reviews.length; i++) {
+                    var review = reviews[i];
+                    var reviewCard = document.createElement('div');
+                    reviewCard.className = 'feedback-card bg-[#F9F9F9] p-6 rounded-xl mb-4';
+
+                    // Generate star HTML
+                    var starsHTML = '';
+                    for (var j = 1; j <= 5; j++) {
+                        if (j <= review.rating) {
+                            starsHTML += '<i class="fas fa-star text-yellow-500"></i>';
+                        } else {
+                            starsHTML += '<i class="far fa-star text-gray-300"></i>';
+                        }
+                    }
+
+                    // Format date
+                    var dateStr = '';
+                    if (review.created_at) {
+                        var date = new Date(review.created_at);
+                        dateStr = date.toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric' 
+                        });
+                    }
+
+                    reviewCard.innerHTML =
+                        '<div class="flex justify-between items-start mb-4">' +
+                        '<div>' +
+                        '<h4 class="font-bold text-[#2B2B2B] mb-1">' + (review.adopter_name || 'Anonymous') + '</h4>' +
+                        '<div class="flex items-center mt-1">' +
+                        '<div class="star-rating mr-3">' +
+                        starsHTML +
+                        '</div>' +
+                        '<span class="text-sm text-gray-600">' + review.rating + '/5</span>' +
+                        '</div>' +
+                        '</div>' +
+                        '<span class="text-[#888] text-sm">' + dateStr + '</span>' +
+                        '</div>' +
+                        '<div class="mb-4">' +
+                        '<p class="text-[#666]">' + (review.comment || 'No comment') + '</p>' +
+                        '</div>';
+
+                    reviewsContainer.appendChild(reviewCard);
+                }
+            }
+
+            // Update review pagination
+            function updateReviewPagination(totalCount, currentPage, pageSize) {
+                const totalPages = Math.ceil(totalCount / pageSize);
 
                 // Update button states
-                prevPetPageBtn.disabled = currentPetPage === 1;
-                nextPetPageBtn.disabled = currentPetPage === totalPetPages;
+                if (prevReviewPageBtn) {
+                    prevReviewPageBtn.disabled = currentPage === 1;
+                }
+                if (nextReviewPageBtn) {
+                    nextReviewPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+                }
 
                 // Generate page number buttons
-                petPageNumbers.innerHTML = '';
-                for (let i = 1; i <= totalPetPages; i++) {
-                    const pageBtn = document.createElement('button');
-                    pageBtn.className = 'w-10 h-10 rounded-lg border ' +
-                            (i === currentPetPage ? 'border-[#2F5D50] bg-[#2F5D50] text-white' : 'border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]');
-                    pageBtn.textContent = i;
-                    pageBtn.addEventListener('click', () => {
-                        currentPetPage = i;
-                        renderPets();
-                        updatePetPagination();
-                    });
-                    petPageNumbers.appendChild(pageBtn);
-                }
-
-                // Next pet page
-                function nextPetPage() {
-                    const totalPetPages = Math.ceil(pets.length / petsPerPage);
-                    if (currentPetPage < totalPetPages) {
-                        currentPetPage++;
-                        renderPets();
-                        updatePetPagination();
-                    }
-                }
-
-                // Previous pet page
-                function prevPetPage() {
-                    if (currentPetPage > 1) {
-                        currentPetPage--;
-                        renderPets();
-                        updatePetPagination();
-                    }
-                }
-
-                // Render reviews for current page
-                function renderReviews() {
-                    reviewsContainer.innerHTML = '';
-
-                    const startIndex = (currentReviewPage - 1) * reviewsPerPage;
-                    const endIndex = startIndex + reviewsPerPage;
-                    const reviewsToShow = allReviews.slice(startIndex, endIndex);
-
-                    if (reviewsToShow.length === 0) {
-                        reviewsContainer.innerHTML = `
-                <div class="text-center py-8">
-                    <i class="fas fa-comment-slash text-4xl text-[#E5E5E5] mb-4"></i>
-                    <p class="text-[#888]">No reviews yet. Be the first to review this shelter!</p>
-                </div>
-            `;
-                        return;
-                    }
-
-                    reviewsToShow.forEach(review => {
-                        const reviewCard = document.createElement('div');
-                        reviewCard.className = 'feedback-card bg-[#F9F9F9] p-6 rounded-xl';
-
-                        // Generate star HTML
-                        let starsHTML = '';
-                        for (let i = 1; i <= 5; i++) {
-                            if (i <= review.rating) {
-                                starsHTML += '<i class="fas fa-star"></i>';
-                            } else {
-                                starsHTML += '<i class="far fa-star"></i>';
-                            }
-                        }
-
-                        reviewCard.innerHTML = `
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h4 class="font-bold text-[#2B2B2B] text-lg">${review.title}</h4>
-                        <div class="flex items-center mt-1">
-                            <div class="star-rating mr-3">
-            ${starsHTML}
-                            </div>
-                            <span class="text-[#888] text-sm">by ${review.user}</span>
-                        </div>
-                    </div>
-                    <span class="text-[#888] text-sm">${review.date}</span>
-                </div>
-                <p class="text-[#666] mb-4">${review.comment}</p>
-                <div class="flex justify-between items-center">
-                    <button class="text-[#2F5D50] hover:text-[#24483E] text-sm">
-                        <i class="far fa-thumbs-up mr-1"></i> Helpful (${review.helpful})
-                    </button>
-                    <button class="text-[#888] hover:text-[#2B2B2B] text-sm">
-                        <i class="far fa-flag mr-1"></i> Report
-                    </button>
-                </div>
-            `;
-
-                        reviewsContainer.appendChild(reviewCard);
-                    });
-                }
-
-                // Update review pagination
-                function updateReviewPagination() {
-                    const totalReviewPages = Math.ceil(allReviews.length / reviewsPerPage);
-
-                    // Update button states
-                    prevReviewPageBtn.disabled = currentReviewPage === 1;
-                    nextReviewPageBtn.disabled = currentReviewPage === totalReviewPages || totalReviewPages === 0;
-
-                    // Generate page number buttons
+                if (reviewPageNumbers) {
                     reviewPageNumbers.innerHTML = '';
                     const maxVisiblePages = 5;
-                    let startPage = Math.max(1, currentReviewPage - Math.floor(maxVisiblePages / 2));
-                    let endPage = Math.min(totalReviewPages, startPage + maxVisiblePages - 1);
-
-                    if (endPage - startPage + 1 < maxVisiblePages) {
-                        startPage = Math.max(1, endPage - maxVisiblePages + 1);
-                    }
+                    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
                     for (let i = startPage; i <= endPage; i++) {
                         const pageBtn = document.createElement('button');
-                        pageBtn.className = 'review-page-btn w-10 h-10 rounded-lg border ' +
-                                (i === currentReviewPage ? 'border-[#2F5D50] bg-[#2F5D50] text-white' : 'border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]');
+                        pageBtn.className = 'review-page-btn w-10 h-10 rounded-lg border ' + 
+                                            (i === currentPage ? 'border-[#2F5D50] bg-[#2F5D50] text-white' : 'border-[#E5E5E5] text-[#2B2B2B] hover:bg-[#F6F3E7]');
                         pageBtn.textContent = i;
-                        pageBtn.addEventListener('click', () => {
+                        pageBtn.addEventListener('click', function() {
                             currentReviewPage = i;
-                            renderReviews();
-                            updateReviewPagination();
+                            loadReviews();
                         });
                         reviewPageNumbers.appendChild(pageBtn);
                     }
+                }
+            }
 
-                    // Next review page
-                    function nextReviewPage() {
-                        const totalReviewPages = Math.ceil(allReviews.length / reviewsPerPage);
-                        if (currentReviewPage < totalReviewPages) {
-                            currentReviewPage++;
-                            renderReviews();
-                            updateReviewPagination();
-                        }
-                    }
+            // Next review page
+            function nextReviewPage() {
+                if (currentReviewPage < totalReviewPages) {
+                    currentReviewPage++;
+                    loadReviews();
+                }
+            }
 
-                    // Previous review page
-                    function prevReviewPage() {
-                        if (currentReviewPage > 1) {
-                            currentReviewPage--;
-                            renderReviews();
-                            updateReviewPagination();
-                        }
-                    }
+            // Previous review page
+            function prevReviewPage() {
+                if (currentReviewPage > 1) {
+                    currentReviewPage--;
+                    loadReviews();
+                }
+            }
 
-                    // Open feedback modal
-                    function openFeedbackModal() {
-                        feedbackModal.classList.add('show');
-                        setTimeout(() => {
-                            const modalContent = feedbackModal.querySelector('.modal-content');
-                            modalContent.classList.add('show');
-                        }, 10);
-                    }
-
-                    // Close feedback modal
-                    function closeFeedbackModal() {
-                        const modalContent = feedbackModal.querySelector('.modal-content');
-                        modalContent.classList.remove('show');
-
-                        setTimeout(() => {
-                            feedbackModal.classList.remove('show');
-                            resetReviewForm();
-                        }, 300);
-                    }
-
-                    // Reset review form
-                    function resetReviewForm() {
-                        selectedRating = 0;
+            // Open feedback modal
+            function openFeedbackModal() {
+                if (feedbackModal) {
+                    // Reset form
+                    selectedRating = 0;
+                    if (selectedRatingInput) {
                         selectedRatingInput.value = "0";
-
-                        // Reset stars
-                        starRatingElements.forEach(star => {
-                            star.classList.remove('fas');
-                            star.classList.add('far');
-                        });
-
-                        // Reset form fields
-                        document.getElementById('reviewTitle').value = '';
-                        document.getElementById('reviewComment').value = '';
                     }
+                    updateStarSelector(0);
+                    updateRatingText(0);
+                    const reviewComment = document.getElementById('reviewComment');
+                    if (reviewComment) reviewComment.value = '';
+                    
+                    feedbackModal.style.display = 'flex';
+                }
+            }
 
-                    // Handle star rating selection
-                    function handleStarClick(e) {
-                        const rating = parseInt(e.target.getAttribute('data-value'));
-                        selectedRating = rating;
-                        selectedRatingInput.value = rating.toString();
+            // Close feedback modal
+            function closeFeedbackModal() {
+                if (feedbackModal) {
+                    feedbackModal.style.display = 'none';
+                }
+            }
 
-                        // Update star display
-                        starRatingElements.forEach((star, index) => {
-                            if (index < rating) {
-                                star.classList.remove('far');
-                                star.classList.add('fas');
-                            } else {
-                                star.classList.remove('fas');
-                                star.classList.add('far');
-                            }
-                        });
-                    }
+            // Handle review form submission - SIMPLE VERSION
+            // Dalam fungsi handleReviewSubmit di shelter_info.jsp
+            function handleReviewSubmit(e) {
+                e.preventDefault();
 
-                    // Handle review form submission
-                    function handleReviewSubmit(e) {
-                        e.preventDefault();
+                const rating = document.getElementById('selectedRating')?.value;
+                const comment = document.getElementById('reviewComment')?.value.trim();
 
-                        const title = document.getElementById('reviewTitle').value.trim();
-                        const comment = document.getElementById('reviewComment').value.trim();
+                if (!rating || parseInt(rating) === 0) {
+                    alert('Please select a rating');
+                    return;
+                }
 
-                        if (selectedRating === 0) {
-                            alert('Please select a rating');
-                            return;
-                        }
+                if (!comment) {
+                    alert('Please enter your review');
+                    return;
+                }
 
-                        if (!title) {
-                            alert('Please enter a review title');
-                            return;
-                        }
+                const formData = new FormData();
+                formData.append('action', 'submitFeedback');
+                formData.append('shelterId', shelterId.toString());
+                formData.append('adopterId', currentUserId.toString());
+                formData.append('rating', rating);
+                formData.append('comment', comment);
+                formData.append('forceSubmit', 'true'); // Ini yang penting!
 
-                        if (!comment) {
-                            alert('Please enter your review');
-                            return;
-                        }
-
-                        // In a real app, this would be sent to a server
-                        alert('Thank you for your review! It will be visible after approval.');
-
-                        // Close modal and reset form
+                fetch('FeedbackServlet', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.success) {
+                        alert('Review submitted successfully!');
                         closeFeedbackModal();
+                        // Reload page to update everything
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
                     }
+                })
+                .catch(function(error) {
+                    console.error('Error:', error);
+                    alert('Failed to submit review. Please try again.');
+                });
+            }
 
-                    // Attach event listeners
-                    function attachEventListeners() {
-                        prevPetPageBtn.addEventListener('click', prevPetPage);
-                        nextPetPageBtn.addEventListener('click', nextPetPage);
-
-                        prevReviewPageBtn.addEventListener('click', prevReviewPage);
-                        nextReviewPageBtn.addEventListener('click', nextReviewPage);
-
-                        openFeedbackModalBtn.addEventListener('click', openFeedbackModal);
-                        writeReviewBtn.addEventListener('click', openFeedbackModal);
-                        closeModalBtn.addEventListener('click', closeFeedbackModal);
-                        cancelReviewBtn.addEventListener('click', closeFeedbackModal);
-
-                        // Close modal when clicking outside
-                        feedbackModal.addEventListener('click', (e) => {
-                            if (e.target === feedbackModal) {
-                                closeFeedbackModal();
-                            }
-                        });
-
-                        // Star rating click events
-                        starRatingElements.forEach(star => {
-                            star.addEventListener('click', handleStarClick);
-                        });
-
-                        // Review form submission
-                        reviewForm.addEventListener('submit', handleReviewSubmit);
+            // Alternative: Direct submission without checking
+            function submitDirectReview(rating, comment) {
+                const directFormData = new FormData();
+                directFormData.append('shelterId', shelterId.toString());
+                directFormData.append('adopterId', currentUserId.toString());
+                directFormData.append('rating', rating);
+                directFormData.append('comment', comment);
+                
+                // Use a different endpoint or direct AJAX
+                fetch('submit_review_direct.jsp', {
+                    method: 'POST',
+                    body: directFormData
+                })
+                .then(function(response) {
+                    if (response.ok) {
+                        alert('Review submitted successfully!');
+                        closeFeedbackModal();
+                        location.reload();
+                    } else {
+                        alert('Failed to submit review. Please try again.');
                     }
+                })
+                .catch(function(error) {
+                    console.error('Error:', error);
+                    alert('Network error. Please try again.');
+                });
+            }
+
+            // Attach event listeners
+            function attachEventListeners() {
+                if (prevReviewPageBtn) {
+                    prevReviewPageBtn.addEventListener('click', prevReviewPage);
+                }
+                if (nextReviewPageBtn) {
+                    nextReviewPageBtn.addEventListener('click', nextReviewPage);
+                }
+
+                if (openFeedbackModalBtn) {
+                    openFeedbackModalBtn.addEventListener('click', openFeedbackModal);
+                }
+                if (writeReviewBtn) {
+                    writeReviewBtn.addEventListener('click', openFeedbackModal);
+                }
+                if (closeModalBtn) {
+                    closeModalBtn.addEventListener('click', closeFeedbackModal);
+                }
+                if (cancelReviewBtn) {
+                    cancelReviewBtn.addEventListener('click', closeFeedbackModal);
+                }
+
+                // Close modal when clicking outside
+                if (feedbackModal) {
+                    feedbackModal.addEventListener('click', function(e) {
+                        if (e.target === feedbackModal) {
+                            closeFeedbackModal();
+                        }
+                    });
+                }
+
+                // Review form submission
+                if (reviewForm) {
+                    reviewForm.addEventListener('submit', handleReviewSubmit);
+                }
+            }
         </script>
 
     </body>

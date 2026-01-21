@@ -19,11 +19,13 @@ public class Pets implements Serializable {
     private String description;
     private String healthStatus;
     private String photoPath;
+    private String adoptionStatus;  // NEW FIELD
     private Timestamp createdAt;
 
     public Pets() {
     }
 
+    // Getters and Setters
     public Integer getPetId() {
         return petId;
     }
@@ -118,6 +120,14 @@ public class Pets implements Serializable {
 
     public void setPhotoPath(String photoPath) {
         this.photoPath = photoPath;
+    }
+
+    public String getAdoptionStatus() {
+        return adoptionStatus;
+    }
+
+    public void setAdoptionStatus(String adoptionStatus) {
+        this.adoptionStatus = adoptionStatus;
     }
 
     public Timestamp getCreatedAt() {

@@ -421,6 +421,29 @@
                 border: 1px solid rgba(184, 74, 74, 0.3);
                 color: #B84A4A;
             }
+
+            /* No data styles */
+            .no-data-row {
+                padding: 3rem 1rem;
+                text-align: center;
+            }
+
+            .no-data-icon {
+                font-size: 3rem;
+                margin-bottom: 1rem;
+                color: #C49A6C;
+            }
+
+            .no-data-message {
+                color: #2B2B2B;
+                font-size: 1.125rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .no-data-submessage {
+                color: #6B7280;
+                font-size: 0.875rem;
+            }
         </style>
     </head>
     <body class="flex flex-col min-h-screen relative bg-[#F6F3E7]">
@@ -459,7 +482,7 @@
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm font-medium" style="color: #C49A6C;">Pending Approvals</p>
-                                <p class="text-3xl font-bold mt-1" style="color: #2B2B2B;">22</p>
+                                <p class="text-3xl font-bold mt-1" style="color: #2B2B2B;" id="pending-count">0</p>
                             </div>
                             <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: rgba(196, 154, 108, 0.2);">
                                 <svg class="w-6 h-6" style="color: #C49A6C;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -467,7 +490,7 @@
                                 </svg>
                             </div>
                         </div>
-                        <p class="text-xs text-gray-500 mt-2">15 shelters, 7 adopters awaiting review</p>
+                        <p class="text-xs text-gray-500 mt-2" id="pending-detail">0 shelters awaiting review</p>
                     </div>
 
                     <!-- Approved Today -->
@@ -475,7 +498,7 @@
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm font-medium" style="color: #6DBF89;">Approved Today</p>
-                                <p class="text-3xl font-bold mt-1" style="color: #2B2B2B;">8</p>
+                                <p class="text-3xl font-bold mt-1" style="color: #2B2B2B;" id="approved-today">0</p>
                             </div>
                             <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: rgba(109, 191, 137, 0.2);">
                                 <svg class="w-6 h-6" style="color: #6DBF89;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -483,7 +506,7 @@
                                 </svg>
                             </div>
                         </div>
-                        <p class="text-xs text-gray-500 mt-2">5 shelters, 3 adopters approved</p>
+                        <p class="text-xs text-gray-500 mt-2" id="approved-detail">0 shelters approved today</p>
                     </div>
 
                     <!-- Rejected Today -->
@@ -491,7 +514,7 @@
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm font-medium" style="color: #B84A4A;">Rejected Today</p>
-                                <p class="text-3xl font-bold mt-1" style="color: #2B2B2B;">3</p>
+                                <p class="text-3xl font-bold mt-1" style="color: #2B2B2B;" id="rejected-today">0</p>
                             </div>
                             <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: rgba(184, 74, 74, 0.2);">
                                 <svg class="w-6 h-6" style="color: #B84A4A;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -499,7 +522,7 @@
                                 </svg>
                             </div>
                         </div>
-                        <p class="text-xs text-gray-500 mt-2">2 shelters, 1 adopter rejected</p>
+                        <p class="text-xs text-gray-500 mt-2" id="rejected-detail">0 shelters rejected today</p>
                     </div>
 
                     <!-- Rejection Rate -->
@@ -507,7 +530,7 @@
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm font-medium" style="color: #2F5D50;">Rejection Rate</p>
-                                <p class="text-3xl font-bold mt-1" style="color: #2B2B2B;">12%</p>
+                                <p class="text-3xl font-bold mt-1" style="color: #2B2B2B;" id="rejection-rate">0%</p>
                             </div>
                             <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: rgba(47, 93, 80, 0.2);">
                                 <svg class="w-6 h-6" style="color: #2F5D50;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -567,7 +590,7 @@
                                 </div>
                             </div>
                             <div class="text-sm" style="color: #2B2B2B;">
-                                <span id="total-count">22</span> registrations found
+                                <span id="total-count">0</span> registrations found
                             </div>
                         </div>
                     </div>
@@ -593,7 +616,7 @@
                     <!-- Pagination -->
                     <div class="flex justify-between items-center p-4 border-t border-[#E5E5E5]">
                         <div class="text-sm" style="color: #2B2B2B;">
-                            Showing <span id="start-index">1</span> to <span id="end-index">10</span> of <span id="total-entries">22</span> entries
+                            Showing <span id="start-index">0</span> to <span id="end-index">0</span> of <span id="total-entries">0</span> entries
                         </div>
                         <div class="flex items-center space-x-1" id="pagination">
                             <!-- Pagination buttons will be inserted here by JavaScript -->
@@ -603,8 +626,8 @@
 
                 <!-- Quick Actions Section -->
                 <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Bulk Actions -->
-                    <div class="border border-[#E5E5E5] rounded-xl p-6 shadow-sm">
+                    <!-- Bulk Actions (1/3 width) -->
+                    <div class="md:col-span-1 border border-[#E5E5E5] rounded-xl p-6 shadow-sm">
                         <h3 class="text-lg font-semibold mb-4" style="color: #2B2B2B;">Bulk Actions</h3>
                         <div class="space-y-3">
                             <button id="bulk-approve" class="w-full action-btn action-btn-approve flex items-center justify-center">
@@ -626,10 +649,10 @@
                         </div>
                     </div>
 
-                    <!-- Common Approval Reasons -->
-                    <div class="border border-[#E5E5E5] rounded-xl p-6 shadow-sm" style="background-color: rgba(109, 191, 137, 0.05);">
+                    <!-- Common Approval Reasons (2/3 width) -->
+                    <div class="md:col-span-2 border border-[#E5E5E5] rounded-xl p-6 shadow-sm" style="background-color: rgba(109, 191, 137, 0.05);">
                         <h3 class="text-lg font-semibold mb-4" style="color: #2B2B2B;">Common Approval Reasons</h3>
-                        <div class="space-y-2 text-sm" style="color: #2B2B2B;">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm" style="color: #2B2B2B;">
                             <div class="flex items-start">
                                 <svg class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" style="color: #6DBF89;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
@@ -654,1109 +677,919 @@
                                 </svg>
                                 <span>Verifiable contact information and address</span>
                             </div>
-                            <div class="flex items-start">
+                            <div class="flex items-start md:col-span-2">
                                 <svg class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" style="color: #6DBF89;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                                 </svg>
                                 <span>Meets all animal welfare standards</span>
                             </div>
                         </div>
-                        <div class="mt-4 pt-4 border-t border-[#E5E5E5]">
-                            <a href="#" class="text-sm font-medium hover:text-[#24483E]" style="color: #2F5D50;">
-                                View Approval Guidelines →
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Recent Activity -->
-                    <div class="border border-[#E5E5E5] rounded-xl p-6 shadow-sm">
-                        <h3 class="text-lg font-semibold mb-4" style="color: #2B2B2B;">Recent Activity</h3>
-                        <div class="space-y-4">
-                            <div class="approval-history-item">
-                                <div class="flex justify-between">
-                                    <span class="font-medium text-sm" style="color: #2B2B2B;">Happy Tails Shelter</span>
-                                    <span class="text-xs text-gray-500">Today</span>
-                                </div>
-                                <div class="approval-history-reason">
-                                    Complete documentation and excellent facility standards
-                                </div>
-                            </div>
-                            <div class="rejection-history-item">
-                                <div class="flex justify-between">
-                                    <span class="font-medium text-sm" style="color: #2B2B2B;">Pet Paradise Shelter</span>
-                                    <span class="text-xs text-gray-500">Today</span>
-                                </div>
-                                <div class="rejection-history-reason">
-                                    Missing proper licensing documentation
-                                </div>
-                            </div>
-                            <div class="approval-history-item">
-                                <div class="flex justify-between">
-                                    <span class="font-medium text-sm" style="color: #2B2B2B;">Emma Davis</span>
-                                    <span class="text-xs text-gray-500">Yesterday</span>
-                                </div>
-                                <div class="approval-history-reason">
-                                    Suitable home conditions and previous experience
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </main>
-
-        <!-- Footer container -->
-        <jsp:include page="includes/footer.jsp" />
-
-        <!-- Registration Details Modal -->
-        <div id="registrationModal" class="modal-overlay">
-            <div class="modal-content">
-                <div class="p-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-xl font-bold" style="color: #2B2B2B;">Registration Details</h3>
-                        <button id="closeModal" class="text-gray-500 hover:text-gray-700">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
-
-                    <div id="modalContent">
-                        <!-- Modal content will be inserted here by JavaScript -->
-                    </div>
-
-                    <div class="flex justify-end space-x-3 mt-8 pt-6 border-t border-[#E5E5E5]">
-                        <button id="modalRejectBtn" class="action-btn action-btn-reject">Reject</button>
-                        <button id="modalApproveBtn" class="action-btn action-btn-approve">Approve</button>
                     </div>
                 </div>
             </div>
+
         </div>
+    </main>
 
-        <!-- Approval Reason Modal -->
-        <div id="approvalModal" class="modal-overlay">
-            <div class="modal-content">
-                <div class="p-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-xl font-bold" style="color: #2B2B2B;">Approve Registration</h3>
-                        <button id="closeApprovalModal" class="text-gray-500 hover:text-gray-700">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
+    <!-- Footer container -->
+    <jsp:include page="includes/footer.jsp" />
 
-                    <div class="mb-4">
-                        <p class="text-gray-700 mb-2" id="approvalTargetName"></p>
-                        <p class="text-sm text-gray-500">Please provide a reason for approving this registration. This reason will be recorded in the system for future reference.</p>
-                    </div>
+    <!-- Registration Details Modal -->
+    <div id="registrationModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold" style="color: #2B2B2B;">Registration Details</h3>
+                    <button id="closeModal" class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
 
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium mb-2" style="color: #2B2B2B;">Approval Reason (Optional but recommended)</label>
-                        <textarea id="approvalReason" class="approval-reason-textarea" placeholder="Enter the reason for approval (e.g., complete documentation, meets requirements)..."></textarea>
-                    </div>
+                <div id="modalContent">
+                    <!-- Modal content will be inserted here by JavaScript -->
+                </div>
 
-                    <div class="mb-6">
-                        <p class="text-sm font-medium mb-2" style="color: #2B2B2B;">Common Reasons (Click to use)</p>
-                        <button class="reason-preset-btn approval-reason-preset-btn" data-reason="Complete documentation meets all requirements">
-                            Complete documentation meets all requirements
-                        </button>
-                        <button class="reason-preset-btn approval-reason-preset-btn" data-reason="Valid and up-to-date license/certification">
-                            Valid and up-to-date license/certification
-                        </button>
-                        <button class="reason-preset-btn approval-reason-preset-btn" data-reason="Adequate facilities and capacity for animal care">
-                            Adequate facilities and capacity for animal care
-                        </button>
-                        <button class="reason-preset-btn approval-reason-preset-btn" data-reason="Verifiable contact information and address">
-                            Verifiable contact information and address
-                        </button>
-                        <button class="reason-preset-btn approval-reason-preset-btn" data-reason="Meets all animal welfare standards and requirements">
-                            Meets all animal welfare standards and requirements
-                        </button>
-                    </div>
-
-                    <div class="flex justify-end space-x-3 mt-8 pt-6 border-t border-[#E5E5E5]">
-                        <button id="cancelApprovalBtn" class="action-btn action-btn-reject">Cancel</button>
-                        <button id="confirmApprovalBtn" class="action-btn action-btn-approve">
-                            Confirm Approval
-                        </button>
-                    </div>
+                <div class="flex justify-end space-x-3 mt-8 pt-6 border-t border-[#E5E5E5]">
+                    <button id="modalRejectBtn" class="action-btn action-btn-reject">Reject</button>
+                    <button id="modalApproveBtn" class="action-btn action-btn-approve">Approve</button>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Bulk Approval Reason Modal -->
-        <div id="bulkApprovalModal" class="modal-overlay">
-            <div class="modal-content">
-                <div class="p-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-xl font-bold" style="color: #2B2B2B;">Approve Multiple Registrations</h3>
-                        <button id="closeBulkApprovalModal" class="text-gray-500 hover:text-gray-700">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
+    <!-- Approval Reason Modal -->
+    <div id="approvalModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold" style="color: #2B2B2B;">Approve Registration</h3>
+                    <button id="closeApprovalModal" class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
 
-                    <div class="mb-4">
-                        <p class="text-gray-700 mb-2">You are about to approve <span id="bulkApprovalCount">0</span> registration(s).</p>
-                        <p class="text-sm text-gray-500">Please provide a reason for approving these registrations. This reason will be applied to all selected registrations.</p>
-                    </div>
+                <div class="mb-4">
+                    <p class="text-gray-700 mb-2" id="approvalTargetName"></p>
+                    <p class="text-sm text-gray-500">Please provide a reason for approving this registration. This reason will be recorded in the system for future reference.</p>
+                </div>
 
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium mb-2" style="color: #2B2B2B;">Approval Reason (Optional but recommended)</label>
-                        <textarea id="bulkApprovalReason" class="approval-reason-textarea" placeholder="Enter the reason for approval..."></textarea>
-                    </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium mb-2" style="color: #2B2B2B;">Approval Reason (Optional but recommended)</label>
+                    <textarea id="approvalReason" class="approval-reason-textarea" placeholder="Enter the reason for approval (e.g., complete documentation, meets requirements)..."></textarea>
+                </div>
 
-                    <div class="mb-6">
-                        <p class="text-sm font-medium mb-2" style="color: #2B2B2B;">Common Reasons (Click to use)</p>
-                        <button class="reason-preset-btn approval-reason-preset-btn" data-bulk-reason="Complete documentation meets all requirements">
-                            Complete documentation meets all requirements
-                        </button>
-                        <button class="reason-preset-btn approval-reason-preset-btn" data-bulk-reason="Valid and up-to-date license/certification">
-                            Valid and up-to-date license/certification
-                        </button>
-                        <button class="reason-preset-btn approval-reason-preset-btn" data-bulk-reason="Meets all minimum requirements for registration">
-                            Meets all minimum requirements for registration
-                        </button>
-                    </div>
+                <div class="mb-6">
+                    <p class="text-sm font-medium mb-2" style="color: #2B2B2B;">Common Reasons (Click to use)</p>
+                    <button class="reason-preset-btn approval-reason-preset-btn" data-reason="Complete documentation meets all requirements">
+                        Complete documentation meets all requirements
+                    </button>
+                    <button class="reason-preset-btn approval-reason-preset-btn" data-reason="Valid and up-to-date license/certification">
+                        Valid and up-to-date license/certification
+                    </button>
+                    <button class="reason-preset-btn approval-reason-preset-btn" data-reason="Adequate facilities and capacity for animal care">
+                        Adequate facilities and capacity for animal care
+                    </button>
+                    <button class="reason-preset-btn approval-reason-preset-btn" data-reason="Verifiable contact information and address">
+                        Verifiable contact information and address
+                    </button>
+                    <button class="reason-preset-btn approval-reason-preset-btn" data-reason="Meets all animal welfare standards and requirements">
+                        Meets all animal welfare standards and requirements
+                    </button>
+                </div>
 
-                    <div class="flex justify-end space-x-3 mt-8 pt-6 border-t border-[#E5E5E5]">
-                        <button id="cancelBulkApprovalBtn" class="action-btn action-btn-reject">Cancel</button>
-                        <button id="confirmBulkApprovalBtn" class="action-btn action-btn-approve">
-                            Approve All Selected
-                        </button>
-                    </div>
+                <div class="flex justify-end space-x-3 mt-8 pt-6 border-t border-[#E5E5E5]">
+                    <button id="cancelApprovalBtn" class="action-btn action-btn-reject">Cancel</button>
+                    <button id="confirmApprovalBtn" class="action-btn action-btn-approve">
+                        Confirm Approval
+                    </button>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Rejection Reason Modal -->
-        <div id="rejectionModal" class="modal-overlay">
-            <div class="modal-content">
-                <div class="p-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-xl font-bold" style="color: #2B2B2B;">Reject Registration</h3>
-                        <button id="closeRejectionModal" class="text-gray-500 hover:text-gray-700">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
+    <!-- Bulk Approval Reason Modal -->
+    <div id="bulkApprovalModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold" style="color: #2B2B2B;">Approve Multiple Registrations</h3>
+                    <button id="closeBulkApprovalModal" class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
 
-                    <div class="mb-4">
-                        <p class="text-gray-700 mb-2" id="rejectionTargetName"></p>
-                        <p class="text-sm text-gray-500">Please provide a reason for rejecting this registration. This reason will be visible to the user and recorded in the system.</p>
-                    </div>
+                <div class="mb-4">
+                    <p class="text-gray-700 mb-2">You are about to approve <span id="bulkApprovalCount">0</span> registration(s).</p>
+                    <p class="text-sm text-gray-500">Please provide a reason for approving these registrations. This reason will be applied to all selected registrations.</p>
+                </div>
 
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium mb-2" style="color: #2B2B2B;">Rejection Reason</label>
-                        <textarea id="rejectionReason" class="rejection-reason-textarea" placeholder="Enter the reason for rejection..."></textarea>
-                    </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium mb-2" style="color: #2B2B2B;">Approval Reason (Optional but recommended)</label>
+                    <textarea id="bulkApprovalReason" class="approval-reason-textarea" placeholder="Enter the reason for approval..."></textarea>
+                </div>
 
-                    <div class="mb-6">
-                        <p class="text-sm font-medium mb-2" style="color: #2B2B2B;">Common Reasons (Click to use)</p>
-                        <button class="reason-preset-btn" data-reason="Incomplete documentation or missing required files">
-                            Incomplete documentation or missing required files
-                        </button>
-                        <button class="reason-preset-btn" data-reason="Invalid or expired license/certification">
-                            Invalid or expired license/certification
-                        </button>
-                        <button class="reason-preset-btn" data-reason="Insufficient facilities or capacity for animal care">
-                            Insufficient facilities or capacity for animal care
-                        </button>
-                        <button class="reason-preset-btn" data-reason="Unverifiable contact information or address">
-                            Unverifiable contact information or address
-                        </button>
-                        <button class="reason-preset-btn" data-reason="Duplicate registration or existing account">
-                            Duplicate registration or existing account
-                        </button>
-                        <button class="reason-preset-btn" data-reason="Does not meet minimum requirements for registration">
-                            Does not meet minimum requirements for registration
-                        </button>
-                    </div>
+                <div class="mb-6">
+                    <p class="text-sm font-medium mb-2" style="color: #2B2B2B;">Common Reasons (Click to use)</p>
+                    <button class="reason-preset-btn approval-reason-preset-btn" data-bulk-reason="Complete documentation meets all requirements">
+                        Complete documentation meets all requirements
+                    </button>
+                    <button class="reason-preset-btn approval-reason-preset-btn" data-bulk-reason="Valid and up-to-date license/certification">
+                        Valid and up-to-date license/certification
+                    </button>
+                    <button class="reason-preset-btn approval-reason-preset-btn" data-bulk-reason="Meets all minimum requirements for registration">
+                        Meets all minimum requirements for registration
+                    </button>
+                </div>
 
-                    <div class="flex justify-end space-x-3 mt-8 pt-6 border-t border-[#E5E5E5]">
-                        <button id="cancelRejectionBtn" class="action-btn action-btn-reject">Cancel</button>
-                        <button id="confirmRejectionBtn" class="action-btn action-btn-reject" style="background-color: #B84A4A; color: white;">
-                            Confirm Rejection
-                        </button>
-                    </div>
+                <div class="flex justify-end space-x-3 mt-8 pt-6 border-t border-[#E5E5E5]">
+                    <button id="cancelBulkApprovalBtn" class="action-btn action-btn-reject">Cancel</button>
+                    <button id="confirmBulkApprovalBtn" class="action-btn action-btn-approve">
+                        Approve All Selected
+                    </button>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Bulk Rejection Reason Modal -->
-        <div id="bulkRejectionModal" class="modal-overlay">
-            <div class="modal-content">
-                <div class="p-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-xl font-bold" style="color: #2B2B2B;">Reject Multiple Registrations</h3>
-                        <button id="closeBulkRejectionModal" class="text-gray-500 hover:text-gray-700">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
+    <!-- Rejection Reason Modal -->
+    <div id="rejectionModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold" style="color: #2B2B2B;">Reject Registration</h3>
+                    <button id="closeRejectionModal" class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
 
-                    <div class="mb-4">
-                        <p class="text-gray-700 mb-2">You are about to reject <span id="bulkRejectionCount">0</span> registration(s).</p>
-                        <p class="text-sm text-gray-500">Please provide a reason for rejecting these registrations. This reason will be applied to all selected registrations.</p>
-                    </div>
+                <div class="mb-4">
+                    <p class="text-gray-700 mb-2" id="rejectionTargetName"></p>
+                    <p class="text-sm text-gray-500">Please provide a reason for rejecting this registration. This reason will be visible to the user and recorded in the system.</p>
+                </div>
 
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium mb-2" style="color: #2B2B2B;">Rejection Reason</label>
-                        <textarea id="bulkRejectionReason" class="rejection-reason-textarea" placeholder="Enter the reason for rejection..."></textarea>
-                    </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium mb-2" style="color: #2B2B2B;">Rejection Reason</label>
+                    <textarea id="rejectionReason" class="rejection-reason-textarea" placeholder="Enter the reason for rejection..."></textarea>
+                </div>
 
-                    <div class="mb-6">
-                        <p class="text-sm font-medium mb-2" style="color: #2B2B2B;">Common Reasons (Click to use)</p>
-                        <button class="reason-preset-btn" data-bulk-reason="Incomplete documentation or missing required files">
-                            Incomplete documentation or missing required files
-                        </button>
-                        <button class="reason-preset-btn" data-bulk-reason="Invalid or expired license/certification">
-                            Invalid or expired license/certification
-                        </button>
-                        <button class="reason-preset-btn" data-bulk-reason="Does not meet minimum requirements for registration">
-                            Does not meet minimum requirements for registration
-                        </button>
-                    </div>
+                <div class="mb-6">
+                    <p class="text-sm font-medium mb-2" style="color: #2B2B2B;">Common Reasons (Click to use)</p>
+                    <button class="reason-preset-btn" data-reason="Incomplete documentation or missing required files">
+                        Incomplete documentation or missing required files
+                    </button>
+                    <button class="reason-preset-btn" data-reason="Invalid or expired license/certification">
+                        Invalid or expired license/certification
+                    </button>
+                    <button class="reason-preset-btn" data-reason="Insufficient facilities or capacity for animal care">
+                        Insufficient facilities or capacity for animal care
+                    </button>
+                    <button class="reason-preset-btn" data-reason="Unverifiable contact information or address">
+                        Unverifiable contact information or address
+                    </button>
+                    <button class="reason-preset-btn" data-reason="Duplicate registration or existing account">
+                        Duplicate registration or existing account
+                    </button>
+                    <button class="reason-preset-btn" data-reason="Does not meet minimum requirements for registration">
+                        Does not meet minimum requirements for registration
+                    </button>
+                </div>
 
-                    <div class="flex justify-end space-x-3 mt-8 pt-6 border-t border-[#E5E5E5]">
-                        <button id="cancelBulkRejectionBtn" class="action-btn action-btn-reject">Cancel</button>
-                        <button id="confirmBulkRejectionBtn" class="action-btn action-btn-reject" style="background-color: #B84A4A; color: white;">
-                            Reject All Selected
-                        </button>
-                    </div>
+                <div class="flex justify-end space-x-3 mt-8 pt-6 border-t border-[#E5E5E5]">
+                    <button id="cancelRejectionBtn" class="action-btn action-btn-reject">Cancel</button>
+                    <button id="confirmRejectionBtn" class="action-btn action-btn-reject" style="background-color: #B84A4A; color: white;">
+                        Confirm Rejection
+                    </button>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Toast Notification -->
-        <div id="toast" class="toast">
-            <div class="flex items-center">
-                <svg id="toast-icon" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-                <span id="toast-message"></span>
+    <!-- Bulk Rejection Reason Modal -->
+    <div id="bulkRejectionModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold" style="color: #2B2B2B;">Reject Multiple Registrations</h3>
+                    <button id="closeBulkRejectionModal" class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="mb-4">
+                    <p class="text-gray-700 mb-2">You are about to reject <span id="bulkRejectionCount">0</span> registration(s).</p>
+                    <p class="text-sm text-gray-500">Please provide a reason for rejecting these registrations. This reason will be applied to all selected registrations.</p>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium mb-2" style="color: #2B2B2B;">Rejection Reason</label>
+                    <textarea id="bulkRejectionReason" class="rejection-reason-textarea" placeholder="Enter the reason for rejection..."></textarea>
+                </div>
+
+                <div class="mb-6">
+                    <p class="text-sm font-medium mb-2" style="color: #2B2B2B;">Common Reasons (Click to use)</p>
+                    <button class="reason-preset-btn" data-bulk-reason="Incomplete documentation or missing required files">
+                        Incomplete documentation or missing required files
+                    </button>
+                    <button class="reason-preset-btn" data-bulk-reason="Invalid or expired license/certification">
+                        Invalid or expired license/certification
+                    </button>
+                    <button class="reason-preset-btn" data-bulk-reason="Does not meet minimum requirements for registration">
+                        Does not meet minimum requirements for registration
+                    </button>
+                </div>
+
+                <div class="flex justify-end space-x-3 mt-8 pt-6 border-t border-[#E5E5E5]">
+                    <button id="cancelBulkRejectionBtn" class="action-btn action-btn-reject">Cancel</button>
+                    <button id="confirmBulkRejectionBtn" class="action-btn action-btn-reject" style="background-color: #B84A4A; color: white;">
+                        Reject All Selected
+                    </button>
+                </div>
             </div>
         </div>
+    </div>
 
-        <!-- Sidebar container -->
-        <jsp:include page="includes/sidebar.jsp" />
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <div class="flex items-center">
+            <svg id="toast-icon" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span id="toast-message"></span>
+        </div>
+    </div>
 
-        <!-- Load sidebar.js -->
-        <script src="includes/sidebar.js"></script>
+    <!-- Sidebar container -->
+    <jsp:include page="includes/sidebar.jsp" />
 
-        <script>
-            // Sample registration data with approval and rejection reason fields
-            const allRegistrations = [
-                // Shelter registrations
-                {
-                    id: 'SHT-0047',
-                    name: 'Happy Paws Shelter',
-                    email: 'contact@happypaws.org',
-                    type: 'Shelter',
-                    date: '2023-10-15',
-                    status: 'Pending Review',
-                    rejectionReason: '',
-                    approvalReason: '',
-                    rejectionDate: '',
-                    approvalDate: '',
-                    rejectedBy: '',
-                    approvedBy: '',
-                    details: {
-                        contactPerson: 'Sarah Johnson',
-                        phone: '+1 (555) 123-4567',
-                        address: '123 Animal Street, Cityville, State 12345',
-                        licenseNumber: 'SH-2023-0047',
-                        description: 'A no-kill shelter dedicated to rescuing and rehoming dogs and cats.',
-                        capacity: 50,
-                        established: '2018',
-                        documents: ['License.pdf', 'AddressProof.pdf', 'TaxExempt.pdf']
-                    }
-                },
-                {
-                    id: 'SHT-0048',
-                    name: 'Furry Friends Haven',
-                    email: 'info@furryfriends.org',
-                    type: 'Shelter',
-                    date: '2023-10-14',
-                    status: 'Pending Review',
-                    rejectionReason: '',
-                    approvalReason: '',
-                    rejectionDate: '',
-                    approvalDate: '',
-                    rejectedBy: '',
-                    approvedBy: '',
-                    details: {
-                        contactPerson: 'Michael Brown',
-                        phone: '+1 (555) 987-6543',
-                        address: '456 Pet Avenue, Townsville, State 67890',
-                        licenseNumber: 'SH-2023-0048',
-                        description: 'Specializing in small animal rescue including rabbits, guinea pigs, and birds.',
-                        capacity: 35,
-                        established: '2020',
-                        documents: ['License.pdf', 'AddressProof.pdf']
-                    }
-                },
-                {
-                    id: 'SHT-0050',
-                    name: 'Wildlife Care Center',
-                    email: 'contact@wildlifecare.org',
-                    type: 'Shelter',
-                    date: '2023-10-12',
-                    status: 'Pending Review',
-                    rejectionReason: '',
-                    approvalReason: '',
-                    rejectionDate: '',
-                    approvalDate: '',
-                    rejectedBy: '',
-                    approvedBy: '',
-                    details: {
-                        contactPerson: 'Dr. Emily Carter',
-                        phone: '+1 (555) 456-7890',
-                        address: '789 Conservation Road, Wildlife City, State 54321',
-                        licenseNumber: 'SH-2023-0050',
-                        description: 'Licensed wildlife rehabilitation center specializing in native species.',
-                        capacity: 100,
-                        established: '2015',
-                        documents: ['License.pdf', 'WildlifePermit.pdf', 'AddressProof.pdf']
-                    }
-                },
-                {
-                    id: 'SHT-0052',
-                    name: 'Pawsitive Rescue',
-                    email: 'info@pawsitive.org',
-                    type: 'Shelter',
-                    date: '2023-10-10',
-                    status: 'Pending Review',
-                    rejectionReason: '',
-                    approvalReason: '',
-                    rejectionDate: '',
-                    approvalDate: '',
-                    rejectedBy: '',
-                    approvedBy: '',
-                    details: {
-                        contactPerson: 'Robert Wilson',
-                        phone: '+1 (555) 234-5678',
-                        address: '321 Hope Street, Compassion City, State 13579',
-                        licenseNumber: 'SH-2023-0052',
-                        description: 'Focus on rescuing and rehabilitating abused and neglected animals.',
-                        capacity: 40,
-                        established: '2021',
-                        documents: ['License.pdf', 'AddressProof.pdf']
-                    }
-                },
-                {
-                    id: 'SHT-0039',
-                    name: 'City Animal Rescue',
-                    email: 'admin@cityrescue.org',
-                    type: 'Shelter',
-                    date: '2023-10-14',
-                    status: 'Approved',
-                    rejectionReason: '',
-                    approvalReason: 'Complete documentation and municipal partnership established',
-                    rejectionDate: '',
-                    approvalDate: '2023-10-14',
-                    rejectedBy: '',
-                    approvedBy: 'Admin User',
-                    details: {
-                        contactPerson: 'Lisa Anderson',
-                        phone: '+1 (555) 876-5432',
-                        address: '555 Rescue Lane, Metro City, State 24680',
-                        licenseNumber: 'SH-2023-0039',
-                        description: 'Municipal animal shelter serving the city and surrounding areas.',
-                        capacity: 120,
-                        established: '2010',
-                        documents: ['License.pdf', 'MunicipalContract.pdf', 'AddressProof.pdf']
-                    }
-                },
-                {
-                    id: 'SHT-0049',
-                    name: 'Pet Paradise Shelter',
-                    email: 'hello@petparadise.org',
-                    type: 'Shelter',
-                    date: '2023-10-13',
-                    status: 'Rejected',
-                    rejectionReason: 'Missing proper licensing documentation and proof of facility compliance with local regulations.',
-                    approvalReason: '',
-                    rejectionDate: '2023-10-14',
-                    approvalDate: '',
-                    rejectedBy: 'Admin User',
-                    approvedBy: '',
-                    details: {
-                        contactPerson: 'David Miller',
-                        phone: '+1 (555) 345-6789',
-                        address: '999 Animal Haven, Petville, State 98765',
-                        licenseNumber: 'SH-2023-0049',
-                        description: 'Private shelter with focus on luxury boarding and adoption services.',
-                        capacity: 60,
-                        established: '2019',
-                        documents: ['License.pdf', 'AddressProof.pdf']
-                    }
-                },
+    <!-- Load sidebar.js -->
+    <script src="includes/sidebar.js"></script>
 
-                // Adopter registrations
-                {
-                    id: 'USR-1025',
-                    name: 'Sarah Johnson',
-                    email: 'sarah.j@email.com',
-                    type: 'Adopter',
-                    date: '2023-10-15',
-                    status: 'New',
-                    rejectionReason: '',
-                    approvalReason: '',
-                    rejectionDate: '',
-                    approvalDate: '',
-                    rejectedBy: '',
-                    approvedBy: '',
-                    details: {
-                        phone: '+1 (555) 111-2222',
-                        address: '123 Main Street, Hometown, State 11111',
-                        occupation: 'Software Engineer',
-                        experience: 'First-time adopter',
-                        homeType: 'House with fenced yard',
-                        otherPets: 'None',
-                        reason: 'Looking for a companion dog for family activities.'
-                    }
-                },
-                {
-                    id: 'USR-1026',
-                    name: 'Michael Brown',
-                    email: 'm.brown@email.com',
-                    type: 'Adopter',
-                    date: '2023-10-14',
-                    status: 'Pending',
-                    rejectionReason: '',
-                    approvalReason: '',
-                    rejectionDate: '',
-                    approvalDate: '',
-                    rejectedBy: '',
-                    approvedBy: '',
-                    details: {
-                        phone: '+1 (555) 333-4444',
-                        address: '456 Oak Avenue, Suburbia, State 22222',
-                        occupation: 'Teacher',
-                        experience: 'Previously had cats',
-                        homeType: 'Apartment',
-                        otherPets: 'One cat',
-                        reason: 'Want to adopt a cat as a companion for my current cat.'
-                    }
-                },
-                {
-                    id: 'USR-1029',
-                    name: 'Lisa Anderson',
-                    email: 'lisa.a@email.com',
-                    type: 'Adopter',
-                    date: '2023-10-13',
-                    status: 'Pending',
-                    rejectionReason: '',
-                    approvalReason: '',
-                    rejectionDate: '',
-                    approvalDate: '',
-                    rejectedBy: '',
-                    approvedBy: '',
-                    details: {
-                        phone: '+1 (555) 555-6666',
-                        address: '789 Pine Road, Countryside, State 33333',
-                        occupation: 'Veterinarian Assistant',
-                        experience: 'Experienced with multiple pets',
-                        homeType: 'Farmhouse with large yard',
-                        otherPets: 'Two dogs, three cats',
-                        reason: 'Looking to adopt a senior dog who needs special care.'
-                    }
-                },
-                {
-                    id: 'USR-1032',
-                    name: 'Christopher Lee',
-                    email: 'chris.l@email.com',
-                    type: 'Adopter',
-                    date: '2023-10-11',
-                    status: 'New',
-                    rejectionReason: '',
-                    approvalReason: '',
-                    rejectionDate: '',
-                    approvalDate: '',
-                    rejectedBy: '',
-                    approvedBy: '',
-                    details: {
-                        phone: '+1 (555) 777-8888',
-                        address: '321 Elm Street, City Center, State 44444',
-                        occupation: 'Graphic Designer',
-                        experience: 'First-time adopter',
-                        homeType: 'Apartment',
-                        otherPets: 'None',
-                        reason: 'Interested in adopting a small, low-energy dog.'
-                    }
-                },
-                {
-                    id: 'USR-1034',
-                    name: 'William Clark',
-                    email: 'william.c@email.com',
-                    type: 'Adopter',
-                    date: '2023-10-10',
-                    status: 'Pending',
-                    rejectionReason: '',
-                    approvalReason: '',
-                    rejectionDate: '',
-                    approvalDate: '',
-                    rejectedBy: '',
-                    approvedBy: '',
-                    details: {
-                        phone: '+1 (555) 999-0000',
-                        address: '654 Maple Lane, Riverside, State 55555',
-                        occupation: 'Retired',
-                        experience: 'Had dogs throughout life',
-                        homeType: 'House with fenced yard',
-                        otherPets: 'None currently',
-                        reason: 'Want to adopt an adult dog for companionship during retirement.'
-                    }
-                },
-                {
-                    id: 'USR-1038',
-                    name: 'Steven Allen',
-                    email: 'steven.a@email.com',
-                    type: 'Adopter',
-                    date: '2023-10-08',
-                    status: 'New',
-                    rejectionReason: '',
-                    approvalReason: '',
-                    rejectionDate: '',
-                    approvalDate: '',
-                    rejectedBy: '',
-                    approvedBy: '',
-                    details: {
-                        phone: '+1 (555) 222-3333',
-                        address: '987 Birch Boulevard, Lakeside, State 66666',
-                        occupation: 'Construction Manager',
-                        experience: 'Grew up with dogs',
-                        homeType: 'House with large yard',
-                        otherPets: 'One dog',
-                        reason: 'Looking for a playmate for my current dog.'
-                    }
-                },
-                {
-                    id: 'USR-1027',
-                    name: 'Emma Davis',
-                    email: 'emma.d@email.com',
-                    type: 'Adopter',
-                    date: '2023-10-14',
-                    status: 'Approved',
-                    rejectionReason: '',
-                    approvalReason: 'Suitable home conditions and previous experience with pets',
-                    rejectionDate: '',
-                    approvalDate: '2023-10-14',
-                    rejectedBy: '',
-                    approvedBy: 'Admin User',
-                    details: {
-                        phone: '+1 (555) 444-5555',
-                        address: '147 Cedar Court, Mountain View, State 77777',
-                        occupation: 'Nurse',
-                        experience: 'Previous dog owner',
-                        homeType: 'House with yard',
-                        otherPets: 'None',
-                        reason: 'Ready to adopt after moving to a pet-friendly home.'
-                    }
-                },
-                {
-                    id: 'USR-1030',
-                    name: 'James Miller',
-                    email: 'james.m@email.com',
-                    type: 'Adopter',
-                    date: '2023-10-12',
-                    status: 'Rejected',
-                    rejectionReason: 'Applicant lives in a dormitory which does not allow pets. Unsuitable living conditions for animal welfare.',
-                    approvalReason: '',
-                    rejectionDate: '2023-10-13',
-                    approvalDate: '',
-                    rejectedBy: 'Admin User',
-                    approvedBy: '',
-                    details: {
-                        phone: '+1 (555) 666-7777',
-                        address: '258 Spruce Street, Valley Town, State 88888',
-                        occupation: 'Student',
-                        experience: 'First-time adopter',
-                        homeType: 'Dormitory',
-                        otherPets: 'None',
-                        reason: 'Want a cat for my dorm room.'
-                    }
-                },
-                {
-                    id: 'USR-1036',
-                    name: 'David Walker',
-                    email: 'david.w@email.com',
-                    type: 'Adopter',
-                    date: '2023-10-09',
-                    status: 'Rejected',
-                    rejectionReason: 'Previous history of animal neglect reported by another shelter. Application denied based on welfare concerns.',
-                    approvalReason: '',
-                    rejectionDate: '2023-10-10',
-                    approvalDate: '',
-                    rejectedBy: 'Admin User',
-                    approvedBy: '',
-                    details: {
-                        phone: '+1 (555) 888-9999',
-                        address: '369 Oak Street, Hillside, State 99999',
-                        occupation: 'Sales Manager',
-                        experience: 'Had pets in the past',
-                        homeType: 'Apartment',
-                        otherPets: 'None',
-                        reason: 'Looking for a small dog for companionship.'
-                    }
+    <script>
+        // State variables
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let currentFilter = 'all'; // 'all', 'shelters', 'adopters', 'rejected'
+        let currentStatusFilter = 'all';
+        let currentDateFilter = '';
+        let selectedRegistrations = new Set();
+        let currentRegistrationId = null;
+        let pendingApprovalIds = []; // For bulk approval
+        let pendingRejectionIds = []; // For bulk rejection
+        let allRegistrations = [];
+
+        // DOM Elements
+        const tableBody = document.getElementById('registrationsTableBody');
+        const paginationContainer = document.getElementById('pagination');
+        const filterChipsContainer = document.getElementById('filter-chips');
+        const statusFilter = document.getElementById('status-filter');
+        const dateFilter = document.getElementById('date-filter');
+        const clearFiltersBtn = document.getElementById('clear-filters');
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const selectAllCheckbox = document.getElementById('select-all');
+        const bulkApproveBtn = document.getElementById('bulk-approve');
+        const bulkRejectBtn = document.getElementById('bulk-reject');
+        const registrationModal = document.getElementById('registrationModal');
+        const closeModalBtn = document.getElementById('closeModal');
+        const modalContent = document.getElementById('modalContent');
+        const modalApproveBtn = document.getElementById('modalApproveBtn');
+        const modalRejectBtn = document.getElementById('modalRejectBtn');
+        const approvalModal = document.getElementById('approvalModal');
+        const closeApprovalModalBtn = document.getElementById('closeApprovalModal');
+        const cancelApprovalBtn = document.getElementById('cancelApprovalBtn');
+        const confirmApprovalBtn = document.getElementById('confirmApprovalBtn');
+        const approvalReasonTextarea = document.getElementById('approvalReason');
+        const approvalTargetName = document.getElementById('approvalTargetName');
+        const bulkApprovalModal = document.getElementById('bulkApprovalModal');
+        const closeBulkApprovalModalBtn = document.getElementById('closeBulkApprovalModal');
+        const cancelBulkApprovalBtn = document.getElementById('cancelBulkApprovalBtn');
+        const confirmBulkApprovalBtn = document.getElementById('confirmBulkApprovalBtn');
+        const bulkApprovalReasonTextarea = document.getElementById('bulkApprovalReason');
+        const bulkApprovalCount = document.getElementById('bulkApprovalCount');
+        const rejectionModal = document.getElementById('rejectionModal');
+        const closeRejectionModalBtn = document.getElementById('closeRejectionModal');
+        const cancelRejectionBtn = document.getElementById('cancelRejectionBtn');
+        const confirmRejectionBtn = document.getElementById('confirmRejectionBtn');
+        const rejectionReasonTextarea = document.getElementById('rejectionReason');
+        const rejectionTargetName = document.getElementById('rejectionTargetName');
+        const bulkRejectionModal = document.getElementById('bulkRejectionModal');
+        const closeBulkRejectionModalBtn = document.getElementById('closeBulkRejectionModal');
+        const cancelBulkRejectionBtn = document.getElementById('cancelBulkRejectionBtn');
+        const confirmBulkRejectionBtn = document.getElementById('confirmBulkRejectionBtn');
+        const bulkRejectionReasonTextarea = document.getElementById('bulkRejectionReason');
+        const bulkRejectionCount = document.getElementById('bulkRejectionCount');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+        const toastIcon = document.getElementById('toast-icon');
+        const totalCountElement = document.getElementById('total-count');
+        const startIndexElement = document.getElementById('start-index');
+        const endIndexElement = document.getElementById('end-index');
+        const totalEntriesElement = document.getElementById('total-entries');
+
+        // Load data from server
+        async function loadData() {
+            try {
+                const response = await fetch('RegistrationServlet?action=getRegistrations');
+                if (!response.ok) {
+                    throw new Error('Failed to load data');
                 }
-            ];
-
-            // State variables
-            let currentPage = 1;
-            const itemsPerPage = 10;
-            let currentFilter = 'all'; // 'all', 'shelters', 'adopters', 'rejected'
-            let currentStatusFilter = 'all';
-            let currentDateFilter = '';
-            let selectedRegistrations = new Set();
-            let currentRegistrationId = null;
-            let pendingApprovalIds = []; // For bulk approval
-            let pendingRejectionIds = []; // For bulk rejection
-
-            // DOM Elements
-            const tableBody = document.getElementById('registrationsTableBody');
-            const paginationContainer = document.getElementById('pagination');
-            const filterChipsContainer = document.getElementById('filter-chips');
-            const statusFilter = document.getElementById('status-filter');
-            const dateFilter = document.getElementById('date-filter');
-            const clearFiltersBtn = document.getElementById('clear-filters');
-            const tabButtons = document.querySelectorAll('.tab-button');
-            const selectAllCheckbox = document.getElementById('select-all');
-            const bulkApproveBtn = document.getElementById('bulk-approve');
-            const bulkRejectBtn = document.getElementById('bulk-reject');
-            const registrationModal = document.getElementById('registrationModal');
-            const closeModalBtn = document.getElementById('closeModal');
-            const modalContent = document.getElementById('modalContent');
-            const modalApproveBtn = document.getElementById('modalApproveBtn');
-            const modalRejectBtn = document.getElementById('modalRejectBtn');
-            const approvalModal = document.getElementById('approvalModal');
-            const closeApprovalModalBtn = document.getElementById('closeApprovalModal');
-            const cancelApprovalBtn = document.getElementById('cancelApprovalBtn');
-            const confirmApprovalBtn = document.getElementById('confirmApprovalBtn');
-            const approvalReasonTextarea = document.getElementById('approvalReason');
-            const approvalTargetName = document.getElementById('approvalTargetName');
-            const bulkApprovalModal = document.getElementById('bulkApprovalModal');
-            const closeBulkApprovalModalBtn = document.getElementById('closeBulkApprovalModal');
-            const cancelBulkApprovalBtn = document.getElementById('cancelBulkApprovalBtn');
-            const confirmBulkApprovalBtn = document.getElementById('confirmBulkApprovalBtn');
-            const bulkApprovalReasonTextarea = document.getElementById('bulkApprovalReason');
-            const bulkApprovalCount = document.getElementById('bulkApprovalCount');
-            const rejectionModal = document.getElementById('rejectionModal');
-            const closeRejectionModalBtn = document.getElementById('closeRejectionModal');
-            const cancelRejectionBtn = document.getElementById('cancelRejectionBtn');
-            const confirmRejectionBtn = document.getElementById('confirmRejectionBtn');
-            const rejectionReasonTextarea = document.getElementById('rejectionReason');
-            const rejectionTargetName = document.getElementById('rejectionTargetName');
-            const bulkRejectionModal = document.getElementById('bulkRejectionModal');
-            const closeBulkRejectionModalBtn = document.getElementById('closeBulkRejectionModal');
-            const cancelBulkRejectionBtn = document.getElementById('cancelBulkRejectionBtn');
-            const confirmBulkRejectionBtn = document.getElementById('confirmBulkRejectionBtn');
-            const bulkRejectionReasonTextarea = document.getElementById('bulkRejectionReason');
-            const bulkRejectionCount = document.getElementById('bulkRejectionCount');
-            const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toast-message');
-            const toastIcon = document.getElementById('toast-icon');
-            const totalCountElement = document.getElementById('total-count');
-            const startIndexElement = document.getElementById('start-index');
-            const endIndexElement = document.getElementById('end-index');
-            const totalEntriesElement = document.getElementById('total-entries');
-
-            // Initialize the page
-            function init() {
+                allRegistrations = await response.json();
                 renderTable();
-                setupEventListeners();
-                updateBulkActionButtons();
+                loadStatistics();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showToast('Failed to load registrations', 'error');
+                // Show "No data found" message
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="no-data-row">
+                            <div class="no-data-icon">📭</div>
+                            <div class="no-data-message">No registrations found</div>
+                            <div class="no-data-submessage">Unable to load registration data</div>
+                        </td>
+                    </tr>
+                `;
             }
+        }
 
-            // Set up event listeners
-            function setupEventListeners() {
-                // Tab buttons
-                tabButtons.forEach(button => {
-                    button.addEventListener('click', () => {
-                        tabButtons.forEach(btn => btn.classList.remove('active'));
-                        button.classList.add('active');
-                        currentFilter = button.getAttribute('data-tab');
-                        currentPage = 1;
-                        renderTable();
-                        updateFilterChips();
-                    });
-                });
+        // Load statistics
+        async function loadStatistics() {
+            try {
+                const response = await fetch('RegistrationServlet?action=getStatistics');
+                if (!response.ok) {
+                    throw new Error('Failed to load statistics');
+                }
+                const stats = await response.json();
 
-                // Status filter
-                statusFilter.addEventListener('change', () => {
-                    currentStatusFilter = statusFilter.value;
+                // Update statistics cards
+                document.getElementById('pending-count').textContent = stats.pendingCount || 0;
+                document.getElementById('pending-detail').textContent =
+                        (stats.pendingCount || 0) + ' shelters awaiting review';
+
+                document.getElementById('approved-today').textContent = stats.approvedToday || 0;
+                document.getElementById('approved-detail').textContent =
+                        (stats.approvedToday || 0) + ' shelters approved today';
+
+                document.getElementById('rejected-today').textContent = stats.rejectedToday || 0;
+                document.getElementById('rejected-detail').textContent =
+                        (stats.rejectedToday || 0) + ' shelters rejected today';
+
+                document.getElementById('rejection-rate').textContent = stats.rejectionRate + '%';
+
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+            }
+        }
+
+        // Initialize the page
+        function init() {
+            // Show "No data found" initially
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="no-data-row">
+                        <div class="no-data-icon">📭</div>
+                        <div class="no-data-message">No registrations found</div>
+                        <div class="no-data-submessage">Loading registration data...</div>
+                    </td>
+                </tr>
+            `;
+
+            loadData();
+            setupEventListeners();
+            updateBulkActionButtons();
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Tab buttons
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    currentFilter = button.getAttribute('data-tab');
                     currentPage = 1;
                     renderTable();
                     updateFilterChips();
                 });
+            });
 
-                // Date filter
-                dateFilter.addEventListener('change', () => {
-                    currentDateFilter = dateFilter.value;
-                    currentPage = 1;
-                    renderTable();
-                    updateFilterChips();
-                });
+            // Status filter
+            statusFilter.addEventListener('change', () => {
+                currentStatusFilter = statusFilter.value;
+                currentPage = 1;
+                renderTable();
+                updateFilterChips();
+            });
 
-                // Clear filters
-                clearFiltersBtn.addEventListener('click', () => {
-                    currentFilter = 'all';
-                    currentStatusFilter = 'all';
-                    currentDateFilter = '';
+            // Date filter
+            dateFilter.addEventListener('change', () => {
+                currentDateFilter = dateFilter.value;
+                currentPage = 1;
+                renderTable();
+                updateFilterChips();
+            });
 
-                    // Reset UI
-                    tabButtons.forEach(btn => {
-                        btn.classList.remove('active');
-                        if (btn.getAttribute('data-tab') === 'all') {
-                            btn.classList.add('active');
-                        }
-                    });
+            // Clear filters
+            clearFiltersBtn.addEventListener('click', () => {
+                currentFilter = 'all';
+                currentStatusFilter = 'all';
+                currentDateFilter = '';
 
-                    statusFilter.value = 'all';
-                    dateFilter.value = '';
-
-                    currentPage = 1;
-                    renderTable();
-                    updateFilterChips();
-                });
-
-                // Select all checkbox
-                selectAllCheckbox.addEventListener('change', () => {
-                    const currentPageData = getFilteredData();
-                    const startIndex = (currentPage - 1) * itemsPerPage;
-                    const endIndex = startIndex + itemsPerPage;
-                    const pageData = currentPageData.slice(startIndex, endIndex);
-
-                    if (selectAllCheckbox.checked) {
-                        pageData.forEach(item => selectedRegistrations.add(item.id));
-                    } else {
-                        pageData.forEach(item => selectedRegistrations.delete(item.id));
-                    }
-
-                    updateRowSelections();
-                    updateBulkActionButtons();
-                });
-
-                // Bulk actions
-                bulkApproveBtn.addEventListener('click', () => {
-                    if (selectedRegistrations.size === 0) {
-                        showToast('Please select at least one registration to approve', 'error');
-                        return;
-                    }
-
-                    // Show bulk approval modal
-                    pendingApprovalIds = Array.from(selectedRegistrations);
-                    bulkApprovalCount.textContent = pendingApprovalIds.length;
-                    bulkApprovalReasonTextarea.value = '';
-                    bulkApprovalModal.classList.add('active');
-                });
-
-                bulkRejectBtn.addEventListener('click', () => {
-                    if (selectedRegistrations.size === 0) {
-                        showToast('Please select at least one registration to reject', 'error');
-                        return;
-                    }
-
-                    // Show bulk rejection modal
-                    pendingRejectionIds = Array.from(selectedRegistrations);
-                    bulkRejectionCount.textContent = pendingRejectionIds.length;
-                    bulkRejectionReasonTextarea.value = '';
-                    bulkRejectionModal.classList.add('active');
-                });
-
-                // Registration modal close button
-                closeModalBtn.addEventListener('click', () => {
-                    registrationModal.classList.remove('active');
-                });
-
-                // Registration modal approve button
-                modalApproveBtn.addEventListener('click', () => {
-                    if (currentRegistrationId) {
-                        const registration = allRegistrations.find(r => r.id === currentRegistrationId);
-                        if (registration) {
-                            // Show approval reason modal
-                            approvalTargetName.textContent = 'Approve ' + registration.name + ' (' + registration.id + ')?';
-                            approvalReasonTextarea.value = '';
-                            approvalModal.classList.add('active');
-                        }
+                // Reset UI
+                tabButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.getAttribute('data-tab') === 'all') {
+                        btn.classList.add('active');
                     }
                 });
 
-                // Registration modal reject button
-                modalRejectBtn.addEventListener('click', () => {
-                    if (currentRegistrationId) {
-                        const registration = allRegistrations.find(r => r.id === currentRegistrationId);
-                        if (registration) {
-                            // Show rejection reason modal
-                            rejectionTargetName.textContent = 'Reject ' + registration.name + ' (' + registration.id + ')?';
-                            rejectionReasonTextarea.value = '';
-                            rejectionModal.classList.add('active');
-                        }
-                    }
-                });
+                statusFilter.value = 'all';
+                dateFilter.value = '';
 
-                // Approval modal close button
-                closeApprovalModalBtn.addEventListener('click', () => {
-                    approvalModal.classList.remove('active');
-                });
+                currentPage = 1;
+                renderTable();
+                updateFilterChips();
+            });
 
-                // Approval modal cancel button
-                cancelApprovalBtn.addEventListener('click', () => {
-                    approvalModal.classList.remove('active');
-                });
-
-                // Approval modal confirm button
-                confirmApprovalBtn.addEventListener('click', () => {
-                    const reason = approvalReasonTextarea.value.trim();
-
-                    const registration = allRegistrations.find(r => r.id === currentRegistrationId);
-                    if (registration) {
-                        registration.status = 'Approved';
-                        registration.approvalReason = reason;
-                        registration.approvalDate = new Date().toISOString().split('T')[0];
-                        registration.approvedBy = 'Admin User';
-                        registration.rejectionReason = '';
-                        registration.rejectionDate = '';
-                        registration.rejectedBy = '';
-
-                        renderTable();
-                        approvalModal.classList.remove('active');
-                        registrationModal.classList.remove('active');
-                        showToast('Registration ' + currentRegistrationId + ' approved', 'success');
-                    }
-                });
-
-                // Bulk approval modal close button
-                closeBulkApprovalModalBtn.addEventListener('click', () => {
-                    bulkApprovalModal.classList.remove('active');
-                });
-
-                // Bulk approval modal cancel button
-                cancelBulkApprovalBtn.addEventListener('click', () => {
-                    bulkApprovalModal.classList.remove('active');
-                });
-
-                // Bulk approval modal confirm button
-                confirmBulkApprovalBtn.addEventListener('click', () => {
-                    const reason = bulkApprovalReasonTextarea.value.trim();
-
-                    pendingApprovalIds.forEach(id => {
-                        const registration = allRegistrations.find(r => r.id === id);
-                        if (registration) {
-                            registration.status = 'Approved';
-                            registration.approvalReason = reason;
-                            registration.approvalDate = new Date().toISOString().split('T')[0];
-                            registration.approvedBy = 'Admin User';
-                            registration.rejectionReason = '';
-                            registration.rejectionDate = '';
-                            registration.rejectedBy = '';
-                        }
-                    });
-
-                    selectedRegistrations.clear();
-                    pendingApprovalIds = [];
-                    selectAllCheckbox.checked = false;
-                    renderTable();
-                    bulkApprovalModal.classList.remove('active');
-                    updateBulkActionButtons();
-                    showToast(pendingApprovalIds.length + ' registration(s) approved', 'success');
-                });
-
-                // Rejection modal close button
-                closeRejectionModalBtn.addEventListener('click', () => {
-                    rejectionModal.classList.remove('active');
-                });
-
-                // Rejection modal cancel button
-                cancelRejectionBtn.addEventListener('click', () => {
-                    rejectionModal.classList.remove('active');
-                });
-
-                // Rejection modal confirm button
-                confirmRejectionBtn.addEventListener('click', () => {
-                    const reason = rejectionReasonTextarea.value.trim();
-                    if (!reason) {
-                        showToast('Please provide a reason for rejection', 'error');
-                        return;
-                    }
-
-                    const registration = allRegistrations.find(r => r.id === currentRegistrationId);
-                    if (registration) {
-                        registration.status = 'Rejected';
-                        registration.rejectionReason = reason;
-                        registration.rejectionDate = new Date().toISOString().split('T')[0];
-                        registration.rejectedBy = 'Admin User';
-                        registration.approvalReason = '';
-                        registration.approvalDate = '';
-                        registration.approvedBy = '';
-
-                        renderTable();
-                        rejectionModal.classList.remove('active');
-                        registrationModal.classList.remove('active');
-                        showToast('Registration ' + currentRegistrationId + ' rejected', 'success');
-                    }
-                });
-
-                // Bulk rejection modal close button
-                closeBulkRejectionModalBtn.addEventListener('click', () => {
-                    bulkRejectionModal.classList.remove('active');
-                });
-
-                // Bulk rejection modal cancel button
-                cancelBulkRejectionBtn.addEventListener('click', () => {
-                    bulkRejectionModal.classList.remove('active');
-                });
-
-                // Bulk rejection modal confirm button
-                confirmBulkRejectionBtn.addEventListener('click', () => {
-                    const reason = bulkRejectionReasonTextarea.value.trim();
-                    if (!reason) {
-                        showToast('Please provide a reason for rejection', 'error');
-                        return;
-                    }
-
-                    pendingRejectionIds.forEach(id => {
-                        const registration = allRegistrations.find(r => r.id === id);
-                        if (registration) {
-                            registration.status = 'Rejected';
-                            registration.rejectionReason = reason;
-                            registration.rejectionDate = new Date().toISOString().split('T')[0];
-                            registration.rejectedBy = 'Admin User';
-                            registration.approvalReason = '';
-                            registration.approvalDate = '';
-                            registration.approvedBy = '';
-                        }
-                    });
-
-                    selectedRegistrations.clear();
-                    pendingRejectionIds = [];
-                    selectAllCheckbox.checked = false;
-                    renderTable();
-                    bulkRejectionModal.classList.remove('active');
-                    updateBulkActionButtons();
-                    showToast(pendingRejectionIds.length + ' registration(s) rejected', 'success');
-                });
-
-                // Reason preset buttons for approval
-                document.querySelectorAll('.reason-preset-btn.approval-reason-preset-btn[data-reason]').forEach(button => {
-                    button.addEventListener('click', () => {
-                        approvalReasonTextarea.value = button.getAttribute('data-reason');
-                    });
-                });
-
-                // Reason preset buttons for bulk approval
-                document.querySelectorAll('.reason-preset-btn.approval-reason-preset-btn[data-bulk-reason]').forEach(button => {
-                    button.addEventListener('click', () => {
-                        bulkApprovalReasonTextarea.value = button.getAttribute('data-bulk-reason');
-                    });
-                });
-
-                // Reason preset buttons for rejection
-                document.querySelectorAll('.reason-preset-btn[data-reason]').forEach(button => {
-                    button.addEventListener('click', () => {
-                        rejectionReasonTextarea.value = button.getAttribute('data-reason');
-                    });
-                });
-
-                // Reason preset buttons for bulk rejection
-                document.querySelectorAll('.reason-preset-btn[data-bulk-reason]').forEach(button => {
-                    button.addEventListener('click', () => {
-                        bulkRejectionReasonTextarea.value = button.getAttribute('data-bulk-reason');
-                    });
-                });
-
-                // Close modals when clicking outside
-                registrationModal.addEventListener('click', (e) => {
-                    if (e.target === registrationModal) {
-                        registrationModal.classList.remove('active');
-                    }
-                });
-
-                approvalModal.addEventListener('click', (e) => {
-                    if (e.target === approvalModal) {
-                        approvalModal.classList.remove('active');
-                    }
-                });
-
-                bulkApprovalModal.addEventListener('click', (e) => {
-                    if (e.target === bulkApprovalModal) {
-                        bulkApprovalModal.classList.remove('active');
-                    }
-                });
-
-                rejectionModal.addEventListener('click', (e) => {
-                    if (e.target === rejectionModal) {
-                        rejectionModal.classList.remove('active');
-                    }
-                });
-
-                bulkRejectionModal.addEventListener('click', (e) => {
-                    if (e.target === bulkRejectionModal) {
-                        bulkRejectionModal.classList.remove('active');
-                    }
-                });
-            }
-
-            // Get filtered data based on current filters
-            function getFilteredData() {
-                return allRegistrations.filter(item => {
-                    // Filter by type (all, shelters, adopters, rejected)
-                    if (currentFilter !== 'all') {
-                        if (currentFilter === 'rejected') {
-                            if (item.status !== 'Rejected')
-                                return false;
-                        } else if (item.type.toLowerCase() !== currentFilter) {
-                            return false;
-                        }
-                    }
-
-                    // Filter by status
-                    if (currentStatusFilter !== 'all') {
-                        const statusMap = {
-                            'pending': ['Pending Review', 'Pending'],
-                            'new': ['New'],
-                            'approved': ['Approved'],
-                            'rejected': ['Rejected']
-                        };
-
-                        if (!statusMap[currentStatusFilter].includes(item.status)) {
-                            return false;
-                        }
-                    }
-
-                    // Filter by date
-                    if (currentDateFilter && item.date !== currentDateFilter) {
-                        return false;
-                    }
-
-                    return true;
-                });
-            }
-
-            // Render the table with current filter and pagination
-            function renderTable() {
-                const filteredData = getFilteredData();
-                const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            // Select all checkbox
+            selectAllCheckbox.addEventListener('change', () => {
+                const currentPageData = getFilteredData();
                 const startIndex = (currentPage - 1) * itemsPerPage;
                 const endIndex = startIndex + itemsPerPage;
-                const pageData = filteredData.slice(startIndex, endIndex);
+                const pageData = currentPageData.slice(startIndex, endIndex);
 
-                // Clear table body
-                tableBody.innerHTML = '';
+                if (selectAllCheckbox.checked) {
+                    pageData.forEach(item => selectedRegistrations.add(item.id));
+                } else {
+                    pageData.forEach(item => selectedRegistrations.delete(item.id));
+                }
 
-                // Update counts
-                totalCountElement.textContent = filteredData.length;
-                startIndexElement.textContent = filteredData.length > 0 ? startIndex + 1 : 0;
-                endIndexElement.textContent = Math.min(endIndex, filteredData.length);
-                totalEntriesElement.textContent = filteredData.length;
+                updateRowSelections();
+                updateBulkActionButtons();
+            });
 
-                // Render rows
+            // Bulk actions
+            bulkApproveBtn.addEventListener('click', () => {
+                if (selectedRegistrations.size === 0) {
+                    showToast('Please select at least one registration to approve', 'error');
+                    return;
+                }
+
+                // Filter only pending shelters
+                const pendingShelters = Array.from(selectedRegistrations).filter(id => {
+                    const reg = allRegistrations.find(r => r.id === id);
+                    return reg && reg.type === 'Shelter' && reg.status === 'pending';
+                });
+
+                if (pendingShelters.length === 0) {
+                    showToast('Only pending shelters can be approved', 'error');
+                    return;
+                }
+
+                // Show bulk approval modal
+                pendingApprovalIds = pendingShelters;
+                bulkApprovalCount.textContent = pendingApprovalIds.length;
+                bulkApprovalReasonTextarea.value = '';
+                bulkApprovalModal.classList.add('active');
+            });
+
+            bulkRejectBtn.addEventListener('click', () => {
+                if (selectedRegistrations.size === 0) {
+                    showToast('Please select at least one registration to reject', 'error');
+                    return;
+                }
+
+                // Filter only pending shelters
+                const pendingShelters = Array.from(selectedRegistrations).filter(id => {
+                    const reg = allRegistrations.find(r => r.id === id);
+                    return reg && reg.type === 'Shelter' && reg.status === 'pending';
+                });
+
+                if (pendingShelters.length === 0) {
+                    showToast('Only pending shelters can be rejected', 'error');
+                    return;
+                }
+
+                // Show bulk rejection modal
+                pendingRejectionIds = pendingShelters;
+                bulkRejectionCount.textContent = pendingRejectionIds.length;
+                bulkRejectionReasonTextarea.value = '';
+                bulkRejectionModal.classList.add('active');
+            });
+
+            // Registration modal close button
+            closeModalBtn.addEventListener('click', () => {
+                registrationModal.classList.remove('active');
+            });
+
+            // Registration modal approve button
+            modalApproveBtn.addEventListener('click', () => {
+                if (currentRegistrationId) {
+                    const registration = allRegistrations.find(r => r.id === currentRegistrationId);
+                    if (registration && registration.type === 'Shelter' && registration.status === 'pending') {
+                        // Show approval reason modal
+                        approvalTargetName.textContent = 'Approve ' + registration.name + ' (' + registration.id + ')?';
+                        approvalReasonTextarea.value = '';
+                        approvalModal.classList.add('active');
+                    } else {
+                        showToast('Only pending shelters can be approved', 'error');
+                    }
+                }
+            });
+
+            // Registration modal reject button
+            modalRejectBtn.addEventListener('click', () => {
+                if (currentRegistrationId) {
+                    const registration = allRegistrations.find(r => r.id === currentRegistrationId);
+                    if (registration && registration.type === 'Shelter' && registration.status === 'pending') {
+                        // Show rejection reason modal
+                        rejectionTargetName.textContent = 'Reject ' + registration.name + ' (' + registration.id + ')?';
+                        rejectionReasonTextarea.value = '';
+                        rejectionModal.classList.add('active');
+                    } else {
+                        showToast('Only pending shelters can be rejected', 'error');
+                    }
+                }
+            });
+
+            // Approval modal close button
+            closeApprovalModalBtn.addEventListener('click', () => {
+                approvalModal.classList.remove('active');
+            });
+
+            // Approval modal cancel button
+            cancelApprovalBtn.addEventListener('click', () => {
+                approvalModal.classList.remove('active');
+            });
+
+            // Approval modal confirm button
+            confirmApprovalBtn.addEventListener('click', async () => {
+                const reason = approvalReasonTextarea.value.trim();
+                const registration = allRegistrations.find(r => r.id === currentRegistrationId);
+
+                if (!registration || registration.type !== 'Shelter') {
+                    showToast('Invalid registration', 'error');
+                    return;
+                }
+
+                try {
+                    const formData = new FormData();
+                    formData.append('action', 'approve');
+                    formData.append('shelterId', registration.userId);
+                    formData.append('reason', reason);
+
+                    const response = await fetch('RegistrationServlet', {
+                        method: 'POST',
+                        body: new URLSearchParams(formData)
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Update local data
+                        registration.status = 'approved';
+                        registration.approvalReason = reason;
+                        registration.rejectionReason = '';
+
+                        renderTable();
+                        approvalModal.classList.remove('active');
+                        registrationModal.classList.remove('active');
+                        loadStatistics(); // Refresh statistics
+                        showToast('Registration ' + currentRegistrationId + ' approved', 'success');
+                    } else {
+                        showToast('Failed to approve registration', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error approving registration:', error);
+                    showToast('Failed to approve registration', 'error');
+                }
+            });
+
+            // Bulk approval modal close button
+            closeBulkApprovalModalBtn.addEventListener('click', () => {
+                bulkApprovalModal.classList.remove('active');
+            });
+
+            // Bulk approval modal cancel button
+            cancelBulkApprovalBtn.addEventListener('click', () => {
+                bulkApprovalModal.classList.remove('active');
+            });
+
+            // Bulk approval modal confirm button
+            confirmBulkApprovalBtn.addEventListener('click', async () => {
+                const reason = bulkApprovalReasonTextarea.value.trim();
+
+                try {
+                    const formData = new FormData();
+                    formData.append('action', 'bulkApprove');
+                    formData.append('reason', reason);
+                    pendingApprovalIds.forEach(id => {
+                        const reg = allRegistrations.find(r => r.id === id);
+                        if (reg) {
+                            formData.append('shelterIds[]', reg.userId);
+                        }
+                    });
+
+                    const response = await fetch('RegistrationServlet', {
+                        method: 'POST',
+                        body: new URLSearchParams(formData)
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Update local data
+                        pendingApprovalIds.forEach(id => {
+                            const reg = allRegistrations.find(r => r.id === id);
+                            if (reg) {
+                                reg.status = 'approved';
+                                reg.approvalReason = reason;
+                                reg.rejectionReason = '';
+                            }
+                        });
+
+                        selectedRegistrations.clear();
+                        pendingApprovalIds = [];
+                        selectAllCheckbox.checked = false;
+                        renderTable();
+                        bulkApprovalModal.classList.remove('active');
+                        updateBulkActionButtons();
+                        loadStatistics(); // Refresh statistics
+                        showToast(result.count + ' registration(s) approved', 'success');
+                    } else {
+                        showToast('Failed to approve registrations', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error bulk approving:', error);
+                    showToast('Failed to approve registrations', 'error');
+                }
+            });
+
+            // Rejection modal close button
+            closeRejectionModalBtn.addEventListener('click', () => {
+                rejectionModal.classList.remove('active');
+            });
+
+            // Rejection modal cancel button
+            cancelRejectionBtn.addEventListener('click', () => {
+                rejectionModal.classList.remove('active');
+            });
+
+            // Rejection modal confirm button
+            confirmRejectionBtn.addEventListener('click', async () => {
+                const reason = rejectionReasonTextarea.value.trim();
+                if (!reason) {
+                    showToast('Please provide a reason for rejection', 'error');
+                    return;
+                }
+
+                const registration = allRegistrations.find(r => r.id === currentRegistrationId);
+
+                if (!registration || registration.type !== 'Shelter') {
+                    showToast('Invalid registration', 'error');
+                    return;
+                }
+
+                try {
+                    const formData = new FormData();
+                    formData.append('action', 'reject');
+                    formData.append('shelterId', registration.userId);
+                    formData.append('reason', reason);
+
+                    const response = await fetch('RegistrationServlet', {
+                        method: 'POST',
+                        body: new URLSearchParams(formData)
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Update local data
+                        registration.status = 'rejected';
+                        registration.rejectionReason = reason;
+                        registration.approvalReason = '';
+
+                        renderTable();
+                        rejectionModal.classList.remove('active');
+                        registrationModal.classList.remove('active');
+                        loadStatistics(); // Refresh statistics
+                        showToast('Registration ' + currentRegistrationId + ' rejected', 'success');
+                    } else {
+                        showToast(result.error || 'Failed to reject registration', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error rejecting registration:', error);
+                    showToast('Failed to reject registration', 'error');
+                }
+            });
+
+            // Bulk rejection modal close button
+            closeBulkRejectionModalBtn.addEventListener('click', () => {
+                bulkRejectionModal.classList.remove('active');
+            });
+
+            // Bulk rejection modal cancel button
+            cancelBulkRejectionBtn.addEventListener('click', () => {
+                bulkRejectionModal.classList.remove('active');
+            });
+
+            // Bulk rejection modal confirm button
+            confirmBulkRejectionBtn.addEventListener('click', async () => {
+                const reason = bulkRejectionReasonTextarea.value.trim();
+                if (!reason) {
+                    showToast('Please provide a reason for rejection', 'error');
+                    return;
+                }
+
+                try {
+                    const formData = new FormData();
+                    formData.append('action', 'bulkReject');
+                    formData.append('reason', reason);
+                    pendingRejectionIds.forEach(id => {
+                        const reg = allRegistrations.find(r => r.id === id);
+                        if (reg) {
+                            formData.append('shelterIds[]', reg.userId);
+                        }
+                    });
+
+                    const response = await fetch('RegistrationServlet', {
+                        method: 'POST',
+                        body: new URLSearchParams(formData)
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Update local data
+                        pendingRejectionIds.forEach(id => {
+                            const reg = allRegistrations.find(r => r.id === id);
+                            if (reg) {
+                                reg.status = 'rejected';
+                                reg.rejectionReason = reason;
+                                reg.approvalReason = '';
+                            }
+                        });
+
+                        selectedRegistrations.clear();
+                        pendingRejectionIds = [];
+                        selectAllCheckbox.checked = false;
+                        renderTable();
+                        bulkRejectionModal.classList.remove('active');
+                        updateBulkActionButtons();
+                        loadStatistics(); // Refresh statistics
+                        showToast(result.count + ' registration(s) rejected', 'success');
+                    } else {
+                        showToast(result.error || 'Failed to reject registrations', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error bulk rejecting:', error);
+                    showToast('Failed to reject registrations', 'error');
+                }
+            });
+
+            // Reason preset buttons for approval
+            document.querySelectorAll('.reason-preset-btn.approval-reason-preset-btn[data-reason]').forEach(button => {
+                button.addEventListener('click', () => {
+                    approvalReasonTextarea.value = button.getAttribute('data-reason');
+                });
+            });
+
+            // Reason preset buttons for bulk approval
+            document.querySelectorAll('.reason-preset-btn.approval-reason-preset-btn[data-bulk-reason]').forEach(button => {
+                button.addEventListener('click', () => {
+                    bulkApprovalReasonTextarea.value = button.getAttribute('data-bulk-reason');
+                });
+            });
+
+            // Reason preset buttons for rejection
+            document.querySelectorAll('.reason-preset-btn[data-reason]').forEach(button => {
+                button.addEventListener('click', () => {
+                    rejectionReasonTextarea.value = button.getAttribute('data-reason');
+                });
+            });
+
+            // Reason preset buttons for bulk rejection
+            document.querySelectorAll('.reason-preset-btn[data-bulk-reason]').forEach(button => {
+                button.addEventListener('click', () => {
+                    bulkRejectionReasonTextarea.value = button.getAttribute('data-bulk-reason');
+                });
+            });
+
+            // Close modals when clicking outside
+            registrationModal.addEventListener('click', (e) => {
+                if (e.target === registrationModal) {
+                    registrationModal.classList.remove('active');
+                }
+            });
+
+            approvalModal.addEventListener('click', (e) => {
+                if (e.target === approvalModal) {
+                    approvalModal.classList.remove('active');
+                }
+            });
+
+            bulkApprovalModal.addEventListener('click', (e) => {
+                if (e.target === bulkApprovalModal) {
+                    bulkApprovalModal.classList.remove('active');
+                }
+            });
+
+            rejectionModal.addEventListener('click', (e) => {
+                if (e.target === rejectionModal) {
+                    rejectionModal.classList.remove('active');
+                }
+            });
+
+            bulkRejectionModal.addEventListener('click', (e) => {
+                if (e.target === bulkRejectionModal) {
+                    bulkRejectionModal.classList.remove('active');
+                }
+            });
+        }
+
+        // Get filtered data based on current filters
+        function getFilteredData() {
+            return allRegistrations.filter(item => {
+                // Filter by type (all, shelters, adopters, rejected)
+                if (currentFilter !== 'all') {
+                    if (currentFilter === 'rejected') {
+                        if (item.status !== 'rejected')
+                            return false;
+                    } else if (currentFilter === 'shelters') {
+                        if (item.type !== 'Shelter')
+                            return false;
+                    } else if (currentFilter === 'adopters') {
+                        if (item.type !== 'Adopter')
+                            return false;
+                    }
+                }
+
+                // Filter by status
+                if (currentStatusFilter !== 'all') {
+                    if (currentStatusFilter === 'pending' && item.status !== 'pending') {
+                        return false;
+                    }
+                    if (currentStatusFilter === 'approved' && item.status !== 'approved') {
+                        return false;
+                    }
+                    if (currentStatusFilter === 'rejected' && item.status !== 'rejected') {
+                        return false;
+                    }
+                    if (currentStatusFilter === 'new') {
+                        // For new status, show pending shelters and adopters
+                        if (item.status !== 'pending') {
+                            return false;
+                        }
+                    }
+                }
+
+                // Filter by date
+                if (currentDateFilter && item.date !== currentDateFilter) {
+                    return false;
+                }
+
+                return true;
+            });
+        }
+
+        // Render the table with current filter and pagination
+        function renderTable() {
+            const filteredData = getFilteredData();
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageData = filteredData.slice(startIndex, endIndex);
+
+            // Clear table body
+            tableBody.innerHTML = '';
+
+            // Update counts
+            totalCountElement.textContent = filteredData.length;
+            startIndexElement.textContent = filteredData.length > 0 ? startIndex + 1 : 0;
+            endIndexElement.textContent = Math.min(endIndex, filteredData.length);
+            totalEntriesElement.textContent = filteredData.length;
+
+            // Render rows - TAMBAH: Langsung papar "No data found" jika tiada data
+            if (pageData.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="no-data-row">
+                            <div class="no-data-icon">📭</div>
+                            <div class="no-data-message">No registrations found</div>
+                            <div class="no-data-submessage">Try adjusting your filters or check back later</div>
+                        </td>
+                    </tr>
+                `;
+            } else {
                 pageData.forEach(item => {
                     const row = document.createElement('tr');
                     row.className = 'border-b border-[#E5E5E5] hover:bg-[#F6F3E7] cursor-pointer';
@@ -1764,24 +1597,22 @@
 
                     // Status badge class
                     let statusClass = '';
-                    if (item.status === 'Pending Review' || item.status === 'Pending') {
+                    if (item.status === 'pending') {
                         statusClass = 'status-pending';
-                    } else if (item.status === 'New') {
-                        statusClass = 'status-new';
-                    } else if (item.status === 'Approved') {
+                    } else if (item.status === 'approved') {
                         statusClass = 'status-approved';
-                    } else if (item.status === 'Rejected') {
+                    } else if (item.status === 'rejected') {
                         statusClass = 'status-rejected';
                     }
 
                     // Show approval/rejection reason in table
                     let reasonBadge = '';
-                    if (item.status === 'Rejected' && item.rejectionReason) {
+                    if (item.status === 'rejected' && item.rejectionReason) {
                         const shortReason = item.rejectionReason.length > 60 ? item.rejectionReason.substring(0, 60) + '...' : item.rejectionReason;
                         reasonBadge = '<div class="reason-box rejection-reason-box mt-1">' +
                                 '<span class="font-medium">Reason:</span> ' + shortReason +
                                 '</div>';
-                    } else if (item.status === 'Approved' && item.approvalReason) {
+                    } else if (item.status === 'approved' && item.approvalReason) {
                         const shortReason = item.approvalReason.length > 60 ? item.approvalReason.substring(0, 60) + '...' : item.approvalReason;
                         reasonBadge = '<div class="reason-box approval-reason-box mt-1">' +
                                 '<span class="font-medium">Reason:</span> ' + shortReason +
@@ -1793,15 +1624,10 @@
                     const typeClass = item.type === 'Shelter' ? 'bg-[#F5F0EB] text-[#C49A6C]' : 'bg-[#E8F5EE] text-[#57A677]';
 
                     let actionButtons = '';
-                    if (item.status === 'Pending Review' || item.status === 'Pending' || item.status === 'New') {
+                    if (item.type === 'Shelter' && item.status === 'pending') {
                         actionButtons = '<button class="action-btn action-btn-approve quick-approve" data-id="' + item.id + '">Approve</button>' +
                                 '<button class="action-btn action-btn-reject quick-reject" data-id="' + item.id + '">Reject</button>';
                     }
-
-                    const rejectionDateHtml = item.status === 'Rejected' && item.rejectionDate ?
-                            '<div class="text-xs text-red-500">Rejected: ' + item.rejectionDate + '</div>' : '';
-                    const approvalDateHtml = item.status === 'Approved' && item.approvalDate ?
-                            '<div class="text-xs text-green-500">Approved: ' + item.approvalDate + '</div>' : '';
 
                     row.innerHTML = '<td class="py-3 px-4">' +
                             '<div class="flex items-center">' +
@@ -1821,11 +1647,9 @@
                             '</td>' +
                             '<td class="py-3 px-4">' +
                             '<span class="text-gray-500 text-sm">' + item.date + '</span>' +
-                            rejectionDateHtml +
-                            approvalDateHtml +
                             '</td>' +
                             '<td class="py-3 px-4">' +
-                            '<span class="status-badge ' + statusClass + '">' + item.status + '</span>' +
+                            '<span class="status-badge ' + statusClass + '">' + item.status.charAt(0).toUpperCase() + item.status.slice(1) + '</span>' +
                             '</td>' +
                             '<td class="py-3 px-4">' +
                             '<div class="flex space-x-2">' +
@@ -1836,467 +1660,376 @@
 
                     tableBody.appendChild(row);
                 });
-
-                // Add event listeners to row checkboxes
-                document.querySelectorAll('.row-checkbox').forEach(checkbox => {
-                    checkbox.addEventListener('change', (e) => {
-                        e.stopPropagation();
-                        const id = checkbox.getAttribute('data-id');
-
-                        if (checkbox.checked) {
-                            selectedRegistrations.add(id);
-                        } else {
-                            selectedRegistrations.delete(id);
-                            selectAllCheckbox.checked = false;
-                        }
-
-                        updateBulkActionButtons();
-                    });
-                });
-
-                // Add event listeners to view buttons
-                document.querySelectorAll('.view-details').forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const id = button.getAttribute('data-id');
-                        showRegistrationDetails(id);
-                    });
-                });
-
-                // Add event listeners to quick approve buttons
-                document.querySelectorAll('.quick-approve').forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const id = button.getAttribute('data-id');
-                        const registration = allRegistrations.find(r => r.id === id);
-                        if (registration) {
-                            // Show approval reason modal
-                            currentRegistrationId = id;
-                            approvalTargetName.textContent = 'Approve ' + registration.name + ' (' + registration.id + ')?';
-                            approvalReasonTextarea.value = '';
-                            approvalModal.classList.add('active');
-                        }
-                    });
-                });
-
-                // Add event listeners to quick reject buttons
-                document.querySelectorAll('.quick-reject').forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const id = button.getAttribute('data-id');
-                        const registration = allRegistrations.find(r => r.id === id);
-                        if (registration) {
-                            // Show rejection reason modal
-                            currentRegistrationId = id;
-                            rejectionTargetName.textContent = 'Reject ' + registration.name + ' (' + registration.id + ')?';
-                            rejectionReasonTextarea.value = '';
-                            rejectionModal.classList.add('active');
-                        }
-                    });
-                });
-
-                // Add click event to entire row (for viewing details)
-                document.querySelectorAll('tr[data-id]').forEach(row => {
-                    row.addEventListener('click', (e) => {
-                        // Don't trigger if clicking on a button or checkbox
-                        if (!e.target.closest('button') && !e.target.closest('input[type="checkbox"]')) {
-                            const id = row.getAttribute('data-id');
-                            showRegistrationDetails(id);
-                        }
-                    });
-                });
-
-                // Render pagination
-                renderPagination(totalPages);
-
-                // Update select all checkbox state
-                updateSelectAllState(pageData);
             }
+
+            // Add event listeners to row checkboxes
+            document.querySelectorAll('.row-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    e.stopPropagation();
+                    const id = checkbox.getAttribute('data-id');
+
+                    if (checkbox.checked) {
+                        selectedRegistrations.add(id);
+                    } else {
+                        selectedRegistrations.delete(id);
+                        selectAllCheckbox.checked = false;
+                    }
+
+                    updateBulkActionButtons();
+                });
+            });
+
+            // Add event listeners to view buttons
+            document.querySelectorAll('.view-details').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = button.getAttribute('data-id');
+                    showRegistrationDetails(id);
+                });
+            });
+
+            // Add event listeners to quick approve buttons
+            document.querySelectorAll('.quick-approve').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = button.getAttribute('data-id');
+                    const registration = allRegistrations.find(r => r.id === id);
+                    if (registration) {
+                        // Show approval reason modal
+                        currentRegistrationId = id;
+                        approvalTargetName.textContent = 'Approve ' + registration.name + ' (' + registration.id + ')?';
+                        approvalReasonTextarea.value = '';
+                        approvalModal.classList.add('active');
+                    }
+                });
+            });
+
+            // Add event listeners to quick reject buttons
+            document.querySelectorAll('.quick-reject').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = button.getAttribute('data-id');
+                    const registration = allRegistrations.find(r => r.id === id);
+                    if (registration) {
+                        // Show rejection reason modal
+                        currentRegistrationId = id;
+                        rejectionTargetName.textContent = 'Reject ' + registration.name + ' (' + registration.id + ')?';
+                        rejectionReasonTextarea.value = '';
+                        rejectionModal.classList.add('active');
+                    }
+                });
+            });
+
+            // Add click event to entire row (for viewing details)
+            document.querySelectorAll('tr[data-id]').forEach(row => {
+                row.addEventListener('click', (e) => {
+                    // Don't trigger if clicking on a button or checkbox
+                    if (!e.target.closest('button') && !e.target.closest('input[type="checkbox"]')) {
+                        const id = row.getAttribute('data-id');
+                        showRegistrationDetails(id);
+                    }
+                });
+            });
+
+            // Render pagination
+            renderPagination(totalPages);
 
             // Update select all checkbox state
-            function updateSelectAllState(pageData) {
-                const allSelected = pageData.length > 0 && pageData.every(item => selectedRegistrations.has(item.id));
-                selectAllCheckbox.checked = allSelected;
+            updateSelectAllState(pageData);
+        }
+
+        // Update select all checkbox state
+        function updateSelectAllState(pageData) {
+            const allSelected = pageData.length > 0 && pageData.every(item => selectedRegistrations.has(item.id));
+            selectAllCheckbox.checked = allSelected;
+        }
+
+        // Update row selection visuals
+        function updateRowSelections() {
+            document.querySelectorAll('.row-checkbox').forEach(checkbox => {
+                const id = checkbox.getAttribute('data-id');
+                checkbox.checked = selectedRegistrations.has(id);
+            });
+        }
+
+        // Update bulk action buttons
+        function updateBulkActionButtons() {
+            const count = selectedRegistrations.size;
+            bulkApproveBtn.textContent = 'Approve Selected (' + count + ')';
+            bulkRejectBtn.textContent = 'Reject Selected (' + count + ')';
+            bulkApproveBtn.disabled = count === 0;
+            bulkRejectBtn.disabled = count === 0;
+        }
+
+        // Render pagination buttons
+        function renderPagination(totalPages) {
+            paginationContainer.innerHTML = '';
+
+            // Previous button
+            const prevButton = document.createElement('button');
+            prevButton.className = 'pagination-btn';
+            prevButton.innerHTML = '&laquo;';
+            prevButton.disabled = currentPage === 1;
+            prevButton.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderTable();
+                }
+            });
+            paginationContainer.appendChild(prevButton);
+
+            // Page buttons
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+            if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
             }
 
-            // Update row selection visuals
-            function updateRowSelections() {
-                document.querySelectorAll('.row-checkbox').forEach(checkbox => {
-                    const id = checkbox.getAttribute('data-id');
-                    checkbox.checked = selectedRegistrations.has(id);
+            for (let i = startPage; i <= endPage; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.className = 'pagination-btn ' + (i === currentPage ? 'active' : '');
+                pageButton.textContent = i;
+                pageButton.addEventListener('click', () => {
+                    currentPage = i;
+                    renderTable();
                 });
+                paginationContainer.appendChild(pageButton);
             }
 
-            // Update bulk action buttons
-            function updateBulkActionButtons() {
-                const count = selectedRegistrations.size;
-                bulkApproveBtn.textContent = 'Approve Selected (' + count + ')';
-                bulkRejectBtn.textContent = 'Reject Selected (' + count + ')';
-                bulkApproveBtn.disabled = count === 0;
-                bulkRejectBtn.disabled = count === 0;
-            }
+            // Next button
+            const nextButton = document.createElement('button');
+            nextButton.className = 'pagination-btn';
+            nextButton.innerHTML = '&raquo;';
+            nextButton.disabled = currentPage === totalPages;
+            nextButton.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderTable();
+                }
+            });
+            paginationContainer.appendChild(nextButton);
+        }
 
-            // Render pagination buttons
-            function renderPagination(totalPages) {
-                paginationContainer.innerHTML = '';
+        // Update filter chips
+        function updateFilterChips() {
+            filterChipsContainer.innerHTML = '';
 
-                // Previous button
-                const prevButton = document.createElement('button');
-                prevButton.className = 'pagination-btn';
-                prevButton.innerHTML = '&laquo;';
-                prevButton.disabled = currentPage === 1;
-                prevButton.addEventListener('click', () => {
-                    if (currentPage > 1) {
-                        currentPage--;
-                        renderTable();
-                    }
+            // Add type filter chip
+            if (currentFilter !== 'all') {
+                const typeChip = document.createElement('div');
+                typeChip.className = 'filter-chip active';
+                let filterText = '';
+                if (currentFilter === 'shelters')
+                    filterText = 'Shelters';
+                else if (currentFilter === 'adopters')
+                    filterText = 'Adopters';
+                else if (currentFilter === 'rejected')
+                    filterText = 'Rejected';
+
+                typeChip.innerHTML = filterText +
+                        '<span class="remove" data-filter="type">&times;</span>';
+
+                typeChip.querySelector('.remove').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // Reset to "all" tab
+                    tabButtons.forEach(btn => {
+                        btn.classList.remove('active');
+                        if (btn.getAttribute('data-tab') === 'all') {
+                            btn.classList.add('active');
+                        }
+                    });
+                    currentFilter = 'all';
+                    renderTable();
+                    updateFilterChips();
                 });
-                paginationContainer.appendChild(prevButton);
+                filterChipsContainer.appendChild(typeChip);
+            }
 
-                // Page buttons
-                const maxVisiblePages = 5;
-                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-                if (endPage - startPage + 1 < maxVisiblePages) {
-                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
-                }
-
-                for (let i = startPage; i <= endPage; i++) {
-                    const pageButton = document.createElement('button');
-                    pageButton.className = 'pagination-btn ' + (i === currentPage ? 'active' : '');
-                    pageButton.textContent = i;
-                    pageButton.addEventListener('click', () => {
-                        currentPage = i;
-                        renderTable();
-                    });
-                    paginationContainer.appendChild(pageButton);
-                }
-
-                // Next button
-                const nextButton = document.createElement('button');
-                nextButton.className = 'pagination-btn';
-                nextButton.innerHTML = '&raquo;';
-                nextButton.disabled = currentPage === totalPages;
-                nextButton.addEventListener('click', () => {
-                    if (currentPage < totalPages) {
-                        currentPage++;
-                        renderTable();
-                    }
+            // Add status filter chip
+            if (currentStatusFilter !== 'all') {
+                const statusChip = document.createElement('div');
+                statusChip.className = 'filter-chip active';
+                const statusText = currentStatusFilter.charAt(0).toUpperCase() + currentStatusFilter.slice(1);
+                statusChip.innerHTML = statusText +
+                        '<span class="remove" data-filter="status">&times;</span>';
+                statusChip.querySelector('.remove').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    currentStatusFilter = 'all';
+                    statusFilter.value = 'all';
+                    renderTable();
+                    updateFilterChips();
                 });
-                paginationContainer.appendChild(nextButton);
+                filterChipsContainer.appendChild(statusChip);
             }
 
-            // Update filter chips
-            function updateFilterChips() {
-                filterChipsContainer.innerHTML = '';
+            // Add date filter chip
+            if (currentDateFilter) {
+                const dateChip = document.createElement('div');
+                dateChip.className = 'filter-chip active';
+                dateChip.innerHTML = currentDateFilter +
+                        '<span class="remove" data-filter="date">&times;</span>';
+                dateChip.querySelector('.remove').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    currentDateFilter = '';
+                    dateFilter.value = '';
+                    renderTable();
+                    updateFilterChips();
+                });
+                filterChipsContainer.appendChild(dateChip);
+            }
+        }
 
-                // Add type filter chip
-                if (currentFilter !== 'all') {
-                    const typeChip = document.createElement('div');
-                    typeChip.className = 'filter-chip active';
-                    let filterText = '';
-                    if (currentFilter === 'shelters')
-                        filterText = 'Shelters';
-                    else if (currentFilter === 'adopters')
-                        filterText = 'Adopters';
-                    else if (currentFilter === 'rejected')
-                        filterText = 'Rejected';
+        // Show registration details in modal
+        function showRegistrationDetails(id) {
+            const registration = allRegistrations.find(r => r.id === id);
+            if (!registration)
+                return;
 
-                    typeChip.innerHTML = filterText +
-                            '<span class="remove" data-filter="type">&times;</span>';
+            currentRegistrationId = id;
 
-                    typeChip.querySelector('.remove').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        // Reset to "all" tab
-                        tabButtons.forEach(btn => {
-                            btn.classList.remove('active');
-                            if (btn.getAttribute('data-tab') === 'all') {
-                                btn.classList.add('active');
-                            }
-                        });
-                        currentFilter = 'all';
-                        renderTable();
-                        updateFilterChips();
-                    });
-                    filterChipsContainer.appendChild(typeChip);
-                }
-
-                // Add status filter chip
-                if (currentStatusFilter !== 'all') {
-                    const statusChip = document.createElement('div');
-                    statusChip.className = 'filter-chip active';
-                    const statusText = currentStatusFilter.charAt(0).toUpperCase() + currentStatusFilter.slice(1);
-                    statusChip.innerHTML = statusText +
-                            '<span class="remove" data-filter="status">&times;</span>';
-                    statusChip.querySelector('.remove').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        currentStatusFilter = 'all';
-                        statusFilter.value = 'all';
-                        renderTable();
-                        updateFilterChips();
-                    });
-                    filterChipsContainer.appendChild(statusChip);
-                }
-
-                // Add date filter chip
-                if (currentDateFilter) {
-                    const dateChip = document.createElement('div');
-                    dateChip.className = 'filter-chip active';
-                    dateChip.innerHTML = currentDateFilter +
-                            '<span class="remove" data-filter="date">&times;</span>';
-                    dateChip.querySelector('.remove').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        currentDateFilter = '';
-                        dateFilter.value = '';
-                        renderTable();
-                        updateFilterChips();
-                    });
-                    filterChipsContainer.appendChild(dateChip);
-                }
+            // Determine status badge
+            let statusClass = '';
+            if (registration.status === 'pending') {
+                statusClass = 'status-pending';
+            } else if (registration.status === 'approved') {
+                statusClass = 'status-approved';
+            } else if (registration.status === 'rejected') {
+                statusClass = 'status-rejected';
             }
 
-            // Show registration details in modal
-            function showRegistrationDetails(id) {
-                const registration = allRegistrations.find(r => r.id === id);
-                if (!registration)
-                    return;
+            // Generate details HTML based on type
+            let detailsHTML = '';
+            if (registration.type === 'Shelter') {
+                detailsHTML = '<div class="mb-6">' +
+                        '<div class="flex items-center justify-between mb-4">' +
+                        '<div>' +
+                        '<h4 class="text-lg font-bold" style="color: #2B2B2B;">' + registration.name + '</h4>' +
+                        '<p class="text-gray-500">' + registration.email + '</p>' +
+                        '</div>' +
+                        '<div>' +
+                        '<span class="status-badge ' + statusClass + '">' + registration.status.charAt(0).toUpperCase() + registration.status.slice(1) + '</span>' +
+                        '</div>' +
+                        '</div>' +
+                        '<div class="bg-[#F6F3E7] p-4 rounded-lg mb-4">' +
+                        '<h5 class="font-semibold mb-2" style="color: #2F5D50;">Shelter Information</h5>' +
+                        '<div class="detail-row">' +
+                        '<div class="detail-label">Contact Person</div>' +
+                        '<div class="detail-value">' + (registration.details.contactPerson || 'N/A') + '</div>' +
+                        '</div>' +
+                        '<div class="detail-row">' +
+                        '<div class="detail-label">Phone</div>' +
+                        '<div class="detail-value">' + (registration.details.phone || 'N/A') + '</div>' +
+                        '</div>' +
+                        '<div class="detail-row">' +
+                        '<div class="detail-label">Address</div>' +
+                        '<div class="detail-value">' + (registration.details.address || 'N/A') + '</div>' +
+                        '</div>' +
+                        '<div class="detail-row">' +
+                        '<div class="detail-label">Description</div>' +
+                        '<div class="detail-value">' + (registration.details.description || 'No description provided') + '</div>' +
+                        '</div>' +
+                        '</div>';
 
-                currentRegistrationId = id;
-
-                // Determine status badge
-                let statusClass = '';
-                if (registration.status === 'Pending Review' || registration.status === 'Pending') {
-                    statusClass = 'status-pending';
-                } else if (registration.status === 'New') {
-                    statusClass = 'status-new';
-                } else if (registration.status === 'Approved') {
-                    statusClass = 'status-approved';
-                } else if (registration.status === 'Rejected') {
-                    statusClass = 'status-rejected';
-                }
-
-                // Generate details HTML based on type
-                let detailsHTML = '';
-                if (registration.type === 'Shelter') {
-                    // Generate documents HTML
-                    const documentsHTML = registration.details.documents.map(doc =>
-                        '<span class="px-3 py-1 text-sm rounded-full bg-gray-100 text-gray-700">' + doc + '</span>'
-                    ).join('');
-
-                    // Generate approval details HTML if approved
-                    let approvalDetailsHTML = '';
-                    if (registration.status === 'Approved' && registration.approvalReason) {
-                        approvalDetailsHTML = '<div class="mt-4 p-4 border border-green-200 rounded-lg bg-green-50">' +
-                                '<h5 class="font-semibold mb-2" style="color: #378A5E;">Approval Details</h5>' +
-                                '<div class="detail-row">' +
-                                '<div class="detail-label">Reason</div>' +
-                                '<div class="detail-value">' + registration.approvalReason + '</div>' +
-                                '</div>' +
-                                '<div class="detail-row">' +
-                                '<div class="detail-label">Approved On</div>' +
-                                '<div class="detail-value">' + registration.approvalDate + '</div>' +
-                                '</div>' +
-                                '<div class="detail-row">' +
-                                '<div class="detail-label">Approved By</div>' +
-                                '<div class="detail-value">' + registration.approvedBy + '</div>' +
-                                '</div>' +
-                                '</div>';
-                    }
-
-                    // Generate rejection details HTML if rejected
-                    let rejectionDetailsHTML = '';
-                    if (registration.status === 'Rejected' && registration.rejectionReason) {
-                        rejectionDetailsHTML = '<div class="mt-4 p-4 border border-red-200 rounded-lg bg-red-50">' +
-                                '<h5 class="font-semibold mb-2" style="color: #B84A4A;">Rejection Details</h5>' +
-                                '<div class="detail-row">' +
-                                '<div class="detail-label">Reason</div>' +
-                                '<div class="detail-value">' + registration.rejectionReason + '</div>' +
-                                '</div>' +
-                                '<div class="detail-row">' +
-                                '<div class="detail-label">Rejected On</div>' +
-                                '<div class="detail-value">' + registration.rejectionDate + '</div>' +
-                                '</div>' +
-                                '<div class="detail-row">' +
-                                '<div class="detail-label">Rejected By</div>' +
-                                '<div class="detail-value">' + registration.rejectedBy + '</div>' +
-                                '</div>' +
-                                '</div>';
-                    }
-
-                    detailsHTML = '<div class="mb-6">' +
-                            '<div class="flex items-center justify-between mb-4">' +
-                            '<div>' +
-                            '<h4 class="text-lg font-bold" style="color: #2B2B2B;">' + registration.name + '</h4>' +
-                            '<p class="text-gray-500">' + registration.email + '</p>' +
-                            '</div>' +
-                            '<div>' +
-                            '<span class="status-badge ' + statusClass + '">' + registration.status + '</span>' +
-                            '</div>' +
-                            '</div>' +
-                            '<div class="bg-[#F6F3E7] p-4 rounded-lg mb-4">' +
-                            '<h5 class="font-semibold mb-2" style="color: #2F5D50;">Shelter Information</h5>' +
+                // Add approval details if approved
+                if (registration.status === 'approved' && registration.approvalReason) {
+                    detailsHTML += '<div class="mt-4 p-4 border border-green-200 rounded-lg bg-green-50">' +
+                            '<h5 class="font-semibold mb-2" style="color: #378A5E;">Approval Details</h5>' +
                             '<div class="detail-row">' +
-                            '<div class="detail-label">Contact Person</div>' +
-                            '<div class="detail-value">' + registration.details.contactPerson + '</div>' +
+                            '<div class="detail-label">Reason</div>' +
+                            '<div class="detail-value">' + registration.approvalReason + '</div>' +
                             '</div>' +
-                            '<div class="detail-row">' +
-                            '<div class="detail-label">Phone</div>' +
-                            '<div class="detail-value">' + registration.details.phone + '</div>' +
-                            '</div>' +
-                            '<div class="detail-row">' +
-                            '<div class="detail-label">Address</div>' +
-                            '<div class="detail-value">' + registration.details.address + '</div>' +
-                            '</div>' +
-                            '<div class="detail-row">' +
-                            '<div class="detail-label">License Number</div>' +
-                            '<div class="detail-value">' + registration.details.licenseNumber + '</div>' +
-                            '</div>' +
-                            '<div class="detail-row">' +
-                            '<div class="detail-label">Established</div>' +
-                            '<div class="detail-value">' + registration.details.established + '</div>' +
-                            '</div>' +
-                            '<div class="detail-row">' +
-                            '<div class="detail-label">Capacity</div>' +
-                            '<div class="detail-value">' + registration.details.capacity + ' animals</div>' +
-                            '</div>' +
-                            '</div>' +
-                            '<div class="mb-4">' +
-                            '<h5 class="font-semibold mb-2" style="color: #2F5D50;">Description</h5>' +
-                            '<p class="text-gray-700">' + registration.details.description + '</p>' +
-                            '</div>' +
-                            '<div>' +
-                            '<h5 class="font-semibold mb-2" style="color: #2F5D50;">Submitted Documents</h5>' +
-                            '<div class="flex flex-wrap gap-2">' + documentsHTML + '</div>' +
-                            '</div>' +
-                            approvalDetailsHTML +
-                            rejectionDetailsHTML +
-                            '</div>';
-                } else {
-                    // Adopter registration
-                    // Generate approval details HTML if approved
-                    let approvalDetailsHTML = '';
-                    if (registration.status === 'Approved' && registration.approvalReason) {
-                        approvalDetailsHTML = '<div class="mt-4 p-4 border border-green-200 rounded-lg bg-green-50">' +
-                                '<h5 class="font-semibold mb-2" style="color: #378A5E;">Approval Details</h5>' +
-                                '<div class="detail-row">' +
-                                '<div class="detail-label">Reason</div>' +
-                                '<div class="detail-value">' + registration.approvalReason + '</div>' +
-                                '</div>' +
-                                '<div class="detail-row">' +
-                                '<div class="detail-label">Approved On</div>' +
-                                '<div class="detail-value">' + registration.approvalDate + '</div>' +
-                                '</div>' +
-                                '<div class="detail-row">' +
-                                '<div class="detail-label">Approved By</div>' +
-                                '<div class="detail-value">' + registration.approvedBy + '</div>' +
-                                '</div>' +
-                                '</div>';
-                    }
-
-                    // Generate rejection details HTML if rejected
-                    let rejectionDetailsHTML = '';
-                    if (registration.status === 'Rejected' && registration.rejectionReason) {
-                        rejectionDetailsHTML = '<div class="mt-4 p-4 border border-red-200 rounded-lg bg-red-50">' +
-                                '<h5 class="font-semibold mb-2" style="color: #B84A4A;">Rejection Details</h5>' +
-                                '<div class="detail-row">' +
-                                '<div class="detail-label">Reason</div>' +
-                                '<div class="detail-value">' + registration.rejectionReason + '</div>' +
-                                '</div>' +
-                                '<div class="detail-row">' +
-                                '<div class="detail-label">Rejected On</div>' +
-                                '<div class="detail-value">' + registration.rejectionDate + '</div>' +
-                                '</div>' +
-                                '<div class="detail-row">' +
-                                '<div class="detail-label">Rejected By</div>' +
-                                '<div class="detail-value">' + registration.rejectedBy + '</div>' +
-                                '</div>' +
-                                '</div>';
-                    }
-
-                    detailsHTML = '<div class="mb-6">' +
-                            '<div class="flex items-center justify-between mb-4">' +
-                            '<div>' +
-                            '<h4 class="text-lg font-bold" style="color: #2B2B2B;">' + registration.name + '</h4>' +
-                            '<p class="text-gray-500">' + registration.email + '</p>' +
-                            '</div>' +
-                            '<div>' +
-                            '<span class="status-badge ' + statusClass + '">' + registration.status + '</span>' +
-                            '</div>' +
-                            '</div>' +
-                            '<div class="bg-[#F6F3E7] p-4 rounded-lg mb-4">' +
-                            '<h5 class="font-semibold mb-2" style="color: #2F5D50;">Adopter Information</h5>' +
-                            '<div class="detail-row">' +
-                            '<div class="detail-label">Phone</div>' +
-                            '<div class="detail-value">' + registration.details.phone + '</div>' +
-                            '</div>' +
-                            '<div class="detail-row">' +
-                            '<div class="detail-label">Address</div>' +
-                            '<div class="detail-value">' + registration.details.address + '</div>' +
-                            '</div>' +
-                            '<div class="detail-row">' +
-                            '<div class="detail-label">Occupation</div>' +
-                            '<div class="detail-value">' + registration.details.occupation + '</div>' +
-                            '</div>' +
-                            '<div class="detail-row">' +
-                            '<div class="detail-label">Experience with Pets</div>' +
-                            '<div class="detail-value">' + registration.details.experience + '</div>' +
-                            '</div>' +
-                            '<div class="detail-row">' +
-                            '<div class="detail-label">Home Type</div>' +
-                            '<div class="detail-value">' + registration.details.homeType + '</div>' +
-                            '</div>' +
-                            '<div class="detail-row">' +
-                            '<div class="detail-label">Other Pets</div>' +
-                            '<div class="detail-value">' + registration.details.otherPets + '</div>' +
-                            '</div>' +
-                            '</div>' +
-                            '<div>' +
-                            '<h5 class="font-semibold mb-2" style="color: #2F5D50;">Reason for Adoption</h5>' +
-                            '<p class="text-gray-700">' + registration.details.reason + '</p>' +
-                            '</div>' +
-                            approvalDetailsHTML +
-                            rejectionDetailsHTML +
                             '</div>';
                 }
 
-                modalContent.innerHTML = detailsHTML;
-
-                // Show/hide action buttons based on status
-                if (registration.status === 'Approved' || registration.status === 'Rejected') {
-                    modalApproveBtn.style.display = 'none';
-                    modalRejectBtn.style.display = 'none';
-                } else {
-                    modalApproveBtn.style.display = 'inline-block';
-                    modalRejectBtn.style.display = 'inline-block';
+                // Add rejection details if rejected
+                if (registration.status === 'rejected' && registration.rejectionReason) {
+                    detailsHTML += '<div class="mt-4 p-4 border border-red-200 rounded-lg bg-red-50">' +
+                            '<h5 class="font-semibold mb-2" style="color: #B84A4A;">Rejection Details</h5>' +
+                            '<div class="detail-row">' +
+                            '<div class="detail-label">Reason</div>' +
+                            '<div class="detail-value">' + registration.rejectionReason + '</div>' +
+                            '</div>' +
+                            '</div>';
                 }
 
-                // Show modal
-                registrationModal.classList.add('active');
+                detailsHTML += '</div>';
+            } else {
+                // Adopter registration
+                detailsHTML = '<div class="mb-6">' +
+                        '<div class="flex items-center justify-between mb-4">' +
+                        '<div>' +
+                        '<h4 class="text-lg font-bold" style="color: #2B2B2B;">' + registration.name + '</h4>' +
+                        '<p class="text-gray-500">' + registration.email + '</p>' +
+                        '</div>' +
+                        '<div>' +
+                        '<span class="status-badge ' + statusClass + '">' + registration.status.charAt(0).toUpperCase() + registration.status.slice(1) + '</span>' +
+                        '</div>' +
+                        '</div>' +
+                        '<div class="bg-[#F6F3E7] p-4 rounded-lg mb-4">' +
+                        '<h5 class="font-semibold mb-2" style="color: #2F5D50;">Adopter Information</h5>' +
+                        '<div class="detail-row">' +
+                        '<div class="detail-label">Phone</div>' +
+                        '<div class="detail-value">' + (registration.details.phone || 'N/A') + '</div>' +
+                        '</div>' +
+                        '<div class="detail-row">' +
+                        '<div class="detail-label">Address</div>' +
+                        '<div class="detail-value">' + (registration.details.address || 'N/A') + '</div>' +
+                        '</div>' +
+                        '<div class="detail-row">' +
+                        '<div class="detail-label">Occupation</div>' +
+                        '<div class="detail-value">' + (registration.details.occupation || 'N/A') + '</div>' +
+                        '</div>' +
+                        '<div class="detail-row">' +
+                        '<div class="detail-label">Household Type</div>' +
+                        '<div class="detail-value">' + (registration.details.homeType || 'N/A') + '</div>' +
+                        '</div>' +
+                        '</div>' +
+                        '<div>' +
+                        '<h5 class="font-semibold mb-2" style="color: #2F5D50;">Reason for Adoption</h5>' +
+                        '<p class="text-gray-700">' + (registration.details.reason || 'Looking to adopt a pet') + '</p>' +
+                        '</div>' +
+                        '</div>';
             }
 
-            // Show toast notification
-            function showToast(message, type = 'success') {
-                toastMessage.textContent = message;
+            modalContent.innerHTML = detailsHTML;
 
-                if (type === 'success') {
-                    toast.className = 'toast toast-success';
-                    toastIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>';
-                } else {
-                    toast.className = 'toast toast-error';
-                    toastIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>';
-                }
-
-                toast.classList.add('show');
-
-                setTimeout(() => {
-                    toast.classList.remove('show');
-                }, 3000);
+            // Show/hide action buttons based on status
+            if (registration.type === 'Shelter' && registration.status === 'pending') {
+                modalApproveBtn.style.display = 'inline-block';
+                modalRejectBtn.style.display = 'inline-block';
+            } else {
+                modalApproveBtn.style.display = 'none';
+                modalRejectBtn.style.display = 'none';
             }
 
-            // Initialize the page when DOM is loaded
-            document.addEventListener('DOMContentLoaded', init);
-        </script>
+            // Show modal
+            registrationModal.classList.add('active');
+        }
 
-    </body>
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            toastMessage.textContent = message;
+
+            if (type === 'success') {
+                toast.className = 'toast toast-success';
+                toastIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>';
+            } else {
+                toast.className = 'toast toast-error';
+                toastIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>';
+            }
+
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Initialize the page when DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+
+</body>
 </html>
